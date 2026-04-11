@@ -1,15 +1,22 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "snapshot": false,
+
+  "skills": {
+    "paths": [
+      "C:\\Users\\z1376\\Documents\\CST_MCP\\skills",
+      "C:\\Users\\z1376\\.config\\opencode\\skills"
+    ]
+  },
+
   "mcp": {
     "cst-modeler": {
       "type": "local",
-      "command": ["uv", "run", "advanced_mcp.py"],
+      "command": ["uv", "run", "mcp/advanced_mcp.py"],
       "enabled": true
     },
     "cst-results": {
       "type": "local",
-      "command": ["uv", "run", "cst_results_mcp.py"],
+      "command": ["uv", "run", "mcp/cst_results_mcp.py"],
       "enabled": true
     }
   }

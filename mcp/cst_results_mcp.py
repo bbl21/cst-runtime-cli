@@ -37,7 +37,11 @@ DEFAULT_PLOT_DIR = Path(__file__).resolve().parent / "plot_previews"
 PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 
 
-def save_project_context(fullpath: str, allow_interactive: bool = False, subproject_treepath: str | None = None):
+def save_project_context(
+    fullpath: str,
+    allow_interactive: bool = False,
+    subproject_treepath: str | None = None,
+):
     """保存当前项目上下文"""
     global _current_project_path, _current_active_subproject, _current_allow_interactive
     _current_project_path = os.path.abspath(fullpath)
@@ -94,7 +98,11 @@ def _load_project():
     if not context:
         raise RuntimeError("当前没有活动的项目，请先调用 open_project")
 
-    cache_key = (context["fullpath"], context.get("active_subproject"), context["allow_interactive"])
+    cache_key = (
+        context["fullpath"],
+        context.get("active_subproject"),
+        context["allow_interactive"],
+    )
     cached = _project_cache.get(cache_key)
     if cached is not None:
         return cached, context
@@ -231,7 +239,9 @@ def _infer_xy_from_rows(rows: list[list[str]]) -> dict[str, Any]:
     }
 
 
-def _try_parse_cst_farfield_ascii(text: str, filename: str = "") -> dict[str, Any] | None:
+def _try_parse_cst_farfield_ascii(
+    text: str, filename: str = ""
+) -> dict[str, Any] | None:
     lines = [line.rstrip() for line in text.splitlines() if line.strip()]
     if not lines:
         return None
@@ -241,7 +251,11 @@ def _try_parse_cst_farfield_ascii(text: str, filename: str = "") -> dict[str, An
     data_unit = "V/m"
     for idx, line in enumerate(lines[:10]):
         normalized = line.lower().replace(" ", "")
-        if "theta[deg.]" in normalized and "phi[deg.]" in normalized and ("abs(e" in normalized or "abs(gain)" in normalized):
+        if (
+            "theta[deg.]" in normalized
+            and "phi[deg.]" in normalized
+            and ("abs(e" in normalized or "abs(gain)" in normalized)
+        ):
             header_index = idx
             if "abs(gain)" in normalized:
                 source_quantity = "Abs(Gain)"
@@ -250,7 +264,6 @@ def _try_parse_cst_farfield_ascii(text: str, filename: str = "") -> dict[str, An
 
     if header_index < 0:
         return None
-
 
     data_rows: list[list[float]] = []
     for line in lines[header_index + 1 :]:
@@ -304,7 +317,9 @@ def _try_parse_cst_farfield_ascii(text: str, filename: str = "") -> dict[str, An
         ax_ratio_matrix.append(ax_ratio_matrix[0][:])
 
     def _fill_none(matrix: list[list[float | None]]) -> list[list[float]]:
-        return [[0.0 if cell is None else float(cell) for cell in row] for row in matrix]
+        return [
+            [0.0 if cell is None else float(cell) for cell in row] for row in matrix
+        ]
 
     return {
         "kind": "2d",
@@ -332,7 +347,6 @@ def _try_parse_cst_farfield_ascii(text: str, filename: str = "") -> dict[str, An
     }
 
 
-
 def _load_exported_payload(file_path: str) -> dict[str, Any]:
     target = Path(file_path)
     if not target.exists():
@@ -343,7 +357,9 @@ def _load_exported_payload(file_path: str) -> dict[str, Any]:
         with target.open("r", encoding="utf-8") as f:
             payload = json.load(f)
         if not isinstance(payload, dict):
-            raise ValueError("JSON 文件内容必须是对象，且应包含 xdata/ydata 或二维 data")
+            raise ValueError(
+                "JSON 文件内容必须是对象，且应包含 xdata/ydata 或二维 data"
+            )
         return payload
 
     text = target.read_text(encoding="utf-8-sig")
@@ -374,7 +390,6 @@ def _load_exported_payload(file_path: str) -> dict[str, Any]:
             raise ValueError(f"无法自动解析导出文件为可绘图数据: {str(e)}")
 
 
-
 def _parse_frequency_from_name(name: str) -> float | None:
     match = re.search(r"(\d+(?:\.\d+)?)\s*GHz", name, flags=re.I)
     if match:
@@ -383,7 +398,6 @@ def _parse_frequency_from_name(name: str) -> float | None:
     if match:
         return float(match.group(1))
     return None
-
 
 
 def _load_farfield_payloads(file_paths: list[str]) -> list[dict[str, Any]]:
@@ -407,39 +421,58 @@ def _load_farfield_payloads(file_paths: list[str]) -> list[dict[str, Any]]:
             raise ValueError(f"远场文件缺少有效矩阵或坐标: {file_path}")
 
         max_value = max(cell for row in matrix for cell in row)
-        norm_matrix = [[(cell / max_value) if max_value > 0 else 0.0 for cell in row] for row in matrix]
-        db_matrix = [[safe if (safe := _safe_log_db(v)) is not None else -120.0 for v in row] for row in norm_matrix]
+        norm_matrix = [
+            [(cell / max_value) if max_value > 0 else 0.0 for cell in row]
+            for row in matrix
+        ]
+        db_matrix = [
+            [safe if (safe := _safe_log_db(v)) is not None else -120.0 for v in row]
+            for row in norm_matrix
+        ]
 
         def _cut_for_phi(target_phi: float):
-            idx = min(range(len(ypositions)), key=lambda i: abs(float(ypositions[i]) - target_phi))
+            idx = min(
+                range(len(ypositions)),
+                key=lambda i: abs(float(ypositions[i]) - target_phi),
+            )
             return {
                 "phi": float(ypositions[idx]),
                 "theta": [float(v) for v in xpositions],
                 "gain_db": [float(v) for v in db_matrix[idx]],
             }
 
-        items.append({
-            "label": f"{freq:g} GHz" if freq is not None else Path(source_file).stem,
-            "frequency": freq,
-            "file": str(Path(source_file)),
-            "points": int(meta.get("point_count", len(xpositions) * len(ypositions))),
-            "theta_range": [float(xpositions[0]), float(xpositions[-1])],
-            "phi_range": [float(ypositions[0]), float(ypositions[-1])],
-            "theta_step": float(xpositions[1] - xpositions[0]) if len(xpositions) > 1 else None,
-            "phi_step": float(ypositions[1] - ypositions[0]) if len(ypositions) > 1 else None,
-            "min_db": min(cell for row in db_matrix for cell in row),
-            "max_db": max(cell for row in db_matrix for cell in row),
-            "theta": [float(v) for v in xpositions],
-            "phi": [float(v) for v in ypositions],
-            "radius": norm_matrix,
-            "surface_color": db_matrix,
-            "cuts": [_cut_for_phi(0.0), _cut_for_phi(90.0)],
-        })
+        items.append(
+            {
+                "label": f"{freq:g} GHz"
+                if freq is not None
+                else Path(source_file).stem,
+                "frequency": freq,
+                "file": str(Path(source_file)),
+                "points": int(
+                    meta.get("point_count", len(xpositions) * len(ypositions))
+                ),
+                "theta_range": [float(xpositions[0]), float(xpositions[-1])],
+                "phi_range": [float(ypositions[0]), float(ypositions[-1])],
+                "theta_step": float(xpositions[1] - xpositions[0])
+                if len(xpositions) > 1
+                else None,
+                "phi_step": float(ypositions[1] - ypositions[0])
+                if len(ypositions) > 1
+                else None,
+                "min_db": min(cell for row in db_matrix for cell in row),
+                "max_db": max(cell for row in db_matrix for cell in row),
+                "theta": [float(v) for v in xpositions],
+                "phi": [float(v) for v in ypositions],
+                "radius": norm_matrix,
+                "surface_color": db_matrix,
+                "cuts": [_cut_for_phi(0.0), _cut_for_phi(90.0)],
+            }
+        )
 
-    items.sort(key=lambda x: (999999 if x["frequency"] is None else x["frequency"], x["label"]))
+    items.sort(
+        key=lambda x: (999999 if x["frequency"] is None else x["frequency"], x["label"])
+    )
     return items
-
-
 
 
 def _build_summary_cards(cards: list[tuple[str, Any]]) -> str:
@@ -580,7 +613,9 @@ def _create_1d_plot_html(payload: dict[str, Any], page_title: str) -> str:
         main_layout_extra = "{margin:{t:40,r:30,b:30,l:30}}"
     else:
         main_trace_expr = "[{x:x,y:mag,type:'scatter',mode:'lines',name:'Magnitude',line:{color:'#38bdf8',width:2}}]"
-        main_layout_extra = "{xaxis:{title:xlabel},yaxis:{title:ylabel},hovermode:'x unified'}"
+        main_layout_extra = (
+            "{xaxis:{title:xlabel},yaxis:{title:ylabel},hovermode:'x unified'}"
+        )
 
     script = f"""
 const x = {x_json};
@@ -650,7 +685,6 @@ Plotly.newPlot('plot_complex', [
 }}, {{responsive:true,displaylogo:false}});
 """.replace("hasComplex", "true" if has_complex else "false")
 
-
     return _html_template(page_title, body, script)
 
 
@@ -675,7 +709,9 @@ def _create_2d_plot_html(payload: dict[str, Any], page_title: str) -> str:
     matrix = _normalize_matrix(payload.get("data"))
     meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
     source_format = (meta.get("source_format") or "").strip().lower()
-    component_payload = meta.get("components") if isinstance(meta.get("components"), dict) else {}
+    component_payload = (
+        meta.get("components") if isinstance(meta.get("components"), dict) else {}
+    )
     ny = len(matrix)
     nx = len(matrix[0]) if matrix else 0
 
@@ -701,12 +737,14 @@ def _create_2d_plot_html(payload: dict[str, Any], page_title: str) -> str:
         ("Y范围", f"{ypositions[0]} ~ {ypositions[-1]}" if ypositions else "N/A"),
     ]
     if source_format == "cst_farfield_ascii":
-        cards.extend([
-            ("源格式", "CST Farfield ASCII"),
-            ("点数", meta.get("point_count", ny * nx)),
-            ("Theta数", meta.get("theta_count", nx)),
-            ("Phi数", meta.get("phi_count", ny)),
-        ])
+        cards.extend(
+            [
+                ("源格式", "CST Farfield ASCII"),
+                ("点数", meta.get("point_count", ny * nx)),
+                ("Theta数", meta.get("theta_count", nx)),
+                ("Phi数", meta.get("phi_count", ny)),
+            ]
+        )
 
     extra_sections = ""
     if source_format == "cst_farfield_ascii":
@@ -779,11 +817,31 @@ def _create_2d_plot_html(payload: dict[str, Any], page_title: str) -> str:
     z_json = _json_dumps(matrix)
     row_slice_json = _json_dumps(mid_row)
     col_slice_json = _json_dumps(mid_col)
-    abs_theta_json = _json_dumps(_normalize_matrix(component_payload.get("abs_theta")) if component_payload.get("abs_theta") else [])
-    abs_phi_json = _json_dumps(_normalize_matrix(component_payload.get("abs_phi")) if component_payload.get("abs_phi") else [])
-    phase_theta_json = _json_dumps(_normalize_matrix(component_payload.get("phase_theta")) if component_payload.get("phase_theta") else [])
-    phase_phi_json = _json_dumps(_normalize_matrix(component_payload.get("phase_phi")) if component_payload.get("phase_phi") else [])
-    ax_ratio_json = _json_dumps(_normalize_matrix(component_payload.get("ax_ratio")) if component_payload.get("ax_ratio") else [])
+    abs_theta_json = _json_dumps(
+        _normalize_matrix(component_payload.get("abs_theta"))
+        if component_payload.get("abs_theta")
+        else []
+    )
+    abs_phi_json = _json_dumps(
+        _normalize_matrix(component_payload.get("abs_phi"))
+        if component_payload.get("abs_phi")
+        else []
+    )
+    phase_theta_json = _json_dumps(
+        _normalize_matrix(component_payload.get("phase_theta"))
+        if component_payload.get("phase_theta")
+        else []
+    )
+    phase_phi_json = _json_dumps(
+        _normalize_matrix(component_payload.get("phase_phi"))
+        if component_payload.get("phase_phi")
+        else []
+    )
+    ax_ratio_json = _json_dumps(
+        _normalize_matrix(component_payload.get("ax_ratio"))
+        if component_payload.get("ax_ratio")
+        else []
+    )
     source_format_json = _json_dumps(source_format)
 
     script = f"""
@@ -963,8 +1021,9 @@ if (sourceFormat === 'cst_farfield_ascii') {{
     return _html_template(page_title, body, script)
 
 
-
-def _create_farfield_multi_plot_html(items: list[dict[str, Any]], page_title: str) -> str:
+def _create_farfield_multi_plot_html(
+    items: list[dict[str, Any]], page_title: str
+) -> str:
     if not items:
         raise ValueError("没有可用的远场文件")
 
@@ -1018,7 +1077,9 @@ def _create_farfield_multi_plot_html(items: list[dict[str, Any]], page_title: st
 
     items_json = _json_dumps(items)
     title_json = _json_dumps(page_title)
-    summary_json = _json_dumps({"global_min_db": global_min_db, "global_max_db": global_max_db})
+    summary_json = _json_dumps(
+        {"global_min_db": global_min_db, "global_max_db": global_max_db}
+    )
     script = f"""
 const items = {items_json};
 const pageTitle = {title_json};
@@ -1156,7 +1217,9 @@ renderComparison('plot_compare_phi90', 1, pageTitle + ' · 多频率对比（目
     return _html_template(page_title, body, script)
 
 
-def _build_plot_html_from_payload(payload: dict[str, Any], page_title: str) -> tuple[str, str]:
+def _build_plot_html_from_payload(
+    payload: dict[str, Any], page_title: str
+) -> tuple[str, str]:
     kind = (payload.get("kind") or "").lower().strip()
 
     if not kind:
@@ -1173,8 +1236,9 @@ def _build_plot_html_from_payload(payload: dict[str, Any], page_title: str) -> t
     raise ValueError("无法自动识别数据类型，请提供包含 xdata/ydata 或二维 data 的数据")
 
 
-def _fetch_plot_payload_from_project(treepath: str, module_type: str, run_id: int, load_impedances: bool):
-
+def _fetch_plot_payload_from_project(
+    treepath: str, module_type: str, run_id: int, load_impedances: bool
+):
     project, context = _load_project()
     result_module, normalized_module = _get_result_module(project, module_type)
 
@@ -1192,7 +1256,9 @@ def _fetch_plot_payload_from_project(treepath: str, module_type: str, run_id: in
             "xdata": _serialize_value(result_item.get_xdata()),
             "ydata": _serialize_value(result_item.get_ydata()),
             "run_id": result_item.run_id,
-            "parameter_combination": _serialize_value(result_item.get_parameter_combination()),
+            "parameter_combination": _serialize_value(
+                result_item.get_parameter_combination()
+            ),
         }
         return payload, "1d", normalized_module, context
     except Exception as first_error:
@@ -1258,7 +1324,9 @@ def open_project(fullpath: str, allow_interactive: bool = False):
     try:
         abs_path = os.path.abspath(fullpath)
         project = cst.results.ProjectFile(abs_path, allow_interactive=allow_interactive)
-        save_project_context(abs_path, allow_interactive=allow_interactive, subproject_treepath=None)
+        save_project_context(
+            abs_path, allow_interactive=allow_interactive, subproject_treepath=None
+        )
         return {
             "status": "success",
             "fullpath": abs_path,
@@ -1273,6 +1341,15 @@ def open_project(fullpath: str, allow_interactive: bool = False):
 @mcp.tool()
 def close_project():
     """关闭当前项目上下文"""
+    global _project_cache
+    context = get_project_context()
+    if context:
+        cache_key = (
+            context["fullpath"],
+            context.get("active_subproject"),
+            context["allow_interactive"],
+        )
+        _project_cache.pop(cache_key, None)
     clear_project_context()
     return {"status": "success", "message": "项目已关闭"}
 
@@ -1321,7 +1398,10 @@ def load_subproject(treepath: str):
     """
     context = get_project_context()
     if not context:
-        return {"status": "error", "message": "当前没有活动的项目，请先调用 open_project"}
+        return {
+            "status": "error",
+            "message": "当前没有活动的项目，请先调用 open_project",
+        }
 
     try:
         root_project = cst.results.ProjectFile(
@@ -1407,7 +1487,6 @@ def list_result_items(module_type: str = "3d", filter_type: str = "0D/1D"):
         return {"status": "error", "message": f"查询结果树项目失败: {str(e)}"}
 
 
-
 @mcp.tool()
 def list_run_ids(
     treepath: str = "",
@@ -1429,9 +1508,13 @@ def list_run_ids(
 
         treepath = treepath or ""
         if treepath:
-            run_ids = result_module.get_run_ids(treepath, skip_nonparametric=skip_nonparametric)
+            run_ids = result_module.get_run_ids(
+                treepath, skip_nonparametric=skip_nonparametric
+            )
         else:
-            run_ids = result_module.get_all_run_ids(max_mesh_passes_only=max_mesh_passes_only)
+            run_ids = result_module.get_all_run_ids(
+                max_mesh_passes_only=max_mesh_passes_only
+            )
 
         return {
             "status": "success",
@@ -1503,7 +1586,9 @@ def get_1d_result(
             "ylabel": result_item.ylabel,
             "length": result_item.length,
             "run_id": result_item.run_id,
-            "parameter_combination": _serialize_value(result_item.get_parameter_combination()),
+            "parameter_combination": _serialize_value(
+                result_item.get_parameter_combination()
+            ),
             "xdata": _serialize_value(xdata),
             "ydata": _serialize_value(ydata),
             "data": _serialize_value(data),
@@ -1585,14 +1670,20 @@ def plot_project_result(
     - page_title: 页面标题；为空则自动使用结果标题
     """
     try:
-        payload, detected_kind, normalized_module, context = _fetch_plot_payload_from_project(
-            treepath=treepath,
-            module_type=module_type,
-            run_id=run_id,
-            load_impedances=load_impedances,
+        payload, detected_kind, normalized_module, context = (
+            _fetch_plot_payload_from_project(
+                treepath=treepath,
+                module_type=module_type,
+                run_id=run_id,
+                load_impedances=load_impedances,
+            )
         )
-        final_title = page_title or payload.get("title") or f"CST Result Preview - {treepath}"
-        html_content, rendered_kind = _build_plot_html_from_payload(payload, final_title)
+        final_title = (
+            page_title or payload.get("title") or f"CST Result Preview - {treepath}"
+        )
+        html_content, rendered_kind = _build_plot_html_from_payload(
+            payload, final_title
+        )
         target = _ensure_plot_output_path(output_html, prefix="project_result")
         target.write_text(html_content, encoding="utf-8")
 
@@ -1629,8 +1720,12 @@ def plot_exported_file(file_path: str, output_html: str = "", page_title: str = 
     try:
         payload = _load_exported_payload(file_path)
         payload_title = payload.get("title") if isinstance(payload, dict) else None
-        final_title = page_title or payload_title or f"Export Preview - {Path(file_path).name}"
-        html_content, rendered_kind = _build_plot_html_from_payload(payload, final_title)
+        final_title = (
+            page_title or payload_title or f"Export Preview - {Path(file_path).name}"
+        )
+        html_content, rendered_kind = _build_plot_html_from_payload(
+            payload, final_title
+        )
         target = _ensure_plot_output_path(output_html, prefix="export_preview")
         target.write_text(html_content, encoding="utf-8")
 
@@ -1647,7 +1742,9 @@ def plot_exported_file(file_path: str, output_html: str = "", page_title: str = 
 
 
 @mcp.tool()
-def plot_farfield_multi(file_paths: list[str], output_html: str = "", page_title: str = ""):
+def plot_farfield_multi(
+    file_paths: list[str], output_html: str = "", page_title: str = ""
+):
     """将多个 CST farfield ASCII 导出文件渲染为多频率交互式 HTML 预览
 
     参数：
@@ -1676,5 +1773,5 @@ def plot_farfield_multi(file_paths: list[str], output_html: str = "", page_title
 
 
 if __name__ == "__main__":
+    print("[MCP] cst_results_mcp: starting", flush=True)
     mcp.run(transport="stdio")
-

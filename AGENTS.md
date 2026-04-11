@@ -30,6 +30,20 @@
 - 命名规范：`task_{序号}_{简短描述}` / `run_{序号}`
 - `tmp/` 超过30天的目录定期删除
 
+### 工程文件管理规则
+- 参考工程一律视为只读蓝本，禁止直接在 `ref/`、`ref_model/`、`prototype_optimizer/data/workspaces/*/projects/source/` 下修改
+- 每次任务必须先创建独立工作副本，再在副本上建模、仿真、导出结果
+- 复制 CST 工程时必须完整复制 `.cst` 文件和同名结果目录；禁止只复制单个 `.cst` 文件
+- run 目录统一使用：`tasks/task_xxx_slug/runs/run_xxx/`
+- `projects/` 只放当前 run 的工程副本与其同名目录，例如 `working.cst` 与 `working/`
+- `exports/` 只放导出的 S 参数、远场、场分布、截图等外部结果文件，不存放源工程副本
+- `logs/` 只放流程日志、诊断输出、报错记录
+- `stages/` 只放阶段状态文件与阶段性元数据，避免混放导出物
+- `analysis/` 只放分析结论、计算中间产物、对比表和结构化摘要
+- `summary.md` 用于记录本次 run 的结果摘要；`status.json` 用于记录当前状态；`config.json` 用于记录输入参数与运行配置
+- 若需要基于已有 run 派生新尝试，创建新的 `run_xxx`，不要覆盖旧 run 的工程和导出结果
+- 在复制、移动、清理工程前，必须先关闭项目并结束相关 CST 进程，避免文件锁和结果目录损坏
+
 ## 项目结构
 
 ```
@@ -94,6 +108,15 @@ CST_MCP/
 - 当前重点项目：`C:/Users/z1376/Documents/CST_MCP/prototype_optimizer/`
 - 目录结构：`task_xxx_slug/run_xxx/{projects,exports,stages,logs}`
 
+## Skill 管理
+- 当前只管理一个正式 Skill：`cst-simulation-optimization`
+- 仓库内维护路径：`C:\Users\z1376\Documents\CST_MCP\skills\cst-simulation-optimization\SKILL.md`
+- opencode 生效路径：`C:\Users\z1376\.config\opencode\skills\cst-simulation-optimization\SKILL.md`
+- 修改 Skill 内容时，优先改仓库内版本，再同步到 opencode 目录；不要只改用户目录副本
+- Skill 同步脚本：`C:\Users\z1376\Documents\CST_MCP\tools\sync_opencode_skills.ps1`
+- 只同步当前 Skill：`powershell -ExecutionPolicy Bypass -File tools/sync_opencode_skills.ps1 -SkillName "cst-simulation-optimization"`
+- 若需要全量同步 `skills/` 目录：`powershell -ExecutionPolicy Bypass -File tools/sync_opencode_skills.ps1`
+
 ## CST 建模关键经验
 - 布尔运算实体名必须使用完整 `component:name` 格式
 - Loft 放样顺序：`pick_face` 先 top 再 bottom；完成后删除零厚度辅助 brick
@@ -102,6 +125,12 @@ CST_MCP/
 - 四脊脊片建模：`define_analytical_curve` + `define_polygon_3d` 共用 curve 组形成闭合轮廓 → `define_extrude_curve` 拉伸 → `boolean_add` 合并 → 旋转复制
 - 轮廓设计原则：polygon 只补辅助边界，不要用 polygon 直连主曲线起终点把主曲线"短路"
 - `define_extrude_curve` 的 `curve` 参数传曲线组名（如 `curve1`），不是单条曲线名
+- 若目标是修改现有项目里的真实几何，不要只改磁盘上的 `ModelHistory.json` 指望 GUI 自动同步；优先删除旧实体后通过 MCP 重新建模
+- 若四脊脊片需要让指数曲线真正参与实体生成，禁止把 polygon 写成 `x1,z1 -> x0,z0 -> x0,z1 -> x2,z2 -> x1,z1`，否则会用 `x2 -> x1` 直线把解析曲线短路
+- 当前环境下四脊脊片的可行做法是：`define_analytical_curve` 与 `define_polygon_3d` 共用同一 curve 组，polygon 用 `x1,z1 -> x0,z0 -> x0,z1 -> x2,z2`，然后 `define_extrude_curve` 对整个 curve 组拉伸，即 `curve="curve1"`，不要写成 `curve="curve1:ridge_profile"`
+- 四脊标准命名流程：先生成种子脊并镜像合并，重命名为 `ridge_x-`；旋转复制后依次重命名为 `ridge_y-`、`ridge_x+`、`ridge_y+`
+- `cst-modeler_list_entities` 在部分 session 中不可靠，不能作为唯一验收依据；应结合 `delete_entity`、`rename_entity`、`transform_shape`、`boolean_add` 的成功返回判断状态
+- `cst-modeler_close_project` 当前有接口不匹配问题；实践中先 `save_project()`，再 `quit_cst()` 结束会话更稳
 
 ## CST 结果获取
 - 常规 1D 结果：优先直接读取接口
@@ -132,7 +161,7 @@ CST_MCP/
 
 ## 工具脚本目录
 `C:\Users\z1376\Documents\CST_MCP\tools/`：
-cleanup_cst.ps1, close_cst_by_name.ps1, diag_refresh.py, e2e_clean.py, e2e_final.py, explore_results.py, find_cst.ps1, kill_cst.ps1, plot_farfield.py, read_pdf.py
+cleanup_cst.ps1, close_cst_by_name.ps1, diag_refresh.py, e2e_clean.py, e2e_final.py, explore_results.py, find_cst.ps1, kill_cst.ps1, plot_farfield.py, read_pdf.py, sync_opencode_skills.ps1
 
 ## 环境配置
 - Python: 3.13 (见 `.python-version`)
@@ -156,4 +185,7 @@ uv run prototype_optimizer/app.py
 
 # 杀 CST 进程
 powershell -ExecutionPolicy Bypass -File tools/kill_cst.ps1
+
+# 同步当前 Skill 到 opencode
+powershell -ExecutionPolicy Bypass -File tools/sync_opencode_skills.ps1 -SkillName "cst-simulation-optimization"
 ```
