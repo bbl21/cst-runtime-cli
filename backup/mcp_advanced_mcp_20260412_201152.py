@@ -203,10 +203,7 @@ def close_project(save: bool = True):
     if not project_data:
         return {"status": "error", "message": "当前没有活动的项目"}
     try:
-        project = project_data["project"]
-        if save:
-            project.save()
-        project.close()
+        project_data["project"].close(SaveChanges=save)
         clear_project_object()
         return {
             "status": "success",
@@ -229,110 +226,41 @@ def quit_cst(project_path: str = None, force: bool = False):
     """
     import subprocess, os
 
-    repo_root = Path(__file__).resolve().parent.parent
+    script_path = os.path.join(
+        os.path.dirname(__file__), "tools", "close_cst_by_name.ps1"
+    )
+
     if force or not project_path:
-        script_path = repo_root / "tools" / "kill_cst.ps1"
         args = [
             "powershell.exe",
             "-ExecutionPolicy",
             "Bypass",
             "-File",
-            str(script_path),
+            script_path,
+            "-Force",
         ]
     else:
-        script_path = repo_root / "tools" / "close_cst_by_name.ps1"
         project_name = os.path.splitext(os.path.basename(project_path))[0]
         args = [
             "powershell.exe",
             "-ExecutionPolicy",
             "Bypass",
             "-File",
-            str(script_path),
+            script_path,
             "-ProjectName",
             project_name,
         ]
 
-    if not script_path.exists():
-        return {
-            "status": "error",
-            "message": f"quit_cst failed: script not found: {script_path}",
-        }
-
     try:
-        result = subprocess.run(
+        subprocess.Popen(
             args,
-            capture_output=True,
-            text=True,
-            timeout=30,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
         )
-        if result.returncode != 0:
-            return {
-                "status": "error",
-                "message": (
-                    "quit_cst failed: "
-                    f"exit_code={result.returncode}, "
-                    f"stdout={result.stdout.strip()}, stderr={result.stderr.strip()}"
-                ),
-            }
-
-        verify = subprocess.run(
-            [
-                "powershell.exe",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-Command",
-                (
-                    "Get-Process -ErrorAction SilentlyContinue | "
-                    "Where-Object { $_.ProcessName -in @("
-                    "'CST DESIGN ENVIRONMENT_AMD64',"
-                    "'cstd',"
-                    "'CSTDCMainController_AMD64',"
-                    "'CSTDCSolverServer_AMD64'"
-                    ") } | "
-                    "Select-Object -ExpandProperty ProcessName"
-                ),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=15,
-        )
-        remaining = [line.strip() for line in verify.stdout.splitlines() if line.strip()]
-        if force or not project_path:
-            if remaining:
-                return {
-                    "status": "error",
-                    "message": f"quit_cst incomplete, remaining processes: {remaining}",
-                }
-        else:
-            title_check = subprocess.run(
-                [
-                    "powershell.exe",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    (
-                        "Get-Process 'CST DESIGN ENVIRONMENT_AMD64' -ErrorAction SilentlyContinue | "
-                        f"Where-Object {{ $_.MainWindowTitle -like '*{project_name}*' }} | "
-                        "Measure-Object | Select-Object -ExpandProperty Count"
-                    ),
-                ],
-                capture_output=True,
-                text=True,
-                timeout=15,
-            )
-            if title_check.stdout.strip() not in {"", "0"}:
-                return {
-                    "status": "error",
-                    "message": f"quit_cst incomplete, project window still running: {project_name}",
-                }
-
         _open_des_list.clear()
         clear_project_object()
-        return {
-            "status": "success",
-            "message": "CST 进程已关闭",
-            "stdout": result.stdout.strip(),
-        }
+        return {"status": "success", "message": "CST 进程已关闭"}
     except Exception as e:
         return {"status": "error", "message": "quit_cst failed: " + str(e)}
 
@@ -2640,12 +2568,9 @@ def export_farfield(
     }
 
 
+@mcp.tool()
 def export_farfield_ascii_selecttree(farfield_name: str, file_name: str):
-    """[已禁用] 按 SelectTreeItem + ASCIIExport 最小流程导出远场 ASCII
-
-    ⚠️ 此工具已禁用 - 最小流程不激活 plot 数据，导出会报 "No plot data available for export"
-
-    替代方案: 使用 export_farfield 工具（会自动补 FarfieldPlot.Plot 激活步骤）
+    """按用户确认可用的 SelectTreeItem + ASCIIExport 最小流程导出远场 ASCII
 
     参数:
         farfield_name: Farfields 节点下的完整结果名，如 "farfield (f=10) [1]"
@@ -2660,13 +2585,6 @@ def export_farfield_ascii_selecttree(farfield_name: str, file_name: str):
             .Execute
         End With
     """
-    return {
-        "status": "error",
-        "message": (
-            "export_farfield_ascii_selecttree 已禁用；"
-            "请改用 export_farfield，它会自动执行 FarfieldPlot.Plot 激活步骤。"
-        ),
-    }
     project_data = get_project_object()
     if not project_data:
         return {"status": "error", "message": "当前没有活动的项目"}
@@ -2783,4 +2701,5 @@ def list_parameters():
 # 主函数
 # ============================================================
 if __name__ == "__main__":
+    print("[MCP] advanced_mcp: starting", flush=True)
     mcp.run(transport="stdio")

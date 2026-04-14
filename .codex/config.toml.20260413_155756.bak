@@ -1,0 +1,11 @@
+[mcp_servers.cst-modeler]
+command = "uv"
+args = ["--directory", "C:\\Users\\z1376\\Documents\\CST_MCP", "run", "mcp/advanced_mcp.py"]
+startup_timeout_sec = 60
+tool_timeout_sec = 60
+
+[mcp_servers.cst-results]
+command = "uv"
+args = ["--directory", "C:\\Users\\z1376\\Documents\\CST_MCP", "run", "mcp/cst_results_mcp.py"]
+startup_timeout_sec = 60
+tool_timeout_sec = 60

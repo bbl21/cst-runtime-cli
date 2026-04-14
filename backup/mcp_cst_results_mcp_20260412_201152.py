@@ -33,7 +33,7 @@ _current_allow_interactive: bool = False
 # 缓存：同一文件路径+子项目+interactive 模式下复用同一 ProjectFile 实例
 _project_cache: dict[tuple[str, str | None, bool], cst.results.ProjectFile] = {}
 
-DEFAULT_PLOT_DIR = Path(__file__).resolve().parent.parent / "plot_previews"
+DEFAULT_PLOT_DIR = Path(__file__).resolve().parent / "plot_previews"
 PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 
 
@@ -131,36 +131,15 @@ def _json_dumps(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-def _default_plot_dir() -> Path:
-    context = get_project_context()
-    if context and context.get("fullpath"):
-        project_path = Path(context["fullpath"]).resolve()
-        parents = list(project_path.parents)
-        for idx, parent in enumerate(parents):
-            if parent.name == "runs" and idx > 0:
-                run_dir = parents[idx - 1]
-                exports_dir = run_dir / "exports"
-                exports_dir.mkdir(parents=True, exist_ok=True)
-                return exports_dir
-            if parent.name == "projects":
-                run_dir = parent.parent
-                if run_dir.name.startswith("run_") and run_dir.parent.name == "runs":
-                    exports_dir = run_dir / "exports"
-                    exports_dir.mkdir(parents=True, exist_ok=True)
-                    return exports_dir
-
-    DEFAULT_PLOT_DIR.mkdir(parents=True, exist_ok=True)
-    return DEFAULT_PLOT_DIR
-
-
 def _ensure_plot_output_path(output_html: str = "", prefix: str = "plot") -> Path:
     if output_html:
         target = Path(output_html).expanduser()
         if not target.is_absolute():
             target = (Path.cwd() / target).resolve()
     else:
+        DEFAULT_PLOT_DIR.mkdir(parents=True, exist_ok=True)
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        target = (_default_plot_dir() / f"{prefix}_{timestamp}.html").resolve()
+        target = (DEFAULT_PLOT_DIR / f"{prefix}_{timestamp}.html").resolve()
 
     target.parent.mkdir(parents=True, exist_ok=True)
     return target
@@ -1573,19 +1552,11 @@ def get_1d_result(
     module_type: str = "3d",
     run_id: int = 0,
     load_impedances: bool = True,
-    export_path: str = "",
 ):
     """获取 0D/1D 结果数据
 
     对应 cst.results.ResultModule.get_result_item(treepath, run_id, load_impedances)。
     兼容 0D 结果、普通 1D 结果和带参考阻抗的结果。
-
-    参数：
-    - treepath: 结果树路径
-    - module_type: 模块类型，"3d" 或 "schematic"，默认 "3d"
-    - run_id: 运行 ID，默认 0
-    - load_impedances: 是否加载参考阻抗，默认 True
-    - export_path: 导出文件路径（仅支持 .json）。不提供时自动导出到默认目录。
     """
     try:
         project, context = _load_project()
@@ -1598,134 +1569,77 @@ def get_1d_result(
 
         xdata = result_item.get_xdata()
         ydata = result_item.get_ydata()
-        # Local-export-only mode: never return raw arrays to the model.
-        if export_path:
-            export_file = Path(export_path)
-            if export_file.suffix.lower() != ".json":
-                return {
-                    "status": "error",
-                    "message": (
-                        f"get_1d_result 的导出仅支持 .json，当前为: {export_file.suffix or '(无扩展名)'}"
-                    ),
-                }
-            export_file.parent.mkdir(parents=True, exist_ok=True)
-            export_file = export_file.resolve()
-        else:
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            export_file = (
-                _default_plot_dir() / f"result_1d_run{run_id}_{timestamp}.json"
-            ).resolve()
-
-        with export_file.open("w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "treepath": result_item.treepath,
-                    "title": result_item.title,
-                    "xlabel": result_item.xlabel,
-                    "ylabel": result_item.ylabel,
-                    "length": result_item.length,
-                    "run_id": result_item.run_id,
-                    "parameter_combination": _serialize_value(
-                        result_item.get_parameter_combination()
-                    ),
-                    "xdata": _serialize_value(xdata),
-                    "ydata": _serialize_value(ydata),
-                },
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
+        data = result_item.get_data()
+        ref_imp_data = None
+        try:
+            ref_imp_data = result_item.get_ref_imp_data()
+        except Exception:
+            ref_imp_data = None
 
         return {
             "status": "success",
-            "mode": "local_export_only",
             "module_type": normalized_module,
             "active_subproject": context["active_subproject"],
             "treepath": result_item.treepath,
+            "title": result_item.title,
+            "xlabel": result_item.xlabel,
+            "ylabel": result_item.ylabel,
+            "length": result_item.length,
             "run_id": result_item.run_id,
-            "point_count": len(xdata),
-            "export_path": str(export_file),
-            "message": f"1D 结果已导出到本地文件: {export_file}",
+            "parameter_combination": _serialize_value(
+                result_item.get_parameter_combination()
+            ),
+            "xdata": _serialize_value(xdata),
+            "ydata": _serialize_value(ydata),
+            "data": _serialize_value(data),
+            "ref_impedance_data": _serialize_value(ref_imp_data),
         }
     except Exception as e:
         return {"status": "error", "message": f"获取 0D/1D 结果失败: {str(e)}"}
 
 
 @mcp.tool()
-def get_2d_result(
-    treepath: str,
-    module_type: str = "3d",
-    include_data: bool = False,
-    export_path: str = "",
-):
+def get_2d_result(treepath: str, module_type: str = "3d", include_data: bool = False):
     """获取 2D 结果数据（colormap）
 
     参数:
     - treepath: 结果树路径
     - module_type: 模块类型，"3d" 或 "schematic"
-    - include_data: 兼容保留参数，已忽略（始终本地导出，不直返矩阵）
-    - export_path: 导出文件路径（仅支持 .json）。不提供时自动导出到默认目录。
+    - include_data: 是否返回完整二维数据；默认 False，仅返回元数据和尺寸
     """
     try:
         project, context = _load_project()
         result_module, normalized_module = _get_result_module(project, module_type)
         result_2d = result_module.get_result2d_item(treepath)
-        # Local-export-only mode: never return 2D matrix payload directly.
-        if export_path:
-            export_file = Path(export_path)
-            if export_file.suffix.lower() != ".json":
-                return {
-                    "status": "error",
-                    "message": (
-                        f"get_2d_result 的导出仅支持 .json，当前为: {export_file.suffix or '(无扩展名)'}"
-                    ),
-                }
-            export_file.parent.mkdir(parents=True, exist_ok=True)
-            export_file = export_file.resolve()
-        else:
-            timestamp = time.strftime("%Y%m%d_%H%M%S")
-            export_file = (
-                _default_plot_dir()
-                / f"result_2d_{result_2d.ny}x{result_2d.nx}_{timestamp}.json"
-            ).resolve()
 
-        with export_file.open("w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "treepath": treepath,
-                    "title": result_2d.title,
-                    "xlabel": result_2d.xlabel,
-                    "ylabel": result_2d.ylabel,
-                    "xunit": result_2d.xunit,
-                    "yunit": result_2d.yunit,
-                    "dataunit": result_2d.dataunit,
-                    "xmin": result_2d.xmin,
-                    "xmax": result_2d.xmax,
-                    "ymin": result_2d.ymin,
-                    "ymax": result_2d.ymax,
-                    "nx": result_2d.nx,
-                    "ny": result_2d.ny,
-                    "xpositions": _serialize_value(result_2d.get_xpositions()),
-                    "ypositions": _serialize_value(result_2d.get_ypositions()),
-                    "data": _serialize_value(result_2d.get_data()),
-                },
-                f,
-                ensure_ascii=False,
-                indent=2,
-            )
-
-        return {
+        response = {
             "status": "success",
-            "mode": "local_export_only",
             "module_type": normalized_module,
             "active_subproject": context["active_subproject"],
             "treepath": treepath,
+            "title": result_2d.title,
+            "xlabel": result_2d.xlabel,
+            "ylabel": result_2d.ylabel,
+            "xunit": result_2d.xunit,
+            "yunit": result_2d.yunit,
+            "dataunit": result_2d.dataunit,
+            "xmin": result_2d.xmin,
+            "xmax": result_2d.xmax,
+            "ymin": result_2d.ymin,
+            "ymax": result_2d.ymax,
             "nx": result_2d.nx,
             "ny": result_2d.ny,
-            "export_path": str(export_file),
-            "message": f"2D 结果已导出到本地文件: {export_file}",
-            "include_data_ignored": bool(include_data),
+            "xpositions": _serialize_value(result_2d.get_xpositions()),
+            "ypositions": _serialize_value(result_2d.get_ypositions()),
+            "include_data": include_data,
         }
+
+        if include_data:
+            response["data"] = _serialize_value(result_2d.get_data())
+        else:
+            response["data_preview"] = f"数据形状: {result_2d.ny} x {result_2d.nx}"
+
+        return response
     except Exception as e:
         return {"status": "error", "message": f"获取 2D 结果失败: {str(e)}"}
 
@@ -1858,270 +1772,6 @@ def plot_farfield_multi(
         return {"status": "error", "message": f"生成多频率远场预览失败: {str(e)}"}
 
 
-@mcp.tool()
-def generate_s11_comparison(
-    file_paths: list[str],
-    output_html: str = "",
-    page_title: str = "",
-):
-    """生成多个 S11 文件的对比图
-
-    读取多个 S11 JSON 数据文件，生成统一对比的交互式 HTML 页面。
-
-    参数：
-    - file_paths: S11 数据文件路径列表（仅支持 .json），按顺序对应 Series 1, Series 2, ...
-    - output_html: 输出 HTML 路径；为空则自动写入 plot_previews 目录
-    - page_title: 页面标题；默认 "S11 Comparison"
-
-    页面内容：
-    - 多条 S11 曲线叠加对比
-    - 可选择频点，查看不同 run_id 在该频点下的 S11 变化折线
-    - Summary 表格：run_id、文件名、最小 S11、最佳频率
-    """
-    try:
-        if not file_paths:
-            raise ValueError("file_paths 不能为空")
-
-        all_series: list[dict[str, Any]] = []
-        for idx, file_path in enumerate(file_paths):
-            if Path(file_path).suffix.lower() != ".json":
-                raise ValueError(
-                    f"generate_s11_comparison 仅支持 .json 输入，检测到: {file_path}"
-                )
-            payload = _load_exported_payload(file_path)
-
-            # 提取频率和幅值数据
-            xdata = payload.get("xdata", [])
-            ydata = payload.get("ydata", [])
-
-            if not xdata or not ydata:
-                raise ValueError(f"文件缺少有效 xdata/ydata: {file_path}")
-
-            # 计算 dB 值
-            mag_db_values: list[float | None] = []
-            for y_val in ydata:
-                real, imag = _complex_components(y_val)
-                mag = math.hypot(real, imag)
-                mag_db_values.append(_safe_log_db(mag))
-
-            # 转换为有限值，-120 代表无效
-            finite_db = [(v if v is not None else -120.0) for v in mag_db_values]
-
-            # 找到最小 dB（最佳匹配）和对应频率
-            valid_db = [v for v in finite_db if v > -120]
-            min_db = min(valid_db) if valid_db else -120.0
-            min_idx = next(i for i, v in enumerate(finite_db) if v == min_db)
-            best_freq = xdata[min_idx] if min_idx < len(xdata) else None
-            best_freq_unit = "GHz" if best_freq and best_freq > 0.1 else ""
-            payload_run_id = payload.get("run_id")
-            if payload_run_id is None:
-                match = re.search(r"run[_-]?(\d+)", Path(file_path).stem, re.IGNORECASE)
-                payload_run_id = int(match.group(1)) if match else idx + 1
-
-            all_series.append(
-                {
-                    "label": f"Run {payload_run_id}",
-                    "run_id": payload_run_id,
-                    "file": str(Path(file_path).name),
-                    "full_file": str(Path(file_path).resolve()),
-                    "xdata": xdata,
-                    "ydata": finite_db,
-                    "min_db": min_db,
-                    "best_freq": best_freq,
-                    "best_unit": best_freq_unit,
-                }
-            )
-
-        # 构造 HTML
-        final_title = page_title or "S11 Comparison"
-        reference_xdata = all_series[0]["xdata"]
-        if not reference_xdata:
-            raise ValueError("缺少可用的频率点数据")
-
-        # 计算全局 dB 范围
-        all_db = [s["ydata"] for s in all_series]
-        global_min = min(min(s) for s in all_db) - 3
-        global_max = max(max(s) for s in all_db) + 3
-
-        series_json = _json_dumps(all_series)
-        frequencies_json = _json_dumps(reference_xdata)
-
-        script = f"""
-const series = {series_json};
-const frequencies = {frequencies_json};
-const globalMin = {global_min};
-const globalMax = {global_max};
-const initialFreqIndex = Math.max(0, Math.min(frequencies.length - 1, Math.floor(frequencies.length / 2)));
-
-const palette = ['#38bdf8','#f59e0b','#22c55e','#ef4444','#a78bfa','#f472b6','#14b8a6','#eab308'];
-const traces = series.map((s, i) => ({{
-  x: s.xdata,
-  y: s.ydata,
-  type: 'scatter',
-  mode: 'lines',
-  name: s.label,
-  line: {{width: 2, color: palette[i % palette.length]}}
-}}));
-
-Plotly.newPlot('plot_main', traces, {{
-  template: 'plotly_dark',
-  title: 'S11 Comparison',
-  xaxis: {{title: 'Frequency (GHz)'}},
-  yaxis: {{title: 'S11 (dB)', range: [globalMin, globalMax]}},
-  hovermode: 'x unified',
-  legend: {{orientation: 'h', y: 1.12}},
-  paper_bgcolor: '#1f2937',
-  plot_bgcolor: '#1f2937'
-}}, {{responsive: true, displaylogo: false}});
-
-const freqSelect = document.getElementById('freq_select');
-const selectedFreqText = document.getElementById('selected_freq');
-const trendMeta = document.getElementById('trend_meta');
-
-function nearestIndex(values, target) {{
-  let bestIndex = 0;
-  let bestDelta = Infinity;
-  values.forEach((value, index) => {{
-    const delta = Math.abs(value - target);
-    if (delta < bestDelta) {{
-      bestDelta = delta;
-      bestIndex = index;
-    }}
-  }});
-  return bestIndex;
-}}
-
-function buildTrendSeries(targetFreq) {{
-  const sorted = [...series].sort((left, right) => Number(left.run_id) - Number(right.run_id));
-  return sorted.map((item, index) => {{
-    const pointIndex = nearestIndex(item.xdata, targetFreq);
-    return {{
-      runId: item.run_id,
-      label: item.label,
-      file: item.file,
-      freq: item.xdata[pointIndex],
-      s11: item.ydata[pointIndex],
-      color: palette[index % palette.length],
-    }};
-  }});
-}}
-
-function renderTrendChart(targetFreq) {{
-  const trend = buildTrendSeries(targetFreq);
-  const trendTrace = {{
-    x: trend.map(item => item.runId),
-    y: trend.map(item => item.s11),
-    type: 'scatter',
-    mode: 'lines+markers',
-    name: 'Selected Frequency',
-    line: {{width: 3, color: '#f97316'}},
-    marker: {{
-      size: 10,
-      color: trend.map(item => item.color),
-      line: {{color: '#0f172a', width: 1}}
-    }},
-    customdata: trend.map(item => [item.label, item.file, item.freq]),
-    hovertemplate: 'Run %{{x}}<br>S11: %{{y:.2f}} dB<br>Series: %{{customdata[0]}}<br>File: %{{customdata[1]}}<br>Actual Freq: %{{customdata[2]:.3f}} GHz<extra></extra>'
-  }};
-
-  Plotly.newPlot('plot_trend', [trendTrace], {{
-    template: 'plotly_dark',
-    title: `S11 vs Run ID @ ${{targetFreq.toFixed(3)}} GHz`,
-    xaxis: {{title: 'Run ID', dtick: 1}},
-    yaxis: {{title: 'S11 (dB)', range: [globalMin, globalMax]}},
-    hovermode: 'closest',
-    paper_bgcolor: '#1f2937',
-    plot_bgcolor: '#1f2937'
-  }}, {{responsive: true, displaylogo: false}});
-
-  const bestPoint = trend.reduce((best, item) => item.s11 < best.s11 ? item : best, trend[0]);
-  selectedFreqText.textContent = `${{targetFreq.toFixed(3)}} GHz`;
-  trendMeta.textContent = `当前频点最优 run: ${{bestPoint.runId}}，S11 = ${{bestPoint.s11.toFixed(2)}} dB`;
-}}
-
-frequencies.forEach((freq, index) => {{
-  const option = document.createElement('option');
-  option.value = String(index);
-  option.textContent = `${{freq.toFixed(3)}} GHz`;
-  freqSelect.appendChild(option);
-}});
-freqSelect.value = String(initialFreqIndex);
-freqSelect.addEventListener('change', (event) => {{
-  const selectedIndex = Number(event.target.value);
-  renderTrendChart(frequencies[selectedIndex]);
-}});
-renderTrendChart(frequencies[initialFreqIndex]);
-
-const summaryHtml = '<table class="summary-table"><thead><tr><th>Run ID</th><th>Series</th><th>File</th><th>Min S11 (dB)</th><th>Best Freq</th></tr></thead><tbody>'
-  + [...series].sort((left, right) => Number(left.run_id) - Number(right.run_id)).map(s => `<tr><td>${{s.run_id}}</td><td>${{s.label}}</td><td>${{s.file}}</td><td>${{s.min_db.toFixed(2)}}</td><td>${{s.best_freq ? s.best_freq.toFixed(3) + ' ' + s.best_unit : '-'}}</td></tr>`).join('')
-  + '</tbody></table>';
-document.getElementById('summary').innerHTML = summaryHtml;
-"""
-
-        body = """
-    <style>
-      .toolbar { display:flex; flex-wrap:wrap; gap:14px; align-items:end; margin-bottom:14px; }
-      .control { min-width:220px; }
-      .control label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-      .control select {
-        width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
-        background:var(--panel-2); color:var(--text); font-size:14px;
-      }
-      .metric {
-        min-width:220px; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
-        background:var(--panel-2);
-      }
-      .metric .metric-label { color:var(--muted); font-size:12px; margin-bottom:4px; }
-      .metric .metric-value { font-size:20px; font-weight:700; }
-      .metric .metric-note { color:var(--muted); font-size:12px; margin-top:4px; }
-      .summary-table { width:100%; border-collapse:collapse; }
-      .summary-table th, .summary-table td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; }
-      .summary-table th { color:var(--muted); font-weight:600; }
-    </style>
-    <div class="header">
-      <div class="title">S11 Comparison</div>
-      <div class="subtitle">多 S11 曲线对比，并按指定频点查看不同 run_id 的 S11 变化</div>
-    </div>
-    <div class="section">
-      <h2>S11 曲线对比</h2>
-      <div id="plot_main" class="plot"></div>
-    </div>
-    <div class="section">
-      <h2>频点趋势</h2>
-      <div class="toolbar">
-        <div class="control">
-          <label for="freq_select">选择频点</label>
-          <select id="freq_select"></select>
-        </div>
-        <div class="metric">
-          <div class="metric-label">当前频点</div>
-          <div id="selected_freq" class="metric-value">-</div>
-          <div id="trend_meta" class="metric-note">-</div>
-        </div>
-      </div>
-      <div id="plot_trend" class="plot small"></div>
-    </div>
-    <div class="section">
-      <h2>Summary</h2>
-      <div id="summary"></div>
-    </div>
-    """
-
-        html_content = _html_template(final_title, body, script)
-        target = _ensure_plot_output_path(output_html, prefix="s11_comparison")
-        target.write_text(html_content, encoding="utf-8")
-
-        return {
-            "status": "success",
-            "series_count": len(all_series),
-            "frequency_count": len(reference_xdata),
-            "file_paths": [str(Path(p).resolve()) for p in file_paths],
-            "page_title": final_title,
-            "output_html": str(target),
-        }
-    except Exception as e:
-        return {"status": "error", "message": f"生成 S11 对比失败: {str(e)}"}
-
-
 if __name__ == "__main__":
+    print("[MCP] cst_results_mcp: starting", flush=True)
     mcp.run(transport="stdio")

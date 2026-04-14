@@ -12,6 +12,10 @@
 - 一次只做一件事，禁止四面出击
 - 工具链优先：生产流程必须走 MCP tools / skills 链路
 
+## 规则来源
+- 项目规则唯一来源：`C:/Users/z1376/Documents/CST_MCP/AGENTS.md`
+- 本文件发生改动后，后续任务一律按最新内容同步执行
+
 ## 强制规则
 
 ### 项目/进程管理
@@ -36,13 +40,14 @@
 - 复制 CST 工程时必须完整复制 `.cst` 文件和同名结果目录；禁止只复制单个 `.cst` 文件
 - run 目录统一使用：`tasks/task_xxx_slug/runs/run_xxx/`
 - `projects/` 只放当前 run 的工程副本与其同名目录，例如 `working.cst` 与 `working/`
-- `exports/` 只放导出的 S 参数、远场、场分布、截图等外部结果文件，不存放源工程副本
+- `exports/` 只放导出的 S 参数、远场、场分布、截图、HTML 预览等外部结果文件，不存放源工程副本
 - `logs/` 只放流程日志、诊断输出、报错记录
 - `stages/` 只放阶段状态文件与阶段性元数据，避免混放导出物
 - `analysis/` 只放分析结论、计算中间产物、对比表和结构化摘要
 - `summary.md` 用于记录本次 run 的结果摘要；`status.json` 用于记录当前状态；`config.json` 用于记录输入参数与运行配置
 - 若需要基于已有 run 派生新尝试，创建新的 `run_xxx`，不要覆盖旧 run 的工程和导出结果
 - 在复制、移动、清理工程前，必须先关闭项目并结束相关 CST 进程，避免文件锁和结果目录损坏
+- `cst_results_mcp` 默认生成的 HTML 预览应优先写入当前 run 的 `exports/`；仅在无法识别 run 上下文时回退到项目根 `plot_previews/`
 
 ## 项目结构
 
@@ -65,7 +70,7 @@ CST_MCP/
 │   ├── kill_cst.ps1         # 强制杀 CST 进程
 │   ├── plot_farfield.py     # 远场绘图
 │   └── ...
-├── plot_previews/           # 交互式 HTML 预览输出
+├── plot_previews/           # 交互式 HTML 预览输出（仅作为无 run 上下文时的回退目录）
 ├── docs/                    # 文档
 ├── ref_vba_code/            # VBA 参考代码
 ├── ref_model/               # 参考模型
@@ -73,32 +78,18 @@ CST_MCP/
 └── test_skill_real/         # Skill 测试
 ```
 
-## MCP 服务说明
 
-### advanced_mcp (modeler)
-- **用途**: CST 建模 + 仿真控制
-- **启动**: `uv run advanced_mcp.py`
-- **核心工具**:
-  - 项目管理: `init_cst_project`, `open_project`, `save_project`, `close_project`, `quit_cst`
-  - 仿真控制: `start_simulation`, `pause_simulation`, `stop_simulation`, `is_simulation_running`
-  - 建模工具: `define_brick`, `define_cylinder`, `define_cone`, `define_loft`, `boolean_*`
-  - 高级建模: `create_loft_sweep`, `create_hollow_sweep`, `define_polygon_3d`, `define_analytical_curve`
-  - 参数管理: `parameter_set`
-  - 材料定义: `define_material_from_mtd`
 
-### cst_results_mcp (results)
-- **用途**: 仿真结果读取 + 可视化
-- **启动**: `uv run cst_results_mcp.py`
-- **核心工具**:
-  - 项目管理: `open_project`, `close_project`, `list_subprojects`, `load_subproject`
-  - 结果查询: `list_result_items`, `list_run_ids`, `get_result_data`
-  - 可视化: `plot_result`, `plot_farfield`, `plot_from_exported_file`
-  - 远场导出: `export_farfield`, `export_farfield_ascii_selecttree`
+## 参考蓝本
 
-## 四脊喇叭蓝本
-- 路径：`C:/Users/z1376/Documents/CST_MCP/prototype_optimizer/data/workspaces/quad_ridged_horn_v1/projects/source/`
-- 文件：`quad_ridged_horn_v1_0.cst` + `quad_ridged_horn_v1_0/` 结果目录
-- 只读蓝本，禁止直接修改；测试需完整复制到 tmp/ 再操作
+### ref_0 (当前主蓝本)
+- **路径**: `C:/Users/z1376/Documents/CST_MCP/ref/ref_model/ref_0/`
+- **文件**: `ref_0.cst` + 同名目录
+- **类型**: 四脊喇叭天线
+- **频率**: 2-18 GHz (S参数), 10 GHz (远场)
+- **只读蓝本，禁止直接修改**
+- **说明**: 每次任务需先复制到工作目录
+
 
 ## 架构决策
 - 技术栈：Streamlit + SQLite + Python
@@ -106,13 +97,30 @@ CST_MCP/
 - 参数搜索、评分、流程编排、历史管理、报告导出均放在外部实现
 - 决策：逐步迁移到 Skill 驱动编排，Python 胶水层 (orchestrator/CSTAdapter) 视为过渡期遗留
 - 当前重点项目：`C:/Users/z1376/Documents/CST_MCP/prototype_optimizer/`
-- 目录结构：`task_xxx_slug/run_xxx/{projects,exports,stages,logs}`
+- 任务目录：`C:/Users/z1376/Documents/CST_MCP/tasks/task_xxx_slug/runs/`
+- 目录结构：`task_xxx_slug/run_xxx/{projects,exports,stages,logs,analysis}`
+
+## MCP 源文件管理
+
+### 备份规则
+- 修改 `mcp/*.py` 前必须先备份到 `backup/mcp_sources/`
+- 备份命名: `{原文件名}_{timestamp}.py`
+- 每次备份必须更新 `backup/mcp_sources/backup_log.md`
+- 见 `backup/mcp_sources/README.md`
+
+### 失效工具处理
+- 发现工具失效后，先备份源文件
+- 测试验证失效后标记/删除
+- 更新备份日志，记录原因和替代方案
+- 当前已知失效: `export_farfield_ascii_selecttree` (需用 `export_farfield` 替代)
+- `export_farfield_ascii_selecttree` 不应注册为可用 MCP tool；如保留函数，也必须直接返回 error 并提示改用 `export_farfield`
 
 ## Skill 管理
 - 当前只管理一个正式 Skill：`cst-simulation-optimization`
 - 仓库内维护路径：`C:\Users\z1376\Documents\CST_MCP\skills\cst-simulation-optimization\SKILL.md`
+- 项目内 Codex 生效路径：`C:\Users\z1376\Documents\CST_MCP\.codex\cst-simulation-optimization\SKILL.md`
 - opencode 生效路径：`C:\Users\z1376\.config\opencode\skills\cst-simulation-optimization\SKILL.md`
-- 修改 Skill 内容时，优先改仓库内版本，再同步到 opencode 目录；不要只改用户目录副本
+- 修改 Skill 内容时，优先改仓库内版本，再同步到项目内 `.codex` 与 opencode 目录；不要只改生效目录副本
 - Skill 同步脚本：`C:\Users\z1376\Documents\CST_MCP\tools\sync_opencode_skills.ps1`
 - 只同步当前 Skill：`powershell -ExecutionPolicy Bypass -File tools/sync_opencode_skills.ps1 -SkillName "cst-simulation-optimization"`
 - 若需要全量同步 `skills/` 目录：`powershell -ExecutionPolicy Bypass -File tools/sync_opencode_skills.ps1`
@@ -130,9 +138,10 @@ CST_MCP/
 - 当前环境下四脊脊片的可行做法是：`define_analytical_curve` 与 `define_polygon_3d` 共用同一 curve 组，polygon 用 `x1,z1 -> x0,z0 -> x0,z1 -> x2,z2`，然后 `define_extrude_curve` 对整个 curve 组拉伸，即 `curve="curve1"`，不要写成 `curve="curve1:ridge_profile"`
 - 四脊标准命名流程：先生成种子脊并镜像合并，重命名为 `ridge_x-`；旋转复制后依次重命名为 `ridge_y-`、`ridge_x+`、`ridge_y+`
 - `cst-modeler_list_entities` 在部分 session 中不可靠，不能作为唯一验收依据；应结合 `delete_entity`、`rename_entity`、`transform_shape`、`boolean_add` 的成功返回判断状态
-- `cst-modeler_close_project` 当前有接口不匹配问题；实践中先 `save_project()`，再 `quit_cst()` 结束会话更稳
+- `cst-modeler_close_project` 正确做法是：`save=True` 时先 `project.save()`，再调用无参 `project.close()`；禁止向 `project.close()` 传 `SaveChanges` 等 kwargs
 
 ## CST 结果获取
+- 读取后禁止保存以免造成项目报错
 - 常规 1D 结果：优先直接读取接口
 - 远场结果：先定位真实 farfield 名称，再通过 VBA 导出 ASCII/TXT，由外部程序解析
 - farfield 名称格式：`farfield (f=10) [1]`（[1] 是端口后缀，不是通用编号）
@@ -153,11 +162,24 @@ CST_MCP/
   2. 仿真后强制 `save_project()` 将 modeler 内存结果传播到磁盘
   3. results 层执行 `close + reopen` 刷新 session
 
+## MCP 传输与开发规则
+- 保留原 `stdio` 版 `cst-modeler` / `cst-results` 作为兼容入口，不删除、不替换
+- 并行提供 HTTP 版：`cst-modeler-http` -> `http://127.0.0.1:8123/mcp`，`cst-results-http` -> `http://127.0.0.1:8124/mcp`
+- 后续开发、调试、联调优先使用 HTTP 版 MCP；仅在 Codex 未识别 URL MCP 或兼容性问题时回退到原 `stdio` 版
+- 修改 `mcp/advanced_mcp.py`、`mcp/cst_results_mcp.py` 及其 HTTP 包装入口后，优先重启本地 HTTP 服务验证，不要先关闭 Codex
+- HTTP 版启动脚本：
+- `powershell -ExecutionPolicy Bypass -File tools/start_advanced_mcp_http.ps1 -ForceRestart`
+- `powershell -ExecutionPolicy Bypass -File tools/start_cst_results_http.ps1 -ForceRestart`
+- HTTP 版停止脚本：
+- `powershell -ExecutionPolicy Bypass -File tools/stop_advanced_mcp_http.ps1`
+- `powershell -ExecutionPolicy Bypass -File tools/stop_cst_results_http.ps1`
+
 ## 已修复 Bug 记录
 - 远场导出后项目损坏：远场导出放流程最后，导出后 `close(save=False)`
 - 远场 VBA 导出失败：导出前 `cst_results_mcp.close_project()` 释放文件锁
 - orchestrator 双重 save_project() 冲突：移除仿真前的冗余 save_project() 调用
 - CST 进程残留：`quit_cst()` 关闭所有 DesignEnvironment 实例
+- 本地 MCP 注册失败：stdio 模式下禁止向 stdout 输出启动提示；启动日志必须走 stderr 或日志系统
 
 ## 工具脚本目录
 `C:\Users\z1376\Documents\CST_MCP\tools/`：
@@ -189,3 +211,19 @@ powershell -ExecutionPolicy Bypass -File tools/kill_cst.ps1
 # 同步当前 Skill 到 opencode
 powershell -ExecutionPolicy Bypass -File tools/sync_opencode_skills.ps1 -SkillName "cst-simulation-optimization"
 ```
+
+## MCP 工具规则增补（2026-04-13）
+
+### cst_results_mcp 新增工具（正式）
+- 新增 `generate_s11_comparison(file_paths, output_html, page_title)`，用于生成多组 S11 对比 HTML。
+- `file_paths` 仅允许 `.json` 数据文件；传入 `.csv` 必须报错并拒绝处理。
+
+### S11 导出与对比链路（强制）
+- `get_1d_result(..., export_path=...)` 的导出格式仅允许 `.json`。
+- 禁止在流程中使用或依赖 S11 CSV 导出/CSV 对比。
+- 生成 S11 对比页必须优先调用 MCP 工具：`cst_results_mcp.generate_s11_comparison`。
+- `tools/generate_s11_comparison.py` 仅保留为历史调试脚本，不作为生产流程默认入口。
+
+### 执行优先级
+- 生产链路：`get_1d_result(export_path=.json)` -> `generate_s11_comparison(file_paths=[...json...])`。
+- 不满足上述链路时，任务状态应标记为 `blocked` 并在日志中说明原因。

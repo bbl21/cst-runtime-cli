@@ -527,14 +527,3 @@ python "C:\Users\z1376\Documents\CST_MCP\tools\generate_s11_comparison.py"
 # 2. 解析 ydata 中的复数数据（real, imag）
 # 3. 生成 Plotly 交互式 HTML
 ```
-
-## 规则增补（2026-04-13）
-
-### S11 对比页面生成（生产流程）
-- 优先使用 MCP 工具：`cst-results.generate_s11_comparison(...)`。
-- 输入文件仅使用 `get_1d_result(..., export_path="*.json")` 产出的 JSON。
-- 不再使用 CSV 作为 S11 对比输入；发现 CSV 输入应直接报错并中止本步。
-
-### 脚本定位调整
-- `tools/generate_s11_comparison.py` 仅用于本地调试/历史兼容。
-- 正式任务编排、自动化流程、交付结果一律走 MCP 工具链。
