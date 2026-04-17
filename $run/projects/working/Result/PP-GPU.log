@@ -1,0 +1,4 @@
+Found 1 cuda-capable device(s).
+Device 0: NVIDIA GeForce RTX 4060 Laptop GPU
+CUDA_VISIBLE_DEVICES is set to: 
+CUDA Driver Version / Runtime Version: 13.2 / 12.8

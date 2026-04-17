@@ -45,4 +45,6 @@ if __name__ == "__main__":
     mcp.settings.port = args.port
     mcp.settings.streamable_http_path = args.path
     mcp.settings.log_level = args.log_level
+    # Stateless HTTP avoids stale MCP session IDs after a local server restart.
+    mcp.settings.stateless_http = True
     mcp.run(transport="streamable-http")

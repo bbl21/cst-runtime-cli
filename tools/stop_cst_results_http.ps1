@@ -4,7 +4,7 @@ $running = Get-CimInstance Win32_Process |
     }
 
 if (-not $running) {
-    Write-Output "cst-results-http 未运行"
+    Write-Output "cst-results-http not running"
     exit 0
 }
 

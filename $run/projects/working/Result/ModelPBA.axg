@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CSTAuxiliaryGeometry version="20170928">
+  <Objects>
+    <Object name="Ports\port1" id="19">
+      <LineSet points="-1.79999995 81 18.7999992 1.79999995 81 18.7999992 1.79999995 81 15.1999998 -1.79999995 81 15.1999998 -1.79999995 81 18.7999992" stripped="1" material="$PortMaterial$" text="1" short="1"/>
+    </Object>
+    <Object name="Ports\port2" id="20">
+      <LineSet points="81 -1.79999995 14.1999998 81 1.79999995 14.1999998 81 1.79999995 17.7999992 81 -1.79999995 17.7999992 81 -1.79999995 14.1999998" stripped="1" material="$PortMaterial$" text="2" short="2"/>
+    </Object>
+    <Object name="Ports\port1" id="21">
+      <LineSet points="-1.79999995 81 18.7999992 1.79999995 81 18.7999992 1.79999995 81 15.1999998 -1.79999995 81 15.1999998 -1.79999995 81 18.7999992" stripped="1" material="$PortMaterial$" text="1" short="1"/>
+    </Object>
+    <Object name="Ports\port2" id="22">
+      <LineSet points="81 -1.79999995 14.1999998 81 1.79999995 14.1999998 81 1.79999995 17.7999992 81 -1.79999995 17.7999992 81 -1.79999995 14.1999998" stripped="1" material="$PortMaterial$" text="2" short="2"/>
+    </Object>
+  </Objects>
+  <Materials>
+    <Material name="$noSnappingMaterial$">
+      <Drawstyle color="0 0 0" transparency="0" linestrength="5"/>
+    </Material>
+    <Material name="">
+      <Drawstyle color="0 0 0.949999988" transparency="0.600000024" linestrength="0"/>
+    </Material>
+    <Material name="$noSnappingMaterial$">
+      <Drawstyle color="0 0 0" transparency="0" linestrength="5"/>
+    </Material>
+    <Material name="">
+      <Drawstyle color="0 0 0.949999988" transparency="0.600000024" linestrength="0"/>
+    </Material>
+  </Materials>
+  <Groups/>
+</CSTAuxiliaryGeometry>

@@ -1,0 +1,142 @@
+================================================================================
+--------------------------------------------------------------------------------
+ 
+================================================================================
+== CST Matrix Calculation Priority Log ==
+================================================================================
+Priorities are sorted in ascending order beginning with the lowest priority
+Priority scheme based on: shape name [priority defaults]
+All shapes have a 2D or 3D geometric representation
+ 
+Group | Shape-ID | Shape-name                   | Material | Material-attributes
+    1 |        1 | component1:air1              | Vacuum   |      normal.vacuum.
+    1 |        2 | component1:air2              | Vacuum   |      normal.vacuum.
+    2 |       18 | component1:solid3            | Medium   |             normal.
+    3 |        3 | component1:bottom            | PEC      |                pec.
+    3 |        4 | component1:horn_2            | PEC      |                pec.
+    3 |        5 | component1:horn_bot          | PEC      |                pec.
+    3 |        6 | component1:probe             | PEC      |                pec.
+    3 |        7 | component1:probe2            | PEC      |                pec.
+    3 |        8 | component1:ridge             | PEC      |                pec.
+    3 |        9 | component1:ridge2            | PEC      |                pec.
+    3 |       10 | component1:ridge2_1          | PEC      |                pec.
+    3 |       19 | component1:ridge2_1 (Lump 2) | PEC      |                pec.
+    3 |       20 | component1:ridge2 (Lump 2)   | PEC      |                pec.
+    3 |       11 | component1:ridge3            | PEC      |                pec.
+    3 |       12 | component1:ridge3_1          | PEC      |                pec.
+    3 |       21 | component1:ridge3_1 (Lump 2) | PEC      |                pec.
+    3 |       22 | component1:ridge3 (Lump 2)   | PEC      |                pec.
+    3 |       13 | component1:ridge4            | PEC      |                pec.
+    3 |       14 | component1:ridge4_1          | PEC      |                pec.
+    3 |       23 | component1:ridge4_1 (Lump 2) | PEC      |                pec.
+    3 |       24 | component1:ridge4 (Lump 2)   | PEC      |                pec.
+    3 |       15 | component1:ridge_1           | PEC      |                pec.
+    3 |       25 | component1:ridge_1 (Lump 2)  | PEC      |                pec.
+    3 |       26 | component1:ridge (Lump 2)    | PEC      |                pec.
+    3 |       16 | component1:solid1            | PEC      |                pec.
+    3 |       17 | component1:solid2            | PEC      |                pec.
+================================================================================
+ 
+--------------------------------------------------------------------------------
+ 
+================================================================================
+
+************************************************************************************************
+------------------------------------------------------------------------------------------------
+Geometry processor: default
+	Geo accuracy: 0.000000
+	Watertightness check: true
+	Self intersection check: false
+	Inheritance (all): false
+	Normal dominance (all): false
+	Normal dominance (ports): false
+	Flanges hollow: true
+	One shape per flange: false
+	Multi threading: true
+		max # of threads used: 24
+		requested max # of threads: 24
+		representation: indexed
+		method: multi thread
+		retry: no
+------------------------------------------------------------------------------------------------
+CAD processing settings are set to default
+------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------
+CAD Processing Version Info
+	ACIS version installed:	35.0.0
+	ACIS version used:	35.0.0
+------------------------------------------------------------------------------------------------
+Success method:	multi-thread-22
+************************************************************************************************
+
+================================================================================
+--------------------------------------------------------------------------------
+ 
+================================================================================
+== CST Matrix Calculation Priority Log ==
+================================================================================
+Priorities are sorted in ascending order beginning with the lowest priority
+Priority scheme based on: shape name [priority defaults]
+All shapes have a 2D or 3D geometric representation
+ 
+Group | Shape-ID | Shape-name                   | Material | Material-attributes
+    1 |        1 | component1:air1              | Vacuum   |      normal.vacuum.
+    1 |        2 | component1:air2              | Vacuum   |      normal.vacuum.
+    2 |       18 | component1:solid3            | Medium   |             normal.
+    3 |        3 | component1:bottom            | PEC      |                pec.
+    3 |        4 | component1:horn_2            | PEC      |                pec.
+    3 |        5 | component1:horn_bot          | PEC      |                pec.
+    3 |        6 | component1:probe             | PEC      |                pec.
+    3 |        7 | component1:probe2            | PEC      |                pec.
+    3 |        8 | component1:ridge             | PEC      |                pec.
+    3 |        9 | component1:ridge2            | PEC      |                pec.
+    3 |       10 | component1:ridge2_1          | PEC      |                pec.
+    3 |       19 | component1:ridge2_1 (Lump 2) | PEC      |                pec.
+    3 |       20 | component1:ridge2 (Lump 2)   | PEC      |                pec.
+    3 |       11 | component1:ridge3            | PEC      |                pec.
+    3 |       12 | component1:ridge3_1          | PEC      |                pec.
+    3 |       21 | component1:ridge3_1 (Lump 2) | PEC      |                pec.
+    3 |       22 | component1:ridge3 (Lump 2)   | PEC      |                pec.
+    3 |       13 | component1:ridge4            | PEC      |                pec.
+    3 |       14 | component1:ridge4_1          | PEC      |                pec.
+    3 |       23 | component1:ridge4_1 (Lump 2) | PEC      |                pec.
+    3 |       24 | component1:ridge4 (Lump 2)   | PEC      |                pec.
+    3 |       15 | component1:ridge_1           | PEC      |                pec.
+    3 |       25 | component1:ridge_1 (Lump 2)  | PEC      |                pec.
+    3 |       26 | component1:ridge (Lump 2)    | PEC      |                pec.
+    3 |       16 | component1:solid1            | PEC      |                pec.
+    3 |       17 | component1:solid2            | PEC      |                pec.
+================================================================================
+ 
+--------------------------------------------------------------------------------
+ 
+================================================================================
+
+************************************************************************************************
+------------------------------------------------------------------------------------------------
+Geometry processor: default
+	Geo accuracy: 0.000000
+	Watertightness check: true
+	Self intersection check: false
+	Inheritance (all): false
+	Normal dominance (all): false
+	Normal dominance (ports): false
+	Flanges hollow: true
+	One shape per flange: false
+	Multi threading: true
+		max # of threads used: 24
+		requested max # of threads: 24
+		representation: indexed
+		method: multi thread
+		retry: no
+------------------------------------------------------------------------------------------------
+CAD processing settings are set to default
+------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------
+CAD Processing Version Info
+	ACIS version installed:	35.0.0
+	ACIS version used:	35.0.0
+------------------------------------------------------------------------------------------------
+Success method:	multi-thread-22
+************************************************************************************************
+

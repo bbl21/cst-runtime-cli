@@ -1,0 +1,279 @@
+{
+    "parameters": [
+        {
+            "descr": "底座半径",
+            "expr": "71",
+            "name": "R1",
+            "value": "71"
+        },
+        {
+            "descr": "底座的高度",
+            "expr": "18",
+            "name": "bottom_h",
+            "value": "18"
+        },
+        {
+            "descr": "匹配圆锥的高度",
+            "expr": "18",
+            "name": "cone_h",
+            "value": "18"
+        },
+        {
+            "expr": "4",
+            "name": "ridge_t",
+            "value": "4"
+        },
+        {
+            "descr": "相当于口径",
+            "expr": "200",
+            "name": "ridge_w",
+            "value": "200"
+        },
+        {
+            "descr": "脊的底部高度",
+            "expr": "11.5",
+            "name": "ridge_bot",
+            "value": "11.5"
+        },
+        {
+            "expr": "30",
+            "name": "ridge_h",
+            "value": "30"
+        },
+        {
+            "expr": "7",
+            "name": "ridge_inner_w2",
+            "value": "7"
+        },
+        {
+            "expr": "1.2",
+            "name": "ridge_inner_w1",
+            "value": "1.2"
+        },
+        {
+            "expr": "176",
+            "name": "ridge2_h",
+            "value": "176"
+        },
+        {
+            "expr": "200",
+            "name": "ridge3_h",
+            "value": "200"
+        },
+        {
+            "descr": "exp已知点x坐标",
+            "expr": "60",
+            "name": "y2",
+            "value": "60"
+        },
+        {
+            "descr": "exp已知点y坐标",
+            "expr": "ridge_h+ridge2_h+ridge3_h",
+            "name": "x2",
+            "value": "406"
+        },
+        {
+            "descr": "exp的c1参数",
+            "expr": "(y2-y1)/(exp(a*x2)-exp(a*x1))",
+            "name": "c1",
+            "value": "1.71240064331065e-02"
+        },
+        {
+            "expr": "0.02",
+            "name": "a",
+            "value": "0.02"
+        },
+        {
+            "descr": "exp的c2参数",
+            "expr": "(y1*exp(a*x2)-y2*exp(a*x1))/(exp(a*x2)-exp(a*x1))",
+            "name": "c2",
+            "value": "2.44585913944677"
+        },
+        {
+            "descr": "exp的已知点y坐标",
+            "expr": "ridge_inner_w2/2",
+            "name": "y1",
+            "value": "3.5"
+        },
+        {
+            "descr": "exp的已知点x坐标",
+            "expr": "ridge_h+ridge2_h",
+            "name": "x1",
+            "value": "206"
+        },
+        {
+            "descr": "抛物线的已知点坐标",
+            "expr": "x2+7",
+            "name": "x3",
+            "value": "413"
+        },
+        {
+            "descr": "抛物线参数a",
+            "expr": "(x1_*(y2-y3)-x2*(y1_-y3)+x3*(y1_-y2))/(y1_^2*(y2-y3)-y2^2*(y1_-y3)+y3^2*(y1_-y2))",
+            "name": "a_",
+            "value": "-0.0175"
+        },
+        {
+            "descr": "抛物线参数b",
+            "expr": "(y1_^2*(x2-x3)-y2^2*(x1_-x3)+y3^2*(x1_-x2))/(y1_^2*(y2-y3)-y2^2*(y1_-y3)+y3^2*(y1_-y2))",
+            "name": "b",
+            "value": "2.8"
+        },
+        {
+            "descr": "抛物线参数c",
+            "expr": "(y1_^2*(y2*x3-y3*x2)-y2^2*(y1_*x3-y3*x1_)+y3^2*(y1_*x2-y2*x1_))/(y1_^2*(y2-y3)-y2^2*(y1_-y3)+y3^2*(y1_-y2))",
+            "name": "c",
+            "value": "301"
+        },
+        {
+            "descr": "抛物线的已知点坐标",
+            "expr": "(y1_-y2)/2+y2",
+            "name": "y3",
+            "value": "80"
+        },
+        {
+            "descr": "抛物线的已知点x坐标",
+            "expr": "x2",
+            "name": "x1_",
+            "value": "406"
+        },
+        {
+            "descr": "抛物线的已知点y坐标",
+            "expr": "ridge_w/2",
+            "name": "y1_",
+            "value": "100"
+        },
+        {
+            "descr": "倒角",
+            "expr": "1.8",
+            "name": "chamfer_w",
+            "value": "1.8"
+        },
+        {
+            "expr": "r1",
+            "name": "r3",
+            "value": "71"
+        },
+        {
+            "expr": "ridge_w/2",
+            "name": "r2",
+            "value": "100"
+        },
+        {
+            "descr": "喇叭底部圆柱高度",
+            "expr": "35",
+            "name": "horn_bot",
+            "value": "35"
+        },
+        {
+            "descr": "喇叭厚度",
+            "expr": "5",
+            "name": "horn_t",
+            "value": "5"
+        },
+        {
+            "expr": "0.35",
+            "name": "probe_r",
+            "value": "0.35"
+        },
+        {
+            "expr": "17",
+            "name": "probe_h",
+            "value": "17"
+        },
+        {
+            "expr": "10",
+            "name": "probe_l",
+            "value": "10"
+        },
+        {
+            "expr": "16",
+            "name": "probe_h2",
+            "value": "16"
+        },
+        {
+            "expr": "0.8",
+            "name": "air_r",
+            "value": "0.8"
+        },
+        {
+            "expr": "12",
+            "name": "bottom_chamfer",
+            "value": "12"
+        },
+        {
+            "expr": "10",
+            "name": "bottom_chamfer2",
+            "value": "10"
+        },
+        {
+            "expr": "10",
+            "name": "bot",
+            "value": "10"
+        },
+        {
+            "expr": "-34.5",
+            "name": "xibox1",
+            "value": "-34.5"
+        },
+        {
+            "expr": "-4",
+            "name": "xibox2",
+            "value": "-4"
+        },
+        {
+            "expr": "-3",
+            "name": "xiboy1",
+            "value": "-3"
+        },
+        {
+            "expr": "-2",
+            "name": "xiboy2",
+            "value": "-2"
+        },
+        {
+            "expr": "18",
+            "name": "xiboz1",
+            "value": "18"
+        },
+        {
+            "expr": "30",
+            "name": "xiboz2",
+            "value": "30"
+        },
+        {
+            "descr": "介质透镜半径",
+            "expr": "100",
+            "name": "R_max",
+            "value": "100"
+        },
+        {
+            "descr": "透镜焦距",
+            "expr": "350",
+            "name": "F",
+            "value": "350"
+        },
+        {
+            "descr": "透镜介电常数",
+            "expr": "2.1",
+            "name": "er",
+            "value": "2.1"
+        },
+        {
+            "expr": "er^0.5",
+            "name": "n",
+            "value": "1.44913767461894"
+        },
+        {
+            "expr": "1",
+            "name": "e1",
+            "value": "1"
+        },
+        {
+            "expr": "0.5",
+            "name": "e2",
+            "value": "0.5"
+        }
+    ],
+    "version": 1
+}

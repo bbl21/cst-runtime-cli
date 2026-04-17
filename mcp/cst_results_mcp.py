@@ -17,11 +17,13 @@ import json
 import math
 import os
 import re
+import subprocess
 import time
 from pathlib import Path
 from typing import Any
 
 
+import cst.interface
 import cst.results
 from mcp.server import FastMCP
 
@@ -35,6 +37,8 @@ _project_cache: dict[tuple[str, str | None, bool], cst.results.ProjectFile] = {}
 
 DEFAULT_PLOT_DIR = Path(__file__).resolve().parent.parent / "plot_previews"
 PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
+FARFIELD_EXPORT_DEFAULT_MAX_ATTEMPTS = 6
+FARFIELD_EXPORT_HARD_MAX_ATTEMPTS = 12
 
 
 def save_project_context(
@@ -129,6 +133,813 @@ def _get_result_module(project, module_type: str):
 
 def _json_dumps(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _derive_farfield_cut_tree_path(
+    farfield_name: str, cut_axis: str = "Phi", cut_angle: str = "0"
+) -> str | None:
+    match = re.fullmatch(r"farfield \(f=(.+?)\) \[(\d+)\]", farfield_name.strip())
+    if not match:
+        return None
+    frequency, port = match.groups()
+    normalized_axis = cut_axis.strip().capitalize()
+    if normalized_axis not in {"Phi", "Theta"}:
+        return None
+    return (
+        f"Farfields\\Farfield Cuts\\Excitation [{port}]\\"
+        f"{normalized_axis}={cut_angle}\\farfield (f={frequency})"
+    )
+
+
+def _build_farfield_cut_export_command(tree_path: str, output_file: str):
+    return "\n".join(
+        [
+            f'SelectTreeItem "{tree_path}"',
+            "With ASCIIExport",
+            "    .Reset",
+            f'    .FileName "{output_file}"',
+            "    .Execute",
+            "End With",
+        ]
+    )
+
+
+def _inspect_farfield_ascii_grid(file_path: str) -> dict[str, Any]:
+    theta_values: set[float] = set()
+    phi_values: set[float] = set()
+    row_count = 0
+    with open(file_path, "r", encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            parts = line.split()
+            if len(parts) < 2:
+                continue
+            try:
+                theta = float(parts[0])
+                phi = float(parts[1])
+            except Exception:
+                continue
+            theta_values.add(theta)
+            phi_values.add(phi)
+            row_count += 1
+    return {
+        "row_count": row_count,
+        "theta_count": len(theta_values),
+        "phi_count": len(phi_values),
+        "theta_min": min(theta_values) if theta_values else None,
+        "theta_max": max(theta_values) if theta_values else None,
+        "phi_min": min(phi_values) if phi_values else None,
+        "phi_max": max(phi_values) if phi_values else None,
+    }
+
+
+def _extract_farfield_frequency_ghz(farfield_name: str) -> float | None:
+    match = re.search(r"f\s*=\s*([0-9]+(?:\.[0-9]+)?)", farfield_name)
+    if not match:
+        return None
+    return float(match.group(1))
+
+
+def _phase_deg_from_components(real: float, imag: float) -> float:
+    return math.degrees(math.atan2(imag, real))
+
+
+def _build_farfield_angle_values(
+    minimum: float,
+    maximum: float,
+    step: float,
+    *,
+    upper_bound: float,
+    exclude_upper_endpoint: bool = False,
+) -> list[float]:
+    if step <= 0:
+        raise ValueError("angle step must be positive")
+    if minimum < 0 or maximum > upper_bound or minimum > maximum:
+        raise ValueError(
+            f"invalid angle range: min={minimum}, max={maximum}, upper_bound={upper_bound}"
+        )
+
+    values: list[float] = []
+    value = minimum
+    if exclude_upper_endpoint:
+        while value < maximum - 1e-9:
+            values.append(round(value, 10))
+            value += step
+    else:
+        while value <= maximum + 1e-9:
+            values.append(round(value, 10))
+            value += step
+    if not values:
+        raise ValueError(
+            f"angle range produced no sample points: min={minimum}, max={maximum}, step={step}"
+        )
+    return values
+
+
+def _com_best_effort_set(obj, name: str, value) -> bool:
+    """Best-effort setter for CST COM objects.
+
+    CST exposes some members as methods in VBA (e.g. `FarfieldPlot.Step "5"`)
+    but they may appear as properties or callables in Python COM. We try both
+    calling and assignment and never raise.
+    """
+    try:
+        attr = getattr(obj, name)
+        if callable(attr):
+            attr(value)
+        else:
+            setattr(obj, name, value)
+        return True
+    except Exception:
+        try:
+            setattr(obj, name, value)
+            return True
+        except Exception:
+            return False
+
+
+def _normalize_farfield_plot_mode(plot_mode: str) -> dict[str, str]:
+    normalized = (plot_mode or "").strip().lower()
+    normalized = normalized.replace("_", " ").replace("-", " ").replace(".", " ")
+    normalized = " ".join(normalized.split())
+
+    if normalized in {"", "realized gain", "realizedgain", "rlzd gain", "rlzdgain"}:
+        return {
+            "result_type": "Realized Gain",
+            "header_quantity": "Abs(Realized Gain)",
+            "unit": "dBi",
+        }
+    if normalized in {"gain", "abs gain", "absgain"}:
+        return {
+            "result_type": "Gain",
+            "header_quantity": "Abs(Gain)",
+            "unit": "dBi",
+        }
+    if normalized in {"directivity", "abs directivity", "absdirectivity"}:
+        return {
+            "result_type": "Directivity",
+            "header_quantity": "Abs(Directivity)",
+            "unit": "dBi",
+        }
+    if normalized in {
+        "efield",
+        "e field",
+        "electric field",
+        "field",
+        "abs e",
+        "abse",
+    }:
+        raise ValueError(
+            "电场强度读取/导出已移除。真实增益请改用 "
+            "read_realized_gain_grid_fresh_session；完整方向图导出仅支持 "
+            "Realized Gain/Gain/Directivity。"
+        )
+
+    raise ValueError(
+        "不支持的 plot_mode。当前仅支持 Realized Gain、Gain、Directivity；"
+        "不再支持 Efield/Abs(E)。"
+    )
+
+
+def _read_farfield_scalar_grid_via_calculator(
+    project,
+    farfield_name: str,
+    result_type: str,
+    unit: str,
+    theta_step_deg: float,
+    phi_step_deg: float,
+    theta_min_deg: float | None = None,
+    theta_max_deg: float | None = None,
+    phi_min_deg: float | None = None,
+    phi_max_deg: float | None = None,
+) -> dict[str, Any]:
+    frequency_ghz = _extract_farfield_frequency_ghz(farfield_name)
+    if frequency_ghz is None:
+        return {
+            "status": "error",
+            "message": f"无法从 farfield_name 解析频率: {farfield_name}",
+        }
+
+    theta_step = max(0.1, float(theta_step_deg))
+    phi_step = max(0.1, float(phi_step_deg))
+    theta_min = 0.0 if theta_min_deg is None else float(theta_min_deg)
+    theta_max = 180.0 if theta_max_deg is None else float(theta_max_deg)
+    phi_min = 0.0 if phi_min_deg is None else float(phi_min_deg)
+    phi_max = 360.0 if phi_max_deg is None else float(phi_max_deg)
+    full_theta_range = abs(theta_min - 0.0) < 1e-9 and abs(theta_max - 180.0) < 1e-9
+    full_phi_range = abs(phi_min - 0.0) < 1e-9 and abs(phi_max - 360.0) < 1e-9
+
+    try:
+        theta_values = _build_farfield_angle_values(
+            theta_min, theta_max, theta_step, upper_bound=180.0
+        )
+        phi_values = _build_farfield_angle_values(
+            phi_min,
+            phi_max,
+            phi_step,
+            upper_bound=360.0,
+            exclude_upper_endpoint=full_phi_range,
+        )
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+
+    try:
+        calculator = project.model3d.FarfieldCalculator
+        calculator.Reset()
+        calculator.SetScaleLinear(False)
+        calculator.DBUnit("0")
+
+        tree_path = f"Farfields\\{farfield_name}"
+        project.model3d.SelectTreeItem(tree_path)
+        for phi_value in phi_values:
+            for theta_value in theta_values:
+                calculator.AddListEvaluationPoint(
+                    theta_value,
+                    phi_value,
+                    1.0,
+                    "spherical",
+                    "frequency",
+                    frequency_ghz,
+                )
+        calculator.CalculateList(tree_path, "farfield Eonly")
+
+        scalar_values = [
+            float(value) for value in calculator.GetList(result_type, "Spherical Abs")
+        ]
+        point_theta = [
+            float(value) for value in calculator.GetList(result_type, "Point_T")
+        ]
+        point_phi = [
+            float(value) for value in calculator.GetList(result_type, "Point_P")
+        ]
+
+        expected_points = len(theta_values) * len(phi_values)
+        if len(scalar_values) != expected_points:
+            return {
+                "status": "error",
+                "message": (
+                    "FarfieldCalculator 返回的数据点数量与角度网格不一致: "
+                    f"points={len(scalar_values)}, expected={expected_points}"
+                ),
+            }
+
+        row_width = len(theta_values)
+        grid_values = [
+            scalar_values[idx : idx + row_width]
+            for idx in range(0, len(scalar_values), row_width)
+        ]
+
+        peak_idx = max(range(len(scalar_values)), key=lambda idx: scalar_values[idx])
+        peak_value = scalar_values[peak_idx]
+        peak_theta_deg = point_theta[peak_idx]
+        peak_phi_deg = point_phi[peak_idx]
+
+        boresight_value = None
+        for theta_value, phi_value, scalar_value in zip(
+            point_theta, point_phi, scalar_values
+        ):
+            if abs(theta_value) <= 1e-9 and abs(phi_value) <= 1e-9:
+                boresight_value = scalar_value
+                break
+
+        return {
+            "status": "success",
+            "source": "FarfieldCalculator",
+            "quantity": result_type,
+            "unit": unit,
+            "tree_path": tree_path,
+            "frequency_ghz": float(frequency_ghz),
+            "scope": "full_sphere" if full_theta_range and full_phi_range else "partial_range",
+            "is_full_sphere": full_theta_range and full_phi_range,
+            "theta_min_deg": theta_min,
+            "theta_max_deg": theta_max,
+            "phi_min_deg": phi_min,
+            "phi_max_deg": phi_max,
+            "theta_values_deg": theta_values,
+            "phi_values_deg": phi_values,
+            "grid_values": grid_values,
+            "sample_count": len(scalar_values),
+            "peak_value": float(peak_value),
+            "peak_theta_deg": float(peak_theta_deg),
+            "peak_phi_deg": float(peak_phi_deg),
+            "boresight_value": None if boresight_value is None else float(boresight_value),
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"{result_type} 读取失败: {str(e)}"}
+
+
+def _write_farfield_scalar_ascii(
+    output_file: str,
+    *,
+    header_quantity: str,
+    unit: str,
+    theta_values: list[float],
+    phi_values: list[float],
+    grid_values: list[list[float]],
+):
+    with open(output_file, "w", encoding="utf-8", newline="") as handle:
+        handle.write(
+            f"Theta [deg.]  Phi   [deg.]  {header_quantity}[{unit}]  "
+            "Aux1[-]  Aux2[-]  Aux3[-]  Aux4[-]  Aux5[-]\n"
+        )
+        handle.write(
+            "------------------------------------------------------------------------------------------------------------------------------------------------------\n"
+        )
+        for phi_idx, phi_value in enumerate(phi_values):
+            for theta_idx, theta_value in enumerate(theta_values):
+                scalar_value = float(grid_values[phi_idx][theta_idx])
+                handle.write(
+                    f"{theta_value:.3f} {phi_value:.3f} "
+                    f"{scalar_value:.6E} 0.000000E+00 0.000000E+00 "
+                    "0.000000E+00 0.000000E+00 0.000000E+00\n"
+                )
+
+
+def _export_farfield_grid_direct_com(
+    project,
+    farfield_name: str,
+    output_file: str,
+    theta_step_deg: float,
+    phi_step_deg: float,
+    plot_mode: str,
+    theta_min_deg: float | None = None,
+    theta_max_deg: float | None = None,
+    phi_min_deg: float | None = None,
+    phi_max_deg: float | None = None,
+) -> dict[str, Any]:
+    try:
+        normalized_mode = _normalize_farfield_plot_mode(plot_mode)
+    except ValueError as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "alternative_tool": "read_realized_gain_grid_fresh_session",
+        }
+
+    read_result = _read_farfield_scalar_grid_via_calculator(
+        project=project,
+        farfield_name=farfield_name,
+        result_type=normalized_mode["result_type"],
+        unit=normalized_mode["unit"],
+        theta_step_deg=theta_step_deg,
+        phi_step_deg=phi_step_deg,
+        theta_min_deg=theta_min_deg,
+        theta_max_deg=theta_max_deg,
+        phi_min_deg=phi_min_deg,
+        phi_max_deg=phi_max_deg,
+    )
+    if read_result.get("status") != "success":
+        return read_result
+
+    _write_farfield_scalar_ascii(
+        output_file,
+        header_quantity=normalized_mode["header_quantity"],
+        unit=normalized_mode["unit"],
+        theta_values=read_result["theta_values_deg"],
+        phi_values=read_result["phi_values_deg"],
+        grid_values=read_result["grid_values"],
+    )
+
+    return {
+        "status": "success",
+        "message": f"真实 farfield 标量网格已导出: {output_file}",
+        "tree_path": read_result["tree_path"],
+        "frequency_ghz": read_result["frequency_ghz"],
+        "requested_plot_mode": plot_mode,
+        "exported_quantity": read_result["quantity"],
+        "unit": read_result["unit"],
+        "scope": read_result["scope"],
+        "is_full_sphere": read_result["is_full_sphere"],
+        "theta_min_deg": read_result["theta_min_deg"],
+        "theta_max_deg": read_result["theta_max_deg"],
+        "phi_min_deg": read_result["phi_min_deg"],
+        "phi_max_deg": read_result["phi_max_deg"],
+        "theta_count": len(read_result["theta_values_deg"]),
+        "phi_count": len(read_result["phi_values_deg"]),
+        "row_count": read_result["sample_count"],
+        "peak_value": read_result["peak_value"],
+        "peak_theta_deg": read_result["peak_theta_deg"],
+        "peak_phi_deg": read_result["peak_phi_deg"],
+        "boresight_value": read_result["boresight_value"],
+    }
+
+    frequency_ghz = _extract_farfield_frequency_ghz(farfield_name)
+    if frequency_ghz is None:
+        return {
+            "status": "error",
+            "message": f"无法从 farfield_name 解析频率: {farfield_name}",
+        }
+    # CST COM API expects frequency in Hz for list evaluation points.
+    frequency_hz = float(frequency_ghz) * 1e9
+
+    theta_step = max(0.1, float(theta_step_deg))
+    phi_step = max(0.1, float(phi_step_deg))
+    theta_min = 0.0 if theta_min_deg is None else float(theta_min_deg)
+    theta_max = 180.0 if theta_max_deg is None else float(theta_max_deg)
+    phi_min = 0.0 if phi_min_deg is None else float(phi_min_deg)
+    phi_max = 360.0 if phi_max_deg is None else float(phi_max_deg)
+    full_theta_range = abs(theta_min - 0.0) < 1e-9 and abs(theta_max - 180.0) < 1e-9
+    full_phi_range = abs(phi_min - 0.0) < 1e-9 and abs(phi_max - 360.0) < 1e-9
+
+    try:
+        theta_values = _build_farfield_angle_values(
+            theta_min, theta_max, theta_step, upper_bound=180.0
+        )
+        # Exclude 360 degrees only for the full 0..360 sweep to avoid duplicating phi=0.
+        phi_values = _build_farfield_angle_values(
+            phi_min,
+            phi_max,
+            phi_step,
+            upper_bound=360.0,
+            exclude_upper_endpoint=full_phi_range,
+        )
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+
+    is_full_sphere = full_theta_range and full_phi_range
+
+    try:
+        model = project.model3d
+        tree_path = f"Farfields\\{farfield_name}"
+        model.SelectTreeItem(tree_path)
+        farfield_plot = model.FarfieldPlot
+        farfield_plot.Reset()
+        # We always export th/ph complex E-field components via GetListItem("th_re"/"th_im"/...).
+        # Other plot modes like "Gain" do not provide those component keys reliably.
+        farfield_plot.SetPlotMode("efield")
+        farfield_plot.SetScaleLinear("True")
+        # Some projects cannot CalculateList unless CST generated the 3D farfield plot data
+        # at least once in the session (it writes `farfield (f=xx)2D_*.ffp` into Result/).
+        # This mirrors the historically working VBA sequence: set plottype/step -> SelectTreeItem -> Plot.
+        try:
+            _com_best_effort_set(farfield_plot, "Plottype", "3d")
+            _com_best_effort_set(farfield_plot, "Step", str(theta_step_deg))
+            _com_best_effort_set(farfield_plot, "SetColorByValue", "True")
+            _com_best_effort_set(farfield_plot, "SetTheta360", "False")
+            _com_best_effort_set(farfield_plot, "DBUnit", "0")
+            _com_best_effort_set(farfield_plot, "Distance", "1")
+            model.SelectTreeItem(tree_path)
+            if hasattr(farfield_plot, "Plot"):
+                farfield_plot.Plot()
+        except Exception:
+            pass
+        # Direct COM evaluation must bind frequency per point; VBA AddListItem
+        # otherwise falls back to HEX-mesh farfield approximation in CST 2026.
+        farfield_plot.UseFarfieldApproximation("False")
+        for phi_value in phi_values:
+            for theta_value in theta_values:
+                farfield_plot.AddListEvaluationPoint(
+                    theta_value,
+                    phi_value,
+                    1,
+                    "spherical",
+                    "frequency",
+                    frequency_hz,
+                )
+        farfield_plot.CalculateList(farfield_name)
+
+        with open(output_file, "w", encoding="utf-8", newline="") as handle:
+            handle.write(
+                "Theta [deg.]  Phi   [deg.]  Abs(E   )[V/m   ]   "
+                "Abs(Theta)[V/m   ]  Phase(Theta)[deg.]  "
+                "Abs(Phi  )[V/m   ]  Phase(Phi  )[deg.]  Ax.Ratio[      ]\n"
+            )
+            handle.write(
+                "------------------------------------------------------------------------------------------------------------------------------------------------------\n"
+            )
+            index = 0
+            for phi_value in phi_values:
+                for theta_value in theta_values:
+                    theta_real = float(farfield_plot.GetListItem(index, "th_re"))
+                    theta_imag = float(farfield_plot.GetListItem(index, "th_im"))
+                    phi_real = float(farfield_plot.GetListItem(index, "ph_re"))
+                    phi_imag = float(farfield_plot.GetListItem(index, "ph_im"))
+                    abs_theta = math.hypot(theta_real, theta_imag)
+                    abs_phi = math.hypot(phi_real, phi_imag)
+                    abs_e = math.hypot(abs_theta, abs_phi)
+                    handle.write(
+                        f"{theta_value:.3f} {phi_value:.3f} "
+                        f"{abs_e:.6E} {abs_theta:.6E} {_phase_deg_from_components(theta_real, theta_imag):.3f} "
+                        f"{abs_phi:.6E} {_phase_deg_from_components(phi_real, phi_imag):.3f} 0.000000E+00\n"
+                    )
+                    index += 1
+        return {
+            "status": "success",
+            "message": f"完整 farfield 网格已导出: {output_file}",
+            "tree_path": tree_path,
+            "frequency_ghz": frequency_ghz,
+            "requested_plot_mode": plot_mode,
+            "exported_quantity": "Efield_components",
+            "scope": "full_sphere" if is_full_sphere else "partial_range",
+            "is_full_sphere": is_full_sphere,
+            "theta_min_deg": theta_min,
+            "theta_max_deg": theta_max,
+            "phi_min_deg": phi_min,
+            "phi_max_deg": phi_max,
+            "theta_count": len(theta_values),
+            "phi_count": len(phi_values),
+            "row_count": len(theta_values) * len(phi_values),
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"完整 farfield 网格导出失败: {str(e)}"}
+
+
+def _cleanup_temp_export_file(file_path: str):
+    try:
+        if file_path and os.path.isfile(file_path):
+            os.remove(file_path)
+    except Exception:
+        pass
+
+
+def _kill_cst_processes():
+    repo_root = Path(__file__).resolve().parent.parent
+    script_path = repo_root / "tools" / "kill_cst.ps1"
+    try:
+        result = subprocess.run(
+            [
+                "powershell.exe",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(script_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            return {
+                "status": "error",
+                "message": (
+                    f"kill_cst.ps1 failed: exit_code={result.returncode}, "
+                    f"stdout={result.stdout.strip()}, stderr={result.stderr.strip()}"
+                ),
+            }
+        return {
+            "status": "success",
+            "message": result.stdout.strip() or "CST processes killed",
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"kill_cst.ps1 failed: {str(e)}"}
+
+
+def _close_results_context_if_matches(project_path: str):
+    context = get_project_context()
+    if not context:
+        return None
+    current_path = os.path.abspath(context["fullpath"])
+    if current_path != os.path.abspath(project_path):
+        return None
+    return close_project()
+
+
+def _gui_open_project(fullpath: str):
+    if os.path.isdir(fullpath):
+        return {"status": "error", "message": f"路径是文件夹，不是项目文件: {fullpath}"}
+    normalized_path = fullpath
+    if not normalized_path.endswith(".cst"):
+        cst_path = normalized_path + ".cst"
+        if os.path.exists(cst_path):
+            normalized_path = cst_path
+        else:
+            return {"status": "error", "message": f"项目文件不存在: {fullpath}"}
+    if not os.path.exists(normalized_path) or not os.path.isfile(normalized_path):
+        return {"status": "error", "message": f"项目文件不存在: {normalized_path}"}
+    try:
+        de = cst.interface.DesignEnvironment()
+        project = de.open_project(normalized_path)
+        return {
+            "status": "success",
+            "project": project,
+            "design_environment": de,
+            "fullpath": normalized_path,
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"打开 GUI 项目失败: {str(e)}"}
+
+
+def _gui_close_project(project, fullpath: str, save: bool = False):
+    try:
+        if save:
+            project.save()
+        project.close()
+        return {"status": "success", "message": f"项目已关闭: {fullpath}"}
+    except Exception as e:
+        return {"status": "error", "message": f"关闭 GUI 项目失败: {str(e)}"}
+
+
+def _gui_add_to_history(project, command: str, history_name: str):
+    try:
+        project.modeler.add_to_history(history_name, command)
+        return {"status": "success", "message": f"命令已添加到历史记录: {history_name}"}
+    except Exception as e:
+        return {"status": "error", "message": f"添加命令失败: {str(e)}"}
+
+
+def _gui_execute_vba(project, code: str):
+    errors: list[str] = []
+    for entrypoint in ("schematic", "modeler"):
+        target = getattr(project, entrypoint, None)
+        if target is None:
+            errors.append(f"{entrypoint}: missing")
+            continue
+        execute = getattr(target, "execute_vba_code", None)
+        if not callable(execute):
+            errors.append(f"{entrypoint}: execute_vba_code unavailable")
+            continue
+        try:
+            result = execute(code)
+            return {
+                "status": "success",
+                "entrypoint": entrypoint,
+                "result": _serialize_value(result),
+            }
+        except Exception as e:
+            errors.append(f"{entrypoint}: {str(e)}")
+    return {
+        "status": "error",
+        "message": " ; ".join(errors) if errors else "execute_vba_code unavailable",
+    }
+
+
+def _gui_set_result_navigator_selection(
+    project,
+    run_ids: list[int] | None,
+    selection_tree_path: str = "1D Results\\S-Parameters",
+):
+    normalized_tree_path = (selection_tree_path or "").strip()
+    if not normalized_tree_path:
+        return {"status": "error", "message": "selection_tree_path cannot be empty"}
+
+    normalized_ids = sorted({int(run_id) for run_id in (run_ids or [])})
+    escaped_tree_path = normalized_tree_path.replace('"', '""')
+    if normalized_ids:
+        selection = " ".join(str(run_id) for run_id in normalized_ids)
+        request = "set selection"
+    else:
+        selection = ""
+        request = "reset selection"
+    escaped_selection = selection.replace('"', '""')
+    macro = "\n".join(
+        [
+            "Sub Main()",
+            f'    SelectTreeItem("{escaped_tree_path}")',
+            "    Dim response As String",
+            f'    response = ResultNavigatorRequest("{request}", "{escaped_selection}")',
+            "End Sub",
+        ]
+    )
+    result = _gui_execute_vba(project, macro)
+    if result.get("status") == "success":
+        result.update(
+            {
+                "selection_tree_path": normalized_tree_path,
+                "selected_run_ids": normalized_ids,
+                "request": request,
+            }
+        )
+    return result
+
+
+def _read_realized_gain_grid_via_calculator(
+    project,
+    farfield_name: str,
+    theta_step_deg: float,
+    phi_step_deg: float,
+    theta_min_deg: float | None = None,
+    theta_max_deg: float | None = None,
+    phi_min_deg: float | None = None,
+    phi_max_deg: float | None = None,
+) -> dict[str, Any]:
+    base_result = _read_farfield_scalar_grid_via_calculator(
+        project=project,
+        farfield_name=farfield_name,
+        result_type="Realized Gain",
+        unit="dBi",
+        theta_step_deg=theta_step_deg,
+        phi_step_deg=phi_step_deg,
+        theta_min_deg=theta_min_deg,
+        theta_max_deg=theta_max_deg,
+        phi_min_deg=phi_min_deg,
+        phi_max_deg=phi_max_deg,
+    )
+    if base_result.get("status") != "success":
+        return base_result
+
+    return {
+        **base_result,
+        "grid_db": base_result["grid_values"],
+        "peak_realized_gain_dbi": base_result["peak_value"],
+        "boresight_realized_gain_dbi": base_result["boresight_value"],
+    }
+
+    frequency_ghz = _extract_farfield_frequency_ghz(farfield_name)
+    if frequency_ghz is None:
+        return {
+            "status": "error",
+            "message": f"无法从 farfield_name 解析频率: {farfield_name}",
+        }
+
+    theta_step = max(0.1, float(theta_step_deg))
+    phi_step = max(0.1, float(phi_step_deg))
+    theta_min = 0.0 if theta_min_deg is None else float(theta_min_deg)
+    theta_max = 180.0 if theta_max_deg is None else float(theta_max_deg)
+    phi_min = 0.0 if phi_min_deg is None else float(phi_min_deg)
+    phi_max = 360.0 if phi_max_deg is None else float(phi_max_deg)
+    full_phi_range = abs(phi_min - 0.0) < 1e-9 and abs(phi_max - 360.0) < 1e-9
+
+    try:
+        theta_values = _build_farfield_angle_values(
+            theta_min, theta_max, theta_step, upper_bound=180.0
+        )
+        phi_values = _build_farfield_angle_values(
+            phi_min,
+            phi_max,
+            phi_step,
+            upper_bound=360.0,
+            exclude_upper_endpoint=full_phi_range,
+        )
+    except ValueError as e:
+        return {"status": "error", "message": str(e)}
+
+    try:
+        calculator = project.model3d.FarfieldCalculator
+        calculator.Reset()
+        # Keep logarithmic gain scaling so returned values map to dBi-like CST gain readout.
+        calculator.SetScaleLinear(False)
+        calculator.DBUnit("0")
+
+        tree_path = f"Farfields\\{farfield_name}"
+        for phi_value in phi_values:
+            for theta_value in theta_values:
+                calculator.AddListEvaluationPoint(
+                    theta_value,
+                    phi_value,
+                    1.0,
+                    "spherical",
+                    "frequency",
+                    frequency_ghz,
+                )
+        calculator.CalculateList(tree_path, "farfield Eonly")
+
+        realized_gain_db = [
+            float(value)
+            for value in calculator.GetList("Realized Gain", "Spherical Abs")
+        ]
+        point_theta = [
+            float(value) for value in calculator.GetList("Realized Gain", "Point_T")
+        ]
+        point_phi = [
+            float(value) for value in calculator.GetList("Realized Gain", "Point_P")
+        ]
+
+        row_width = len(theta_values)
+        grid_db = [
+            realized_gain_db[idx : idx + row_width]
+            for idx in range(0, len(realized_gain_db), row_width)
+        ]
+        if len(grid_db) != len(phi_values):
+            return {
+                "status": "error",
+                "message": (
+                    "FarfieldCalculator 返回的数据点数量与角度网格不一致: "
+                    f"points={len(realized_gain_db)}, expected={len(theta_values) * len(phi_values)}"
+                ),
+            }
+
+        peak_idx = max(range(len(realized_gain_db)), key=lambda idx: realized_gain_db[idx])
+        peak_gain_db = realized_gain_db[peak_idx]
+        peak_theta_deg = point_theta[peak_idx]
+        peak_phi_deg = point_phi[peak_idx]
+
+        boresight_gain_db = None
+        for theta_value, phi_value, gain_value in zip(
+            point_theta, point_phi, realized_gain_db
+        ):
+            if abs(theta_value) <= 1e-9 and abs(phi_value) <= 1e-9:
+                boresight_gain_db = gain_value
+                break
+
+        return {
+            "status": "success",
+            "source": "FarfieldCalculator",
+            "quantity": "Realized Gain",
+            "unit": "dBi",
+            "tree_path": tree_path,
+            "frequency_ghz": float(frequency_ghz),
+            "theta_values_deg": theta_values,
+            "phi_values_deg": phi_values,
+            "grid_db": grid_db,
+            "sample_count": len(realized_gain_db),
+            "peak_realized_gain_dbi": float(peak_gain_db),
+            "peak_theta_deg": float(peak_theta_deg),
+            "peak_phi_deg": float(peak_phi_deg),
+            "boresight_realized_gain_dbi": (
+                None if boresight_gain_db is None else float(boresight_gain_db)
+            ),
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Realized Gain 读取失败: {str(e)}"}
 
 
 def _default_plot_dir() -> Path:
@@ -270,17 +1081,32 @@ def _try_parse_cst_farfield_ascii(
     header_index = -1
     source_quantity = "Abs(E)"
     data_unit = "V/m"
+    component_mode = "vector_efield"
     for idx, line in enumerate(lines[:10]):
         normalized = line.lower().replace(" ", "")
         if (
             "theta[deg.]" in normalized
             and "phi[deg.]" in normalized
-            and ("abs(e" in normalized or "abs(gain)" in normalized)
+            and (
+                "abs(e" in normalized
+                or "abs(gain)" in normalized
+                or "abs(realizedgain)" in normalized
+                or "abs(directivity)" in normalized
+            )
         ):
             header_index = idx
-            if "abs(gain)" in normalized:
+            if "abs(realizedgain)" in normalized:
+                source_quantity = "Abs(Realized Gain)"
+                data_unit = "dBi"
+                component_mode = "scalar"
+            elif "abs(directivity)" in normalized:
+                source_quantity = "Abs(Directivity)"
+                data_unit = "dBi"
+                component_mode = "scalar"
+            elif "abs(gain)" in normalized:
                 source_quantity = "Abs(Gain)"
-                data_unit = ""
+                data_unit = "dBi"
+                component_mode = "scalar"
             break
 
     if header_index < 0:
@@ -354,6 +1180,7 @@ def _try_parse_cst_farfield_ascii(
         "meta": {
             "source_format": "cst_farfield_ascii",
             "source_quantity": source_quantity,
+            "component_mode": component_mode,
             "point_count": len(data_rows),
             "theta_count": len(theta_values),
             "phi_count": len(phi_values),
@@ -494,6 +1321,130 @@ def _load_farfield_payloads(file_paths: list[str]) -> list[dict[str, Any]]:
         key=lambda x: (999999 if x["frequency"] is None else x["frequency"], x["label"])
     )
     return items
+
+
+def _parse_farfield_cut_payload(file_path: str) -> dict[str, Any]:
+    payload = _load_exported_payload(file_path)
+    angle_deg = payload.get("angle_deg")
+    primary_db = payload.get("primary_db")
+    if not isinstance(angle_deg, list) or not isinstance(primary_db, list):
+        raise ValueError(
+            f"仅支持包含 angle_deg 和 primary_db 的 farfield cut JSON: {file_path}"
+        )
+    if len(angle_deg) != len(primary_db):
+        raise ValueError(f"angle_deg 与 primary_db 长度不一致: {file_path}")
+
+    samples: list[tuple[float, float]] = []
+    for angle, gain in zip(angle_deg, primary_db):
+        try:
+            samples.append((float(angle), float(gain)))
+        except Exception as exc:
+            raise ValueError(f"farfield cut 数据含非数值项: {file_path}") from exc
+
+    if not samples:
+        raise ValueError(f"farfield cut 数据为空: {file_path}")
+
+    source = Path(file_path).resolve()
+    return {
+        "file_path": str(source),
+        "label": source.stem,
+        "frequency_ghz": payload.get("frequency_ghz"),
+        "port": payload.get("port"),
+        "cut": payload.get("cut"),
+        "const_axis_value": payload.get("const_axis_value"),
+        "samples": samples,
+    }
+
+
+def _evaluate_farfield_cut_neighborhood_flatness(
+    cut_item: dict[str, Any], theta_max_deg: float
+) -> dict[str, Any]:
+    samples = [
+        (angle, gain)
+        for angle, gain in cut_item["samples"]
+        if 0.0 <= angle <= theta_max_deg
+    ]
+    if not samples:
+        raise ValueError(
+            f"在 theta <= {theta_max_deg:g}° 范围内没有可用采样点: {cut_item['file_path']}"
+        )
+
+    gains = [gain for _, gain in samples]
+    max_idx = max(range(len(samples)), key=lambda idx: samples[idx][1])
+    min_idx = min(range(len(samples)), key=lambda idx: samples[idx][1])
+    max_angle, max_gain = samples[max_idx]
+    min_angle, min_gain = samples[min_idx]
+    boresight_gain = next(
+        (gain for angle, gain in samples if abs(angle) <= 1e-9),
+        None,
+    )
+
+    frequency = cut_item.get("frequency_ghz")
+    try:
+        frequency = None if frequency is None else float(frequency)
+    except Exception:
+        frequency = None
+
+    port = cut_item.get("port")
+    try:
+        port = None if port is None else int(port)
+    except Exception:
+        port = None
+
+    return {
+        "file_path": cut_item["file_path"],
+        "label": cut_item["label"],
+        "frequency_ghz": frequency,
+        "port": port,
+        "cut": cut_item.get("cut"),
+        "const_axis_value": cut_item.get("const_axis_value"),
+        "theta_max_deg": float(theta_max_deg),
+        "sample_count": len(samples),
+        "angle_range_deg": [samples[0][0], samples[-1][0]],
+        "flatness_db": float(max_gain - min_gain),
+        "max_gain_db": float(max_gain),
+        "max_gain_angle_deg": float(max_angle),
+        "min_gain_db": float(min_gain),
+        "min_gain_angle_deg": float(min_angle),
+        "boresight_gain_db": None if boresight_gain is None else float(boresight_gain),
+    }
+
+
+def _group_farfield_cut_flatness(
+    items: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    groups: dict[tuple[float | None, int | None], list[dict[str, Any]]] = {}
+    for item in items:
+        key = (item.get("frequency_ghz"), item.get("port"))
+        groups.setdefault(key, []).append(item)
+
+    summaries: list[dict[str, Any]] = []
+    for key in sorted(
+        groups.keys(),
+        key=lambda value: (
+            float("inf") if value[0] is None else float(value[0]),
+            float("inf") if value[1] is None else int(value[1]),
+        ),
+    ):
+        members = groups[key]
+        flatness_values = [float(member["flatness_db"]) for member in members]
+        max_gain_values = [float(member["max_gain_db"]) for member in members]
+        min_gain_values = [float(member["min_gain_db"]) for member in members]
+        summaries.append(
+            {
+                "frequency_ghz": key[0],
+                "port": key[1],
+                "cut_count": len(members),
+                "cuts": [member.get("cut") for member in members],
+                "worst_flatness_db": max(flatness_values),
+                "best_flatness_db": min(flatness_values),
+                "mean_flatness_db": sum(flatness_values) / len(flatness_values),
+                "max_gain_db": max(max_gain_values),
+                "min_gain_db": min(min_gain_values),
+                "files": [member["file_path"] for member in members],
+            }
+        )
+    return summaries
 
 
 def _build_summary_cards(cards: list[tuple[str, Any]]) -> str:
@@ -730,6 +1681,7 @@ def _create_2d_plot_html(payload: dict[str, Any], page_title: str) -> str:
     matrix = _normalize_matrix(payload.get("data"))
     meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
     source_format = (meta.get("source_format") or "").strip().lower()
+    component_mode = (meta.get("component_mode") or "").strip().lower()
     component_payload = (
         meta.get("components") if isinstance(meta.get("components"), dict) else {}
     )
@@ -768,7 +1720,7 @@ def _create_2d_plot_html(payload: dict[str, Any], page_title: str) -> str:
         )
 
     extra_sections = ""
-    if source_format == "cst_farfield_ascii":
+    if source_format == "cst_farfield_ascii" and component_mode == "vector_efield":
         extra_sections = """
     <div class="grid-2">
       <div class="section">
@@ -864,6 +1816,7 @@ def _create_2d_plot_html(payload: dict[str, Any], page_title: str) -> str:
         else []
     )
     source_format_json = _json_dumps(source_format)
+    component_mode_json = _json_dumps(component_mode)
 
     script = f"""
 const x = {x_json};
@@ -881,6 +1834,7 @@ const phaseThetaMatrix = {phase_theta_json};
 const phasePhiMatrix = {phase_phi_json};
 const axRatioMatrix = {ax_ratio_json};
 const template = 'plotly_dark';
+const componentMode = {component_mode_json};
 
 function safeDb(v) {{
   return v > 0 ? 20 * Math.log10(v) : -120;
@@ -1030,7 +1984,7 @@ Plotly.newPlot('plot_col_slice', [{{
   plot_bgcolor:'#1f2937'
 }}, {{responsive:true,displaylogo:false}});
 
-if (sourceFormat === 'cst_farfield_ascii') {{
+if (sourceFormat === 'cst_farfield_ascii' && componentMode === 'vector_efield') {{
   Plotly.newPlot('plot_abs_theta', [{{x:x,y:y,z:absThetaMatrix,type:'heatmap',colorscale:'Jet',colorbar:{chr(123)}title:'Abs(Theta)'{chr(125)}}}], {{template, title:'Abs(Theta)', xaxis:{{title:xlabel}}, yaxis:{{title:ylabel}}, paper_bgcolor:'#1f2937', plot_bgcolor:'#1f2937'}}, {{responsive:true,displaylogo:false}});
   Plotly.newPlot('plot_abs_phi', [{{x:x,y:y,z:absPhiMatrix,type:'heatmap',colorscale:'Jet',colorbar:{chr(123)}title:'Abs(Phi)'{chr(125)}}}], {{template, title:'Abs(Phi)', xaxis:{{title:xlabel}}, yaxis:{{title:ylabel}}, paper_bgcolor:'#1f2937', plot_bgcolor:'#1f2937'}}, {{responsive:true,displaylogo:false}});
   Plotly.newPlot('plot_phase_theta', [{{x:x,y:y,z:phaseThetaMatrix,type:'heatmap',colorscale:'Jet',colorbar:{chr(123)}title:'deg'{chr(125)}}}], {{template, title:'Phase(Theta)', xaxis:{{title:xlabel}}, yaxis:{{title:ylabel}}, paper_bgcolor:'#1f2937', plot_bgcolor:'#1f2937'}}, {{responsive:true,displaylogo:false}});
@@ -1238,6 +2192,83 @@ renderComparison('plot_compare_phi90', 1, pageTitle + ' · 多频率对比（目
     return _html_template(page_title, body, script)
 
 
+def _extract_run_id_from_path(path_str: str) -> int | None:
+    target = Path(path_str)
+    candidates = [target.stem, target.name, *[parent.name for parent in target.parents]]
+    for text in candidates:
+        match = re.search(r"run[_-]?(\d+)", text, re.IGNORECASE)
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def _build_s11_series(file_paths: list[str]) -> list[dict[str, Any]]:
+    all_series: list[dict[str, Any]] = []
+    for idx, file_path in enumerate(file_paths):
+        if Path(file_path).suffix.lower() != ".json":
+            raise ValueError(f"S11 输入仅支持 .json，检测到: {file_path}")
+
+        payload = _load_exported_payload(file_path)
+        xdata = payload.get("xdata", [])
+        ydata = payload.get("ydata", [])
+        if not xdata or not ydata:
+            raise ValueError(f"文件缺少有效 xdata/ydata: {file_path}")
+
+        mag_db_values: list[float | None] = []
+        for y_val in ydata:
+            real, imag = _complex_components(y_val)
+            mag = math.hypot(real, imag)
+            mag_db_values.append(_safe_log_db(mag))
+
+        finite_db = [(v if v is not None else -120.0) for v in mag_db_values]
+        valid_db = [v for v in finite_db if v > -120]
+        min_db = min(valid_db) if valid_db else -120.0
+        min_idx = next(i for i, v in enumerate(finite_db) if v == min_db)
+        best_freq = xdata[min_idx] if min_idx < len(xdata) else None
+        run_id = payload.get("run_id")
+        if run_id is None:
+            run_id = _extract_run_id_from_path(file_path)
+        if run_id is None:
+            run_id = idx + 1
+
+        all_series.append(
+            {
+                "label": f"Run {run_id}",
+                "run_id": run_id,
+                "file": str(Path(file_path).name),
+                "full_file": str(Path(file_path).resolve()),
+                "xdata": xdata,
+                "ydata": finite_db,
+                "min_db": min_db,
+                "best_freq": best_freq,
+                "best_unit": "GHz" if best_freq and best_freq > 0.1 else "",
+            }
+        )
+    return all_series
+
+
+def _group_farfield_items_by_run(file_paths: list[str]) -> list[dict[str, Any]]:
+    raw_items = _load_farfield_payloads(file_paths)
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for item in raw_items:
+        run_id = _extract_run_id_from_path(item.get("file", ""))
+        if run_id is None:
+            raise ValueError(f"无法从 farfield 文件路径识别 run_id: {item.get('file')}")
+        item["run_id"] = run_id
+        grouped.setdefault(run_id, []).append(item)
+
+    groups: list[dict[str, Any]] = []
+    for run_id, items in grouped.items():
+        items.sort(
+            key=lambda x: (
+                999999 if x["frequency"] is None else x["frequency"],
+                x["label"],
+            )
+        )
+        groups.append({"run_id": run_id, "label": f"Run {run_id}", "items": items})
+    groups.sort(key=lambda x: x["run_id"])
+    return groups
+
 def _build_plot_html_from_payload(
     payload: dict[str, Any], page_title: str
 ) -> tuple[str, str]:
@@ -1385,6 +2416,391 @@ def get_project_context_info():
     if not context:
         return {"status": "error", "message": "当前没有活动的项目"}
     return {"status": "success", **context}
+
+
+@mcp.tool()
+def export_farfield(
+    farfield_name: str,
+    frequency: str,
+    file_path: str,
+    plot_mode: str = "Realized Gain",
+    prime_with_cut: bool = False,
+    cut_axis: str = "Phi",
+    cut_angle: str = "0",
+    theta_step_deg: float = 5.0,
+    phi_step_deg: float = 5.0,
+    theta_min_deg: float | None = None,
+    theta_max_deg: float | None = None,
+    phi_min_deg: float | None = None,
+    phi_max_deg: float | None = None,
+):
+    """基于当前 results 项目上下文导出完整 farfield ASCII/TXT。
+
+    默认会连续重试，直到成功或达到导出上限。
+    """
+    context = get_project_context()
+    if not context:
+        return {"status": "error", "message": "当前没有活动的 results 项目，请先调用 open_project"}
+    project_path = context["fullpath"]
+    return export_farfield_fresh_session(
+        project_path=project_path,
+        farfield_name=farfield_name,
+        output_file=file_path,
+        plot_mode=plot_mode,
+        prime_with_cut=prime_with_cut,
+        cut_axis=cut_axis,
+        cut_angle=cut_angle,
+        theta_step_deg=theta_step_deg,
+        phi_step_deg=phi_step_deg,
+        theta_min_deg=theta_min_deg,
+        theta_max_deg=theta_max_deg,
+        phi_min_deg=phi_min_deg,
+        phi_max_deg=phi_max_deg,
+        max_attempts=FARFIELD_EXPORT_DEFAULT_MAX_ATTEMPTS,
+        keep_prime_cut_file=False,
+    )
+
+
+@mcp.tool()
+def export_farfield_fresh_session(
+    project_path: str,
+    farfield_name: str,
+    output_file: str,
+    plot_mode: str = "Realized Gain",
+    prime_with_cut: bool = False,
+    cut_axis: str = "Phi",
+    cut_angle: str = "0",
+    theta_step_deg: float = 5.0,
+    phi_step_deg: float = 5.0,
+    theta_min_deg: float | None = None,
+    theta_max_deg: float | None = None,
+    phi_min_deg: float | None = None,
+    phi_max_deg: float | None = None,
+    max_attempts: int = FARFIELD_EXPORT_DEFAULT_MAX_ATTEMPTS,
+    keep_prime_cut_file: bool = False,
+):
+    """按 fresh CST session 稳定导出单个 farfield ASCII/TXT。
+
+    默认会在同一路径上持续重试，直到成功或达到硬上限。
+    """
+    normalized_project = os.path.abspath(project_path)
+    if not normalized_project.lower().endswith(".cst"):
+        normalized_project += ".cst"
+    if not os.path.isfile(normalized_project):
+        return {"status": "error", "message": f"项目文件不存在: {normalized_project}"}
+
+    normalized_output = os.path.abspath(output_file)
+    if not normalized_output.lower().endswith(".txt"):
+        normalized_output += ".txt"
+    output_dir = os.path.dirname(normalized_output)
+    if not output_dir:
+        return {"status": "error", "message": f"输出路径无效: {output_file}"}
+    os.makedirs(output_dir, exist_ok=True)
+
+    try:
+        attempts = max(1, int(max_attempts))
+    except Exception:
+        return {"status": "error", "message": f"max_attempts 非法: {max_attempts}"}
+    attempts = min(attempts, FARFIELD_EXPORT_HARD_MAX_ATTEMPTS)
+
+    derived_prime_tree = None
+    if prime_with_cut:
+        derived_prime_tree = _derive_farfield_cut_tree_path(
+            farfield_name=farfield_name,
+            cut_axis=cut_axis,
+            cut_angle=cut_angle,
+        )
+        if not derived_prime_tree:
+            return {
+                "status": "error",
+                "message": (
+                    f"无法从 farfield_name 推导预激活 cut 节点: {farfield_name} "
+                    f"(需要类似 farfield (f=13) [2] 的格式)"
+                ),
+            }
+
+    attempt_logs = []
+    last_error = None
+
+    for attempt in range(1, attempts + 1):
+        flow_log = []
+        prime_cut_output = None
+        _cleanup_temp_export_file(normalized_output)
+        close_results = _close_results_context_if_matches(normalized_project)
+        if close_results is not None:
+            flow_log.append({"step": "close_results_context", "result": close_results})
+
+        start_quit = _kill_cst_processes()
+        flow_log.append({"step": "quit_before_open", "result": start_quit})
+        if start_quit.get("status") != "success":
+            last_error = "导出前清理 CST 进程失败"
+            attempt_logs.append(
+                {"attempt": attempt, "success": False, "flow_log": flow_log}
+            )
+            continue
+
+        open_result = _gui_open_project(normalized_project)
+        flow_log.append({"step": "open_project", "result": {
+            k: v for k, v in open_result.items() if k not in {"project", "design_environment"}
+        }})
+        if open_result.get("status") != "success":
+            last_error = f"打开项目失败: {normalized_project}"
+            attempt_logs.append(
+                {"attempt": attempt, "success": False, "flow_log": flow_log}
+            )
+            continue
+
+        project = open_result["project"]
+        try:
+            if prime_with_cut and derived_prime_tree:
+                output_path = Path(normalized_output)
+                prime_cut_output = str(
+                    output_path.with_name(
+                        f"{output_path.stem}__prime_{cut_axis.lower()}{cut_angle}_attempt{attempt}.txt"
+                    )
+                )
+                _cleanup_temp_export_file(prime_cut_output)
+                prime_command = _build_farfield_cut_export_command(
+                    derived_prime_tree, prime_cut_output
+                )
+                prime_result = _gui_add_to_history(
+                    project,
+                    prime_command,
+                    history_name=f"PrimeFarfieldCut:{farfield_name}:attempt{attempt}",
+                )
+                flow_log.append({"step": "prime_cut", "result": prime_result})
+                if prime_result.get("status") != "success":
+                    last_error = f"预激活 cut 导出失败: {derived_prime_tree}"
+                    attempt_logs.append(
+                        {"attempt": attempt, "success": False, "flow_log": flow_log}
+                    )
+                    continue
+                if (not os.path.isfile(prime_cut_output)) or os.path.getsize(prime_cut_output) <= 0:
+                    last_error = f"prime cut did not produce output (or empty): {prime_cut_output}"
+                    flow_log.append(
+                        {
+                            "step": "prime_cut_validate",
+                            "result": {
+                                "status": "error",
+                                "message": last_error,
+                                "output_file": prime_cut_output,
+                            },
+                        }
+                    )
+                    attempt_logs.append(
+                        {"attempt": attempt, "success": False, "flow_log": flow_log}
+                    )
+                    continue
+
+            export_result = _export_farfield_grid_direct_com(
+                project=project,
+                farfield_name=farfield_name,
+                output_file=normalized_output,
+                plot_mode=plot_mode,
+                theta_step_deg=theta_step_deg,
+                phi_step_deg=phi_step_deg,
+                theta_min_deg=theta_min_deg,
+                theta_max_deg=theta_max_deg,
+                phi_min_deg=phi_min_deg,
+                phi_max_deg=phi_max_deg,
+            )
+            flow_log.append({"step": "export_farfield", "result": export_result})
+            if export_result.get("status") != "success":
+                last_error = f"远场导出失败: {farfield_name}"
+                attempt_logs.append(
+                    {"attempt": attempt, "success": False, "flow_log": flow_log}
+                )
+                continue
+
+            if not os.path.isfile(normalized_output):
+                last_error = f"导出命令成功但未生成文件: {normalized_output}"
+                attempt_logs.append(
+                    {"attempt": attempt, "success": False, "flow_log": flow_log}
+                )
+                continue
+
+            file_size = os.path.getsize(normalized_output)
+            if file_size <= 0:
+                last_error = f"导出文件为空: {normalized_output}"
+                attempt_logs.append(
+                    {"attempt": attempt, "success": False, "flow_log": flow_log}
+                )
+                continue
+            grid_info = _inspect_farfield_ascii_grid(normalized_output)
+            flow_log.append({"step": "validate_full_grid", "result": grid_info})
+            is_full_sphere = export_result.get("is_full_sphere", True)
+            if is_full_sphere and grid_info["phi_count"] <= 2:
+                last_error = (
+                    "导出文件不是完整方向图，只包含切片: "
+                    f"phi_count={grid_info['phi_count']}, row_count={grid_info['row_count']}"
+                )
+                attempt_logs.append(
+                    {"attempt": attempt, "success": False, "flow_log": flow_log}
+                )
+                continue
+
+            success_payload = {
+                "status": "success",
+                "project_path": normalized_project,
+                "farfield_name": farfield_name,
+                "output_file": normalized_output,
+                "plot_mode": plot_mode,
+                "theta_step_deg": theta_step_deg,
+                "phi_step_deg": phi_step_deg,
+                "theta_min_deg": export_result.get("theta_min_deg"),
+                "theta_max_deg": export_result.get("theta_max_deg"),
+                "phi_min_deg": export_result.get("phi_min_deg"),
+                "phi_max_deg": export_result.get("phi_max_deg"),
+                "scope": export_result.get("scope"),
+                "is_full_sphere": is_full_sphere,
+                "file_size": file_size,
+                "grid": grid_info,
+                "attempt": attempt,
+                "attempt_logs": attempt_logs
+                + [{"attempt": attempt, "success": True, "flow_log": flow_log}],
+                "message": (
+                    f"已按 fresh session 导出远场: {normalized_output} "
+                    f"(attempt={attempt}/{attempts}, prime_with_cut={prime_with_cut})"
+                ),
+            }
+            if prime_with_cut:
+                success_payload["prime_cut_tree_path"] = derived_prime_tree
+                if keep_prime_cut_file and prime_cut_output:
+                    success_payload["prime_cut_output"] = prime_cut_output
+            return success_payload
+        finally:
+            if prime_cut_output and not keep_prime_cut_file:
+                _cleanup_temp_export_file(prime_cut_output)
+            close_result = _gui_close_project(
+                project, normalized_project, save=False
+            )
+            flow_log.append({"step": "close_project", "result": close_result})
+            end_quit = _kill_cst_processes()
+            flow_log.append({"step": "quit_after_close", "result": end_quit})
+
+    return {
+        "status": "error",
+        "message": last_error or f"远场导出失败: {farfield_name}",
+        "attempt_logs": attempt_logs,
+        "project_path": normalized_project,
+        "farfield_name": farfield_name,
+        "output_file": normalized_output,
+        "plot_mode": plot_mode,
+        "theta_step_deg": theta_step_deg,
+        "phi_step_deg": phi_step_deg,
+        "theta_min_deg": theta_min_deg,
+        "theta_max_deg": theta_max_deg,
+        "phi_min_deg": phi_min_deg,
+        "phi_max_deg": phi_max_deg,
+        "prime_with_cut": prime_with_cut,
+        "prime_cut_tree_path": derived_prime_tree,
+        "attempts_used": attempts,
+        "hard_max_attempts": FARFIELD_EXPORT_HARD_MAX_ATTEMPTS,
+    }
+
+
+@mcp.tool()
+def export_existing_farfield_cut_fresh_session(
+    project_path: str,
+    tree_path: str,
+    output_file: str,
+):
+    """按 fresh CST session 稳定导出已有 Farfield Cut 结果。"""
+    normalized_project = os.path.abspath(project_path)
+    if not normalized_project.lower().endswith(".cst"):
+        normalized_project += ".cst"
+    if not os.path.isfile(normalized_project):
+        return {"status": "error", "message": f"项目文件不存在: {normalized_project}"}
+
+    normalized_tree_path = tree_path.strip()
+    if not normalized_tree_path.startswith("Farfields\\Farfield Cuts\\"):
+        return {
+            "status": "error",
+            "message": (
+                "tree_path 必须指向已有 Farfield Cut 结果节点，"
+                "例如 Farfields\\Farfield Cuts\\Excitation [1]\\Phi=0\\farfield (f=12)"
+            ),
+        }
+
+    normalized_output = os.path.abspath(output_file)
+    if not normalized_output.lower().endswith(".txt"):
+        normalized_output += ".txt"
+    output_dir = os.path.dirname(normalized_output)
+    if not output_dir:
+        return {"status": "error", "message": f"输出路径无效: {output_file}"}
+    os.makedirs(output_dir, exist_ok=True)
+
+    command = _build_farfield_cut_export_command(normalized_tree_path, normalized_output)
+
+    flow_log = []
+    close_results = _close_results_context_if_matches(normalized_project)
+    if close_results is not None:
+        flow_log.append({"step": "close_results_context", "result": close_results})
+
+    start_quit = _kill_cst_processes()
+    flow_log.append({"step": "quit_before_open", "result": start_quit})
+    if start_quit.get("status") != "success":
+        return {
+            "status": "error",
+            "message": "导出前清理 CST 进程失败",
+            "flow_log": flow_log,
+        }
+
+    open_result = _gui_open_project(normalized_project)
+    flow_log.append({"step": "open_project", "result": {
+        k: v for k, v in open_result.items() if k not in {"project", "design_environment"}
+    }})
+    if open_result.get("status") != "success":
+        return {
+            "status": "error",
+            "message": f"打开项目失败: {normalized_project}",
+            "flow_log": flow_log,
+        }
+
+    project = open_result["project"]
+    try:
+        export_result = _gui_add_to_history(
+            project,
+            command,
+            history_name=f"ExportFarfieldCutFresh:{normalized_tree_path}",
+        )
+        flow_log.append({"step": "export_farfield_cut", "result": export_result})
+        if export_result.get("status") != "success":
+            return {
+                "status": "error",
+                "message": f"Farfield Cut 导出失败: {normalized_tree_path}",
+                "flow_log": flow_log,
+            }
+
+        if not os.path.isfile(normalized_output):
+            return {
+                "status": "error",
+                "message": f"导出命令成功但未生成文件: {normalized_output}",
+                "flow_log": flow_log,
+            }
+
+        file_size = os.path.getsize(normalized_output)
+        if file_size <= 0:
+            return {
+                "status": "error",
+                "message": f"导出文件为空: {normalized_output}",
+                "flow_log": flow_log,
+            }
+
+        return {
+            "status": "success",
+            "project_path": normalized_project,
+            "tree_path": normalized_tree_path,
+            "output_file": normalized_output,
+            "file_size": file_size,
+            "flow_log": flow_log,
+            "message": f"已按 fresh session 导出 Farfield Cut: {normalized_output}",
+        }
+    finally:
+        close_result = _gui_close_project(project, normalized_project, save=False)
+        flow_log.append({"step": "close_project", "result": close_result})
+        end_quit = _kill_cst_processes()
+        flow_log.append({"step": "quit_after_close", "result": end_quit})
 
 
 @mcp.tool()
@@ -1859,6 +3275,233 @@ def plot_farfield_multi(
 
 
 @mcp.tool()
+def calculate_farfield_neighborhood_flatness(
+    file_paths: list[str], theta_max_deg: float = 15.0, output_json: str = ""
+):
+    """计算 farfield cut 在法向邻域内的增益平坦度。
+
+    当前仅支持 farfield cut JSON 输入，要求文件包含：
+    - angle_deg
+    - primary_db
+
+    指标定义：
+    - 在 0 <= theta <= theta_max_deg 范围内计算 max(gain) - min(gain)
+
+    参数：
+    - file_paths: 一个或多个 farfield cut JSON 文件路径
+    - theta_max_deg: 法向邻域半角，默认 15 度
+    - output_json: 可选，若提供则将计算结果写入 JSON 文件
+    """
+    try:
+        if not file_paths:
+            raise ValueError("file_paths 不能为空")
+        if theta_max_deg <= 0:
+            raise ValueError("theta_max_deg 必须大于 0")
+
+        per_file = [
+            _evaluate_farfield_cut_neighborhood_flatness(
+                _parse_farfield_cut_payload(file_path), theta_max_deg
+            )
+            for file_path in file_paths
+        ]
+        grouped_summary = _group_farfield_cut_flatness(per_file)
+        result = {
+            "status": "success",
+            "theta_max_deg": float(theta_max_deg),
+            "file_count": len(per_file),
+            "per_file": per_file,
+            "grouped_summary": grouped_summary,
+        }
+
+        if output_json:
+            target = Path(output_json).expanduser()
+            if not target.is_absolute():
+                target = (Path.cwd() / target).resolve()
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(
+                json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            result["output_json"] = str(target)
+
+        return result
+    except Exception as e:
+        return {"status": "error", "message": f"计算邻域平坦度失败: {str(e)}"}
+
+
+@mcp.tool()
+def read_realized_gain_grid_fresh_session(
+    project_path: str,
+    farfield_name: str,
+    run_id: int | None = None,
+    theta_step_deg: float = 1.0,
+    phi_step_deg: float = 2.0,
+    theta_min_deg: float | None = None,
+    theta_max_deg: float | None = None,
+    phi_min_deg: float | None = None,
+    phi_max_deg: float | None = None,
+    selection_tree_path: str = "1D Results\\S-Parameters",
+    output_json: str = "",
+):
+    """按 fresh CST session 读取真实 Realized Gain(dBi) 网格与峰值。
+
+    底层使用 FarfieldCalculator，直接读取 CST farfield 结果中的
+    Realized Gain，不再复用 Abs(E) 代理链。
+    """
+    normalized_project = os.path.abspath(project_path)
+    if not normalized_project.lower().endswith(".cst"):
+        normalized_project += ".cst"
+    if not os.path.isfile(normalized_project):
+        return {"status": "error", "message": f"项目文件不存在: {normalized_project}"}
+
+    normalized_output_json = ""
+    if output_json:
+        target = Path(output_json).expanduser()
+        if not target.is_absolute():
+            target = (Path.cwd() / target).resolve()
+        if target.suffix.lower() != ".json":
+            target = target.with_suffix(".json")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        normalized_output_json = str(target)
+
+    flow_log = []
+    close_results = _close_results_context_if_matches(normalized_project)
+    if close_results is not None:
+        flow_log.append({"step": "close_results_context", "result": close_results})
+
+    start_quit = _kill_cst_processes()
+    flow_log.append({"step": "quit_before_open", "result": start_quit})
+    if start_quit.get("status") != "success":
+        return {
+            "status": "error",
+            "message": "读取前清理 CST 进程失败",
+            "flow_log": flow_log,
+        }
+
+    open_result = _gui_open_project(normalized_project)
+    flow_log.append(
+        {
+            "step": "open_project",
+            "result": {
+                k: v
+                for k, v in open_result.items()
+                if k not in {"project", "design_environment"}
+            },
+        }
+    )
+    if open_result.get("status") != "success":
+        return {
+            "status": "error",
+            "message": f"打开项目失败: {normalized_project}",
+            "flow_log": flow_log,
+        }
+
+    project = open_result["project"]
+    try:
+        if run_id is not None:
+            selection_result = _gui_set_result_navigator_selection(
+                project=project,
+                run_ids=[int(run_id)],
+                selection_tree_path=selection_tree_path,
+            )
+            flow_log.append(
+                {"step": "set_result_navigator_selection", "result": selection_result}
+            )
+            if selection_result.get("status") != "success":
+                return {
+                    "status": "error",
+                    "message": selection_result.get(
+                        "message", f"Result Navigator run_id={run_id} 切换失败"
+                    ),
+                    "flow_log": flow_log,
+                    "project_path": normalized_project,
+                    "farfield_name": farfield_name,
+                    "run_id": int(run_id),
+                    "selection_tree_path": selection_tree_path,
+                }
+
+        read_result = _read_realized_gain_grid_via_calculator(
+            project=project,
+            farfield_name=farfield_name,
+            theta_step_deg=theta_step_deg,
+            phi_step_deg=phi_step_deg,
+            theta_min_deg=theta_min_deg,
+            theta_max_deg=theta_max_deg,
+            phi_min_deg=phi_min_deg,
+            phi_max_deg=phi_max_deg,
+        )
+        flow_log.append({"step": "read_realized_gain", "result": read_result})
+        if read_result.get("status") != "success":
+            return {
+                "status": "error",
+                "message": read_result.get("message", "Realized Gain 读取失败"),
+                "flow_log": flow_log,
+                "project_path": normalized_project,
+                "farfield_name": farfield_name,
+            }
+
+        result = {
+            "status": "success",
+            "project_path": normalized_project,
+            "farfield_name": farfield_name,
+            "run_id": None if run_id is None else int(run_id),
+            "selection_tree_path": selection_tree_path if run_id is not None else None,
+            "source": read_result["source"],
+            "quantity": read_result["quantity"],
+            "unit": read_result["unit"],
+            "tree_path": read_result["tree_path"],
+            "frequency_ghz": read_result["frequency_ghz"],
+            "theta_step_deg": float(theta_step_deg),
+            "phi_step_deg": float(phi_step_deg),
+            "theta_min_deg": 0.0 if theta_min_deg is None else float(theta_min_deg),
+            "theta_max_deg": (
+                180.0 if theta_max_deg is None else float(theta_max_deg)
+            ),
+            "phi_min_deg": 0.0 if phi_min_deg is None else float(phi_min_deg),
+            "phi_max_deg": 360.0 if phi_max_deg is None else float(phi_max_deg),
+            "theta_count": len(read_result["theta_values_deg"]),
+            "phi_count": len(read_result["phi_values_deg"]),
+            "sample_count": read_result["sample_count"],
+            "peak_realized_gain_dbi": read_result["peak_realized_gain_dbi"],
+            "peak_theta_deg": read_result["peak_theta_deg"],
+            "peak_phi_deg": read_result["peak_phi_deg"],
+            "boresight_realized_gain_dbi": read_result[
+                "boresight_realized_gain_dbi"
+            ],
+            "flow_log": flow_log,
+            "message": f"已按 fresh session 读取 Realized Gain: {farfield_name}",
+        }
+
+        if normalized_output_json:
+            payload = {
+                **result,
+                "theta_values_deg": read_result["theta_values_deg"],
+                "phi_values_deg": read_result["phi_values_deg"],
+                "grid_db": read_result["grid_db"],
+            }
+            Path(normalized_output_json).write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            result["output_json"] = normalized_output_json
+
+        return result
+    finally:
+        if run_id is not None:
+            reset_result = _gui_set_result_navigator_selection(
+                project=project,
+                run_ids=None,
+                selection_tree_path=selection_tree_path,
+            )
+            flow_log.append(
+                {"step": "reset_result_navigator_selection", "result": reset_result}
+            )
+        close_result = _gui_close_project(project, normalized_project, save=False)
+        flow_log.append({"step": "close_project", "result": close_result})
+        end_quit = _kill_cst_processes()
+        flow_log.append({"step": "quit_after_close", "result": end_quit})
+
+
+@mcp.tool()
 def generate_s11_comparison(
     file_paths: list[str],
     output_html: str = "",
@@ -2121,6 +3764,364 @@ document.getElementById('summary').innerHTML = summaryHtml;
         }
     except Exception as e:
         return {"status": "error", "message": f"生成 S11 对比失败: {str(e)}"}
+
+
+def _create_s11_farfield_dashboard_html(
+    s11_series: list[dict[str, Any]],
+    farfield_runs: list[dict[str, Any]],
+    page_title: str,
+    initial_farfield_run_id: int | None,
+) -> str:
+    reference_xdata = s11_series[0]["xdata"]
+    global_min = min(min(series["ydata"]) for series in s11_series) - 3
+    global_max = max(max(series["ydata"]) for series in s11_series) + 3
+    selected_run_id = initial_farfield_run_id or farfield_runs[0]["run_id"]
+
+    body = """
+    <style>
+      .toolbar { display:flex; flex-wrap:wrap; gap:14px; align-items:end; margin-bottom:14px; }
+      .control { min-width:220px; }
+      .control label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+      .control select {
+        width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+        background:var(--panel-2); color:var(--text); font-size:14px;
+      }
+      .metric {
+        min-width:220px; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+        background:var(--panel-2);
+      }
+      .metric .metric-label { color:var(--muted); font-size:12px; margin-bottom:4px; }
+      .metric .metric-value { font-size:20px; font-weight:700; }
+      .metric .metric-note { color:var(--muted); font-size:12px; margin-top:4px; }
+      .summary-table { width:100%; border-collapse:collapse; }
+      .summary-table th, .summary-table td { padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; font-size:13px; }
+      .summary-table th { color:var(--muted); font-weight:600; }
+    </style>
+    <div class="header">
+      <div class="title">S11 + Farfield Dashboard</div>
+      <div class="subtitle">S 曲线与 3D 方向图合并展示；方向图 run 通过参数或页面控件手动指定，不与 S11 结果绑定。</div>
+    </div>
+    <div class="section">
+      <h2>S11 曲线对比</h2>
+      <div id="plot_main" class="plot"></div>
+    </div>
+    <div class="section">
+      <h2>S11 频点趋势</h2>
+      <div class="toolbar">
+        <div class="control">
+          <label for="freq_select">选择频点</label>
+          <select id="freq_select"></select>
+        </div>
+        <div class="metric">
+          <div class="metric-label">当前频点</div>
+          <div id="selected_freq" class="metric-value">-</div>
+          <div id="trend_meta" class="metric-note">-</div>
+        </div>
+      </div>
+      <div id="plot_trend" class="plot small"></div>
+    </div>
+    <div class="section">
+      <h2>方向图展示</h2>
+      <div class="toolbar">
+        <div class="control">
+          <label for="farfield_run_select">选择方向图 Run</label>
+          <select id="farfield_run_select"></select>
+        </div>
+        <div class="control">
+          <label for="farfield_freq_select">选择方向图频点</label>
+          <select id="farfield_freq_select"></select>
+        </div>
+        <div class="metric">
+          <div class="metric-label">当前方向图</div>
+          <div id="farfield_run_label" class="metric-value">-</div>
+          <div id="farfield_file_hint" class="metric-note">-</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="section">
+          <h2>3D 方向图</h2>
+          <div id="plot_surface3d" class="plot"></div>
+        </div>
+        <div class="section">
+          <h2>主平面切面（Phi = 0° / 90°）</h2>
+          <div id="plot_single_cuts" class="plot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>S11 Summary</h2>
+      <div id="summary"></div>
+    </div>
+    """
+
+    script = f"""
+const s11Series = {_json_dumps(s11_series)};
+const farfieldRuns = {_json_dumps(farfield_runs)};
+const frequencies = {_json_dumps(reference_xdata)};
+const globalMin = {global_min};
+const globalMax = {global_max};
+const initialFarfieldRunId = {selected_run_id};
+const initialFreqIndex = Math.max(0, Math.min(frequencies.length - 1, Math.floor(frequencies.length / 2)));
+const palette = ['#38bdf8','#f59e0b','#22c55e','#ef4444','#a78bfa','#f472b6','#14b8a6','#eab308'];
+
+function buildFarfieldCartesian(thetaDeg, phiDeg, radiusMatrix) {{
+  const xs = [];
+  const ys = [];
+  const zs = [];
+  for (let i = 0; i < phiDeg.length; i++) {{
+    const xr = [];
+    const yr = [];
+    const zr = [];
+    for (let j = 0; j < thetaDeg.length; j++) {{
+      const theta = thetaDeg[j] * Math.PI / 180.0;
+      const phi = phiDeg[i] * Math.PI / 180.0;
+      const r = radiusMatrix[i][j];
+      xr.push(r * Math.sin(theta) * Math.cos(phi));
+      yr.push(r * Math.sin(theta) * Math.sin(phi));
+      zr.push(r * Math.cos(theta));
+    }}
+    xs.push(xr);
+    ys.push(yr);
+    zs.push(zr);
+  }}
+  return {{x: xs, y: ys, z: zs}};
+}}
+
+const s11Traces = s11Series.map((item, index) => ({{
+  x: item.xdata,
+  y: item.ydata,
+  type: 'scatter',
+  mode: 'lines',
+  name: item.label,
+  line: {{width: 2, color: palette[index % palette.length]}}
+}}));
+
+Plotly.newPlot('plot_main', s11Traces, {{
+  template: 'plotly_dark',
+  title: 'S11 Comparison',
+  xaxis: {{title: 'Frequency (GHz)'}},
+  yaxis: {{title: 'S11 (dB)', range: [globalMin, globalMax]}},
+  hovermode: 'x unified',
+  legend: {{orientation: 'h', y: 1.12}},
+  paper_bgcolor: '#1f2937',
+  plot_bgcolor: '#1f2937'
+}}, {{responsive: true, displaylogo: false}});
+
+const freqSelect = document.getElementById('freq_select');
+const selectedFreqText = document.getElementById('selected_freq');
+const trendMeta = document.getElementById('trend_meta');
+const farfieldRunSelect = document.getElementById('farfield_run_select');
+const farfieldFreqSelect = document.getElementById('farfield_freq_select');
+const farfieldRunLabel = document.getElementById('farfield_run_label');
+const farfieldFileHint = document.getElementById('farfield_file_hint');
+
+function nearestIndex(values, target) {{
+  let bestIndex = 0;
+  let bestDelta = Infinity;
+  values.forEach((value, index) => {{
+    const delta = Math.abs(value - target);
+    if (delta < bestDelta) {{
+      bestDelta = delta;
+      bestIndex = index;
+    }}
+  }});
+  return bestIndex;
+}}
+
+function renderTrendChart(targetFreq) {{
+  const trend = [...s11Series]
+    .sort((left, right) => Number(left.run_id) - Number(right.run_id))
+    .map((item, index) => {{
+      const pointIndex = nearestIndex(item.xdata, targetFreq);
+      return {{
+        runId: item.run_id,
+        label: item.label,
+        file: item.file,
+        freq: item.xdata[pointIndex],
+        s11: item.ydata[pointIndex],
+        color: palette[index % palette.length],
+      }};
+    }});
+
+  Plotly.newPlot('plot_trend', [{{
+    x: trend.map(item => item.runId),
+    y: trend.map(item => item.s11),
+    type: 'scatter',
+    mode: 'lines+markers',
+    line: {{width: 3, color: '#f97316'}},
+    marker: {{
+      size: 10,
+      color: trend.map(item => item.color),
+      line: {{color: '#0f172a', width: 1}}
+    }},
+    customdata: trend.map(item => [item.label, item.file, item.freq]),
+    hovertemplate: 'Run %{{x}}<br>S11: %{{y:.2f}} dB<br>Series: %{{customdata[0]}}<br>File: %{{customdata[1]}}<br>Actual Freq: %{{customdata[2]:.3f}} GHz<extra></extra>'
+  }}], {{
+    template: 'plotly_dark',
+    title: `S11 vs Run ID @ ${{targetFreq.toFixed(3)}} GHz`,
+    xaxis: {{title: 'Run ID', dtick: 1}},
+    yaxis: {{title: 'S11 (dB)', range: [globalMin, globalMax]}},
+    hovermode: 'closest',
+    paper_bgcolor: '#1f2937',
+    plot_bgcolor: '#1f2937'
+  }}, {{responsive: true, displaylogo: false}});
+
+  const bestPoint = trend.reduce((best, item) => item.s11 < best.s11 ? item : best, trend[0]);
+  selectedFreqText.textContent = `${{targetFreq.toFixed(3)}} GHz`;
+  trendMeta.textContent = `当前频点最优 run: ${{bestPoint.runId}}，S11 = ${{bestPoint.s11.toFixed(2)}} dB`;
+}}
+
+function renderFarfieldItem(item, runLabel) {{
+  const ff = buildFarfieldCartesian(item.theta, item.phi, item.radius);
+  Plotly.newPlot('plot_surface3d', [{{
+    x: ff.x,
+    y: ff.y,
+    z: ff.z,
+    surfacecolor: item.surface_color,
+    type: 'surface',
+    colorscale: 'Jet',
+    cmin: item.min_db,
+    cmax: item.max_db,
+    colorbar: {{title: 'Norm dB'}}
+  }}], {{
+    template: 'plotly_dark',
+    title: `${{runLabel}} · ${{item.label}} · 3D Polar Farfield`,
+    scene: {{
+      xaxis: {{title: 'X'}},
+      yaxis: {{title: 'Y'}},
+      zaxis: {{title: 'Z'}},
+      aspectmode: 'data',
+      camera: {{eye: {{x: 1.7, y: 1.6, z: 1.1}}}}
+    }},
+    paper_bgcolor:'#1f2937',
+    plot_bgcolor:'#1f2937'
+  }}, {{responsive:true,displaylogo:false}});
+
+  const cutTraces = item.cuts.map((cut, index) => ({{
+    x: cut.theta,
+    y: cut.gain_db,
+    type: 'scatter',
+    mode: 'lines',
+    name: `Phi=${{cut.phi}}°`,
+    line: {{width: 2.5, color: index === 0 ? '#38bdf8' : '#f59e0b'}}
+  }}));
+  Plotly.newPlot('plot_single_cuts', cutTraces, {{
+    template: 'plotly_dark',
+    title: `${{runLabel}} · ${{item.label}} · Main Cuts`,
+    xaxis: {{title: 'Theta (deg)'}},
+    yaxis: {{title: 'Norm Gain (dB)'}},
+    hovermode: 'x unified',
+    paper_bgcolor:'#1f2937',
+    plot_bgcolor:'#1f2937'
+  }}, {{responsive:true,displaylogo:false}});
+
+  farfieldRunLabel.textContent = `${{runLabel}} / ${{item.label}}`;
+  farfieldFileHint.textContent = item.file;
+}}
+
+function renderFarfieldRun(runId) {{
+  const run = farfieldRuns.find(item => Number(item.run_id) === Number(runId));
+  if (!run) {{
+    return;
+  }}
+  farfieldFreqSelect.innerHTML = '';
+  run.items.forEach((item, index) => {{
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = item.label;
+    farfieldFreqSelect.appendChild(option);
+  }});
+  farfieldFreqSelect.value = '0';
+  renderFarfieldItem(run.items[0], run.label);
+}}
+
+frequencies.forEach((freq, index) => {{
+  const option = document.createElement('option');
+  option.value = String(index);
+  option.textContent = `${{freq.toFixed(3)}} GHz`;
+  freqSelect.appendChild(option);
+}});
+freqSelect.value = String(initialFreqIndex);
+freqSelect.addEventListener('change', event => {{
+  renderTrendChart(frequencies[Number(event.target.value)]);
+}});
+renderTrendChart(frequencies[initialFreqIndex]);
+
+farfieldRuns.forEach(run => {{
+  const option = document.createElement('option');
+  option.value = String(run.run_id);
+  option.textContent = run.label;
+  farfieldRunSelect.appendChild(option);
+}});
+farfieldRunSelect.value = String(initialFarfieldRunId);
+farfieldRunSelect.addEventListener('change', event => {{
+  renderFarfieldRun(Number(event.target.value));
+}});
+farfieldFreqSelect.addEventListener('change', event => {{
+  const run = farfieldRuns.find(item => Number(item.run_id) === Number(farfieldRunSelect.value));
+  if (!run) {{
+    return;
+  }}
+  renderFarfieldItem(run.items[Number(event.target.value)], run.label);
+}});
+renderFarfieldRun(initialFarfieldRunId);
+
+const summaryHtml = '<table class="summary-table"><thead><tr><th>Run ID</th><th>Series</th><th>File</th><th>Min S11 (dB)</th><th>Best Freq</th></tr></thead><tbody>'
+  + [...s11Series].sort((left, right) => Number(left.run_id) - Number(right.run_id)).map(item => `<tr><td>${{item.run_id}}</td><td>${{item.label}}</td><td>${{item.file}}</td><td>${{item.min_db.toFixed(2)}}</td><td>${{item.best_freq ? item.best_freq.toFixed(3) + ' ' + item.best_unit : '-'}}</td></tr>`).join('')
+  + '</tbody></table>';
+document.getElementById('summary').innerHTML = summaryHtml;
+"""
+    return _html_template(page_title, body, script)
+
+
+@mcp.tool()
+def generate_s11_farfield_dashboard(
+    s11_file_paths: list[str],
+    farfield_file_paths: list[str],
+    output_html: str = "",
+    page_title: str = "",
+    farfield_run_id: int = 0,
+):
+    """生成 S11 曲线与 3D 方向图合并页面。
+
+    参数：
+    - s11_file_paths: S11 JSON 文件列表
+    - farfield_file_paths: farfield ASCII/TXT 文件列表
+    - output_html: 输出 HTML 路径；为空则自动输出到默认目录
+    - page_title: 页面标题
+    - farfield_run_id: 手动指定方向图使用的 run_id；0 表示默认使用文件列表中的第一个 run
+    """
+    try:
+        if not s11_file_paths:
+            raise ValueError("s11_file_paths 不能为空")
+        if not farfield_file_paths:
+            raise ValueError("farfield_file_paths 不能为空")
+
+        s11_series = _build_s11_series(s11_file_paths)
+        farfield_runs = _group_farfield_items_by_run(farfield_file_paths)
+        selected_run_id = farfield_run_id if farfield_run_id > 0 else farfield_runs[0]["run_id"]
+        if selected_run_id not in {item["run_id"] for item in farfield_runs}:
+            raise ValueError(f"farfield_run_id={selected_run_id} 不在提供的方向图文件列表中")
+
+        final_title = page_title or "S11 + Farfield Dashboard"
+        html_content = _create_s11_farfield_dashboard_html(
+            s11_series=s11_series,
+            farfield_runs=farfield_runs,
+            page_title=final_title,
+            initial_farfield_run_id=selected_run_id,
+        )
+        target = _ensure_plot_output_path(output_html, prefix="s11_farfield_dashboard")
+        target.write_text(html_content, encoding="utf-8")
+        return {
+            "status": "success",
+            "s11_series_count": len(s11_series),
+            "farfield_run_count": len(farfield_runs),
+            "selected_farfield_run_id": selected_run_id,
+            "output_html": str(target),
+            "page_title": final_title,
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"生成 S11/方向图合并页面失败: {str(e)}"}
 
 
 if __name__ == "__main__":

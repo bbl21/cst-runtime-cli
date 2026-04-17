@@ -1,0 +1,30 @@
+Post-processing Logfile 
+
+----------------------------------------------------------------------------------------
+Units settings: 
+
+  Dimensions: mm
+  Frequency:  GHz
+  Time:       ns
+
+----------------------------------------------------------------------------------------
+
+Template based post-processing started at: 2026-04-16 00:01:15
+
+  Error: (&H8000ffff) No calculated Farfield Result with correct excitation string found.
+(ReportError "No calculated Farfield Result with correct excitation string found.")(Line:2269)
+  Evaluating 'Realized Gain,Theta=0,Phi=0': 4.354 s
+  Error: (&H8000ffff) No calculated Farfield Result with correct excitation string found.
+(ReportError "No calculated Farfield Result with correct excitation string found.")(Line:2269)
+  Evaluating 'Realized Gain,Theta=0,Phi=0_1': 4.126 s
+  Error: (&H8000ffff) No calculated Farfield Result with correct excitation string found.
+(ReportError "No calculated Farfield Result with correct excitation string found.")(Line:2269)
+  Evaluating 'Realized Gain,Theta=0,Phi=0_2': 4.051 s
+  Error: (&H8000ffff) No calculated Farfield Result with correct excitation string found.
+(ReportError "No calculated Farfield Result with correct excitation string found.")(Line:2269)
+  Evaluating 'Realized Gain,Theta=0,Phi=0_3': 4.046 s
+
+  Total time: 16 s  ( = 0 h, 0 m, 16 s )
+
+Template based post-processing finished at: 2026-04-16 00:01:32
+----------------------------------------------------------------------------------------

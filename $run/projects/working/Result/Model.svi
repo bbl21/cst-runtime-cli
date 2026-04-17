@@ -1,0 +1,64 @@
+{
+  "conspicuous": {
+    "classic-matrices": [],
+    "m2h": [],
+    "pip": []
+  },
+  "header": {
+    "crop-info-version": 20240828,
+    "history": {
+      "acceleration-flavour": [
+        1
+      ],
+      "general-state": [
+        1
+      ],
+      "module": [
+        3
+      ],
+      "readable": "states: 0: {S: def M: So A: cpu } "
+    },
+    "naming": "v2024",
+    "num-monitors": 0,
+    "num-sub-volume-folders": 0,
+    "sv-prefix": "SV^"
+  },
+  "lmf": {
+    "matrix-types": [
+      28,
+      31,
+      32,
+      33,
+      34
+    ],
+    "np": {
+      "np-excl-tst": 6082800,
+      "np-incl-tst": 6082800,
+      "np-x-B": 6082800,
+      "np-x-E": 6082800,
+      "np-y-B": 6082800,
+      "np-y-E": 6082800,
+      "np-z-B": 6082800,
+      "np-z-E": 6082800
+    },
+    "problem-type": 0
+  },
+  "m2h": {
+    "0": [
+      0
+    ],
+    "1": [
+      0,
+      1,
+      3,
+      4
+    ],
+    "problem-type": 0
+  },
+  "pip": {
+    "pec-is-ptc": false
+  },
+  "sub-volumes": {
+    "active-carts": 0
+  }
+}

@@ -1,0 +1,13 @@
+{
+   "Author": "Administrator",
+   "Comment": "",
+   "Last Problem Type": "High Frequency",
+   "Last Solver Type": "HF Time Domain",
+   "Last Solver Type Abb": "t",
+   "Mesh Cells": "5,979,519",
+   "Mesh Type": "Hexahedral",
+   "Modeler Unique ID": "5:0.8-18gh双极化优化版4更优.cst?d8f2e1dadacda4d74f6fb0c8a9d84735?274609:numberofparameters=48:port=1>mode=1>zre=0>zim=0?port=2>mode=1>zre=0>zim=0:::f?r1?r_max?a?a_?air_r?b?bot?bottom_chamfer?bottom_chamfer2?bottom_h?c?c1?c2?chamfer_w?cone_h?er?horn_bot?horn_t?n?probe_h?probe_h2?probe_l?probe_r?r2?r3?ridge2_h?ridge3_h?ridge_bot?ridge_h?ridge_inner_w1?ridge_inner_w2?ridge_t?ridge_w?x1?x1_?x2?x3?xibox1?xibox2?xiboy1?xiboy2?xiboz1?xiboz2?y1?y1_?y2?y3",
+   "ProjectVersion": "'# MWS Version: Version 2026.1 - Oct 22 2025 - ACIS 35.0.0 -",
+   "Results": "Time Domain: S-Parameter",
+   "Version": "3"
+}

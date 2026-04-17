@@ -1,0 +1,32 @@
+{
+    "messages": [
+        {
+            "message": "Farfield: No HEX mesh found.",
+            "severity": "error"
+        },
+        {
+            "message": "1 error occurred.",
+            "severity": "error"
+        },
+        {
+            "message": "Farfield: No HEX mesh found.",
+            "severity": "error"
+        },
+        {
+            "message": "1 error occurred.",
+            "severity": "error"
+        },
+        {
+            "message": "No plot data available for export.",
+            "severity": "warning"
+        },
+        {
+            "message": "History update failed for command (Step 388):\nFarfieldPlot.Reset\nFarfieldPlot.Plottype \"3d\"\nFarfieldPlot.Step \"5\"\nFarfieldPlot.SetColorByValue \"True\"\nFarfieldPlot.SetTheta360 \"False\"\nFarfieldPlot.SetPlotMode \"Efield\"\nFarfieldPlot.SetScaleLinear \"True\"\nFarfieldPlot.DBUnit \"0\"\nFarfieldPlot.Distance \"1\"\nSelectTreeItem \"Farfields\\farfield (f=13) [2]\"\nWith FarfieldPlot\n    .Step \"5\"\n    .Plottype \"3d\"\n    .SetPlotMode \"Efield\"\n    .Plot\nEnd With\nWith ASCIIExport\n    .Reset\n    .FileName \"C:\\Users\\z1376\\Documents\\CST_MCP\\tasks\\task_005_ref2_farfield_export\\runs\\run_006\\exports\\port2_full_13GHz.txt\"\n    .Execute\nEnd With\n>>> Error text: (&H8000ffff) No plot data available for export.\n(.Execute)\n\n",
+            "severity": "error"
+        }
+    ],
+    "version": {
+        "build": "2026.1 Release from 2025-10-22 (change 1489198)",
+        "project name": "C:\\Users\\z1376\\Documents\\CST_MCP\\tasks\\task_005_ref2_farfield_export\\runs\\run_006\\projects\\working"
+    }
+}

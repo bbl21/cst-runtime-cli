@@ -1,0 +1,48 @@
+_______________________________________________________________________________________________________________________
+    Message output from C:\Users\z1376\Documents\CST_MCP\tasks\task_005_ref2_farfield_export\runs\run_006\projects\working
+    Build: 2026.1 Release from 2025-10-22 (change 1489198)
+_______________________________________________________________________________________________________________________
+
+_______________________________________________________________________________________________________________________
+ERROR:
+Farfield: No HEX mesh found.
+_______________________________________________________________________________________________________________________
+ERROR:
+1 error occurred.
+_______________________________________________________________________________________________________________________
+ERROR:
+Farfield: No HEX mesh found.
+_______________________________________________________________________________________________________________________
+ERROR:
+1 error occurred.
+_______________________________________________________________________________________________________________________
+WARNING:
+No plot data available for export.
+_______________________________________________________________________________________________________________________
+ERROR:
+History update failed for command (Step 388):
+FarfieldPlot.Reset
+FarfieldPlot.Plottype "3d"
+FarfieldPlot.Step "5"
+FarfieldPlot.SetColorByValue "True"
+FarfieldPlot.SetTheta360 "False"
+FarfieldPlot.SetPlotMode "Efield"
+FarfieldPlot.SetScaleLinear "True"
+FarfieldPlot.DBUnit "0"
+FarfieldPlot.Distance "1"
+SelectTreeItem "Farfields\farfield (f=13) [2]"
+With FarfieldPlot
+    .Step "5"
+    .Plottype "3d"
+    .SetPlotMode "Efield"
+    .Plot
+End With
+With ASCIIExport
+    .Reset
+    .FileName "C:\Users\z1376\Documents\CST_MCP\tasks\task_005_ref2_farfield_export\runs\run_006\exports\port2_full_13GHz.txt"
+    .Execute
+End With
+>>> Error text: (&H8000ffff) No plot data available for export.
+(.Execute)
+
+

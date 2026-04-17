@@ -1,0 +1,4 @@
+Solver_HF_TD_AMD64 @ A14:  ======================================================================================================
+                           5139.00 ms |  --> 2nd | SV-crop-all | Outside MCalcResultIdentification (Solver) | 1.13 GB | 0.0000 GB
+                           5155.00 ms | --> peak | SV-crop-all | Outside MCalcResultIdentification (Solver) | 1.13 GB | 0.0000 GB
+                           ======================================================================================================

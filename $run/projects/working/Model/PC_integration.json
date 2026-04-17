@@ -1,0 +1,184 @@
+{
+   "execution": {
+      "classname": "SMAPowerByEmagHPCFrame",
+      "libname": "SMAPowerByEmagUI"
+   },
+   "inputVariables": [
+      {
+         "name": "R1",
+         "type": "float",
+         "value": 71.0
+      },
+      {
+         "name": "bottom_h",
+         "type": "float",
+         "value": 18.0
+      },
+      {
+         "name": "cone_h",
+         "type": "float",
+         "value": 18.0
+      },
+      {
+         "name": "ridge_t",
+         "type": "float",
+         "value": 4.0
+      },
+      {
+         "name": "ridge_w",
+         "type": "float",
+         "value": 200.0
+      },
+      {
+         "name": "ridge_bot",
+         "type": "float",
+         "value": 11.5
+      },
+      {
+         "name": "ridge_h",
+         "type": "float",
+         "value": 30.0
+      },
+      {
+         "name": "ridge_inner_w2",
+         "type": "float",
+         "value": 7.0
+      },
+      {
+         "name": "ridge_inner_w1",
+         "type": "float",
+         "value": 1.2
+      },
+      {
+         "name": "ridge2_h",
+         "type": "float",
+         "value": 176.0
+      },
+      {
+         "name": "ridge3_h",
+         "type": "float",
+         "value": 200.0
+      },
+      {
+         "name": "y2",
+         "type": "float",
+         "value": 60.0
+      },
+      {
+         "name": "a",
+         "type": "float",
+         "value": 0.02
+      },
+      {
+         "name": "chamfer_w",
+         "type": "float",
+         "value": 1.8
+      },
+      {
+         "name": "horn_bot",
+         "type": "float",
+         "value": 35.0
+      },
+      {
+         "name": "horn_t",
+         "type": "float",
+         "value": 5.0
+      },
+      {
+         "name": "probe_r",
+         "type": "float",
+         "value": 0.35
+      },
+      {
+         "name": "probe_h",
+         "type": "float",
+         "value": 17.0
+      },
+      {
+         "name": "probe_l",
+         "type": "float",
+         "value": 10.0
+      },
+      {
+         "name": "probe_h2",
+         "type": "float",
+         "value": 16.0
+      },
+      {
+         "name": "air_r",
+         "type": "float",
+         "value": 0.8
+      },
+      {
+         "name": "bottom_chamfer",
+         "type": "float",
+         "value": 12.0
+      },
+      {
+         "name": "bottom_chamfer2",
+         "type": "float",
+         "value": 10.0
+      },
+      {
+         "name": "bot",
+         "type": "float",
+         "value": 10.0
+      },
+      {
+         "name": "xibox1",
+         "type": "float",
+         "value": -34.5
+      },
+      {
+         "name": "xibox2",
+         "type": "float",
+         "value": -4.0
+      },
+      {
+         "name": "xiboy1",
+         "type": "float",
+         "value": -3.0
+      },
+      {
+         "name": "xiboy2",
+         "type": "float",
+         "value": -2.0
+      },
+      {
+         "name": "xiboz1",
+         "type": "float",
+         "value": 18.0
+      },
+      {
+         "name": "xiboz2",
+         "type": "float",
+         "value": 30.0
+      },
+      {
+         "name": "R_max",
+         "type": "float",
+         "value": 100.0
+      },
+      {
+         "name": "F",
+         "type": "float",
+         "value": 350.0
+      },
+      {
+         "name": "er",
+         "type": "float",
+         "value": 2.1
+      },
+      {
+         "name": "e1",
+         "type": "float",
+         "value": 1.0
+      },
+      {
+         "name": "e2",
+         "type": "float",
+         "value": 0.5
+      }
+   ],
+   "outputVariables": []
+}

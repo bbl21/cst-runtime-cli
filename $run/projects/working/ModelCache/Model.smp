@@ -1,0 +1,30 @@
+With MeshSettings
+     With .ItemMeshSettings ("solid$component1:ridge4")
+          .SetMeshType "All" 
+          .Set "Transform", "6.12323e-17", "-1", "0", "1", "6.12323e-17", "0", "0", "0", "1" 
+     End With
+End With
+With MeshSettings
+     With .ItemMeshSettings ("solid$component1:ridge_1")
+          .SetMeshType "All" 
+          .Set "Transform", "6.12323e-17", "-1", "0", "1", "6.12323e-17", "0", "0", "0", "1" 
+     End With
+End With
+With MeshSettings
+     With .ItemMeshSettings ("solid$component1:ridge2_1")
+          .SetMeshType "All" 
+          .Set "Transform", "6.12323e-17", "-1", "0", "1", "6.12323e-17", "0", "0", "0", "1" 
+     End With
+End With
+With MeshSettings
+     With .ItemMeshSettings ("solid$component1:ridge3_1")
+          .SetMeshType "All" 
+          .Set "Transform", "6.12323e-17", "-1", "0", "1", "6.12323e-17", "0", "0", "0", "1" 
+     End With
+End With
+With MeshSettings
+     With .ItemMeshSettings ("solid$component1:ridge4_1")
+          .SetMeshType "All" 
+          .Set "Transform", "6.12323e-17", "-1", "0", "1", "6.12323e-17", "0", "0", "0", "1" 
+     End With
+End With

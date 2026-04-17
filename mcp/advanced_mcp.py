@@ -2,7 +2,10 @@ import cst
 import cst.interface
 import os
 import re
-from typing import Union
+import shutil
+import subprocess
+from datetime import datetime
+from typing import Any, Union
 from mcp.server import FastMCP
 import json
 from pathlib import Path
@@ -100,6 +103,102 @@ def _generate_unique_param_name(name):
 
     # 没有重名，直接使用原名
     return name_original
+
+
+def _now_iso() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def _load_json_file(file_path: Path) -> dict[str, Any]:
+    if not file_path.exists():
+        return {}
+    return json.loads(file_path.read_text(encoding="utf-8"))
+
+
+def _find_next_run_index(runs_dir: Path) -> int:
+    max_run_index = 0
+    if runs_dir.exists():
+        for child in runs_dir.iterdir():
+            if not child.is_dir():
+                continue
+            match = re.fullmatch(r"run_(\d+)", child.name)
+            if match:
+                max_run_index = max(max_run_index, int(match.group(1)))
+    return max_run_index + 1
+
+
+def _render_initial_summary(
+    *,
+    task_id: str,
+    run_id: str,
+    created_at: str,
+    goal: str,
+    target_metric: str,
+    objective: str,
+    frequency_start_ghz: float | None,
+    frequency_end_ghz: float | None,
+    source_project: Path,
+    working_project: Path,
+) -> str:
+    lines = [
+        f"# {run_id} Summary",
+        "",
+        "## Run Info",
+        f"- run_id: {run_id}",
+        f"- task_id: {task_id}",
+        f"- created_at: {created_at}",
+        f"- source_project: `{source_project.as_posix()}`",
+        f"- working_project: `{working_project.as_posix()}`",
+        "",
+        "## Goal",
+        goal or "TBD",
+        "",
+        "## Target Metrics",
+        f"- primary: {target_metric or 'TBD'}",
+        f"- objective: {objective or 'TBD'}",
+    ]
+    if frequency_start_ghz is not None or frequency_end_ghz is not None:
+        lines.extend(
+            [
+                "",
+                "## Frequency Range",
+                f"- start_ghz: {frequency_start_ghz if frequency_start_ghz is not None else 'TBD'}",
+                f"- end_ghz: {frequency_end_ghz if frequency_end_ghz is not None else 'TBD'}",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Status",
+            "- status: prepared",
+            "- next_step: open `projects/working.cst` and continue the simulation workflow",
+            "",
+            "## Notes",
+            "- This run is created from a read-only source project copy.",
+            "- Exported artifacts should be written into `exports/`.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def _copy_project_artifacts(source_project: Path, working_project: Path) -> Path:
+    source_companion = source_project.with_suffix("")
+    if not source_companion.exists() or not source_companion.is_dir():
+        raise FileNotFoundError(f"source companion directory not found: {source_companion}")
+
+    lock_files = list(source_companion.rglob("*.lok"))
+    if lock_files:
+        raise RuntimeError("source project appears to be locked; close the CST project before copying")
+
+    working_project.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_project, working_project)
+    working_companion = working_project.with_suffix("")
+    shutil.copytree(
+        source_companion,
+        working_companion,
+        ignore=shutil.ignore_patterns("*.lok", "*.tmp"),
+    )
+    return working_companion
 
 
 # ============================================================
@@ -335,6 +434,156 @@ def quit_cst(project_path: str = None, force: bool = False):
         }
     except Exception as e:
         return {"status": "error", "message": "quit_cst failed: " + str(e)}
+
+
+@mcp.tool()
+def prepare_new_run(
+    task_path: str,
+    source_project: str = "",
+    goal: str = "",
+    target_metric: str = "",
+    objective: str = "",
+    frequency_start_ghz: float | None = None,
+    frequency_end_ghz: float | None = None,
+    allow_interactive: bool = True,
+    save_project_after_simulation: bool = True,
+):
+    """创建新 run 工作区：自动编号、复制工程副本并生成初始化文档。"""
+    try:
+        task_dir = Path(task_path).expanduser().resolve()
+        if not task_dir.exists() or not task_dir.is_dir():
+            return {"status": "error", "message": f"task_path 不存在或不是目录: {task_path}"}
+
+        task_json_path = task_dir / "task.json"
+        task_data = _load_json_file(task_json_path)
+        task_id = task_data.get("task_id") or task_dir.name
+        resolved_goal = goal or task_data.get("goal") or task_data.get("title") or ""
+
+        resolved_source_project = source_project or task_data.get("source_project") or ""
+        if not resolved_source_project:
+            return {
+                "status": "error",
+                "message": "未提供 source_project，且 task.json 中未找到 source_project",
+            }
+
+        source_project_path = Path(resolved_source_project).expanduser().resolve()
+        if source_project_path.suffix.lower() != ".cst":
+            source_project_path = source_project_path.with_suffix(".cst")
+        if not source_project_path.exists() or not source_project_path.is_file():
+            return {
+                "status": "error",
+                "message": f"source_project 不存在: {source_project_path.as_posix()}",
+            }
+
+        runs_dir = task_dir / "runs"
+        run_index = _find_next_run_index(runs_dir)
+        run_id = f"run_{run_index:03d}"
+        run_dir = runs_dir / run_id
+        projects_dir = run_dir / "projects"
+        exports_dir = run_dir / "exports"
+        logs_dir = run_dir / "logs"
+        stages_dir = run_dir / "stages"
+        analysis_dir = run_dir / "analysis"
+
+        for path in [runs_dir, run_dir, projects_dir, exports_dir, logs_dir, stages_dir, analysis_dir]:
+            path.mkdir(parents=True, exist_ok=True)
+
+        working_project = projects_dir / "working.cst"
+        working_companion = _copy_project_artifacts(source_project_path, working_project)
+        created_at = _now_iso()
+
+        config_payload = {
+            "task_id": task_id,
+            "run_id": run_id,
+            "source_project": source_project_path.as_posix(),
+            "working_project": working_project.resolve().as_posix(),
+            "goal": resolved_goal,
+            "target_metrics": {
+                "primary": target_metric,
+                "objective": objective,
+            },
+            "frequency_range": {
+                "start_ghz": frequency_start_ghz,
+                "end_ghz": frequency_end_ghz,
+            },
+            "allow_interactive": allow_interactive,
+            "save_project_after_simulation": save_project_after_simulation,
+            "created_at": created_at,
+        }
+        status_payload = {
+            "task_id": task_id,
+            "run_id": run_id,
+            "status": "prepared",
+            "stage": "workspace_prepared",
+            "started_at": created_at,
+            "completed_at": None,
+            "best_result": None,
+            "output_files": {},
+            "error": None,
+        }
+        stage_payload = {
+            "task_id": task_id,
+            "run_id": run_id,
+            "stage": "stage_00_workspace_prepared",
+            "status": "prepared",
+            "created_at": created_at,
+            "source_project": source_project_path.as_posix(),
+            "working_project": working_project.resolve().as_posix(),
+            "working_project_dir": working_companion.resolve().as_posix(),
+        }
+
+        config_path = run_dir / "config.json"
+        status_path = run_dir / "status.json"
+        summary_path = run_dir / "summary.md"
+        stage_path = stages_dir / "stage_00_workspace_prepared.json"
+        log_path = logs_dir / "run_init.log"
+        latest_path = task_dir / "latest"
+
+        config_path.write_text(json.dumps(config_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        status_path.write_text(json.dumps(status_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        stage_path.write_text(json.dumps(stage_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        summary_path.write_text(
+            _render_initial_summary(
+                task_id=task_id,
+                run_id=run_id,
+                created_at=created_at,
+                goal=resolved_goal,
+                target_metric=target_metric,
+                objective=objective,
+                frequency_start_ghz=frequency_start_ghz,
+                frequency_end_ghz=frequency_end_ghz,
+                source_project=source_project_path,
+                working_project=working_project.resolve(),
+            ),
+            encoding="utf-8",
+        )
+        log_path.write_text(
+            (
+                f"[{created_at}] prepared new run workspace\n"
+                f"task_id={task_id}\n"
+                f"run_id={run_id}\n"
+                f"source_project={source_project_path.as_posix()}\n"
+                f"working_project={working_project.resolve().as_posix()}\n"
+            ),
+            encoding="utf-8",
+        )
+        latest_path.write_text(run_id, encoding="utf-8")
+
+        return {
+            "status": "success",
+            "task_id": task_id,
+            "run_id": run_id,
+            "run_dir": run_dir.resolve().as_posix(),
+            "working_project": working_project.resolve().as_posix(),
+            "working_project_dir": working_companion.resolve().as_posix(),
+            "config_path": config_path.resolve().as_posix(),
+            "status_path": status_path.resolve().as_posix(),
+            "summary_path": summary_path.resolve().as_posix(),
+            "latest_path": latest_path.resolve().as_posix(),
+            "message": f"已创建 {run_id} 并完成工程副本与初始化文档生成",
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"prepare_new_run 失败: {str(e)}"}
 
 
 # ---------- 仿真运行（6个）----------
@@ -2580,63 +2829,83 @@ def export_voltage_data(voltage_index: str, file_path: str):
     }
 
 
-@mcp.tool()
 def export_farfield(
-    farfield_name: str, frequency: str, file_path: str, plot_mode: str = "Efield"
+    farfield_name: str,
+    frequency: str,
+    file_path: str,
+    plot_mode: str = "Efield",
+    prime_with_cut: bool = True,
+    cut_axis: str = "Phi",
+    cut_angle: str = "0",
 ):
-    """导出远场方向图数据（ASCII格式）
-
-    参数:
-        farfield_name: 远场结果名称（不含路径前缀），如 "farfield (f=10) [pw]"
-        frequency: 频率值（GHz），如 "10"
-        file_path: 导出文件路径（不含扩展名），如 "D:/export/farfield_10GHz"
-                   实际导出会自动添加 .txt 扩展名
-        plot_mode: 绘图模式，默认为 "Efield"，可选 "Directivity"、"Gain" 等
-
-    示例:
-        export_farfield(farfield_name="farfield (f=10) [pw]", frequency="10",
-                       file_path="D:/export/farfield_10GHz")
-    """
-    project_data = get_project_object()
-    if not project_data:
-        return {"status": "error", "message": "当前没有活动的项目"}
-    project = project_data["project"]
-
-    # 先用 FarfieldPlot 配置参数
-    farfieldplot_code = (
-        f'FarfieldPlot.Plottype "3d"{line_break}'
-        f'FarfieldPlot.Step "5"{line_break}'
-        f'FarfieldPlot.SetColorByValue "True"{line_break}'
-        f'FarfieldPlot.SetTheta360 "False"{line_break}'
-        f'FarfieldPlot.SetPlotMode "{plot_mode}"{line_break}'
-        f'FarfieldPlot.SetScaleLinear "True"{line_break}'
-        f'FarfieldPlot.DBUnit "0"{line_break}'
-        f'FarfieldPlot.Distance "1"'
-    )
-
-    # 选择远场结果树节点并用 FarfieldPlot.Plot 激活，然后用 ASCIIExport 导出
-    tree_path = f"Farfields\\{farfield_name}"
-    export_code = (
-        f'SelectTreeItem "{tree_path}"{line_break}'
-        f"With FarfieldPlot{line_break}"
-        f'    .Step "5"{line_break}'
-        f'    .Plottype "3d"{line_break}'
-        f'    .SetPlotMode "{plot_mode}"{line_break}'
-        f"    .Plot{line_break}"
-        f"End With{line_break}"
-        f"With ASCIIExport{line_break}"
-        f"    .Reset{line_break}"
-        f'    .FileName "{file_path}.txt"{line_break}'
-        f"    .Execute{line_break}"
-        f"End With"
-    )
-
-    # 组合两段代码
-    sCommand = farfieldplot_code + line_break + export_code
-    project.modeler.add_to_history("ExportFarfield", sCommand)
+    """[已迁移] 远场结果导出必须走 results session。"""
     return {
-        "status": "success",
-        "message": f"远场方向图已导出至 {file_path}.txt（plot_mode={plot_mode}）",
+        "status": "error",
+        "message": (
+            "export_farfield 已迁移到 cst_results_mcp。"
+            "请先在 results 侧 open_project，再调用 cst_results_mcp.export_farfield。"
+        ),
+        "alternative_tool": "cst_results_mcp.export_farfield",
+        "project_session": "results",
+        "farfield_name": farfield_name,
+        "frequency": frequency,
+        "output_file": file_path,
+        "plot_mode": plot_mode,
+        "prime_with_cut": prime_with_cut,
+        "cut_axis": cut_axis,
+        "cut_angle": cut_angle,
+    }
+
+
+def export_farfield_fresh_session(
+    project_path: str,
+    farfield_name: str,
+    output_file: str,
+    plot_mode: str = "Efield",
+    prime_with_cut: bool = True,
+    cut_axis: str = "Phi",
+    cut_angle: str = "0",
+    max_attempts: int = 2,
+    keep_prime_cut_file: bool = False,
+):
+    """[已迁移] fresh-session 远场导出必须走 results session。"""
+    return {
+        "status": "error",
+        "message": (
+            "export_farfield_fresh_session 已迁移到 cst_results_mcp。"
+            "请改用 cst_results_mcp.export_farfield_fresh_session。"
+        ),
+        "alternative_tool": "cst_results_mcp.export_farfield_fresh_session",
+        "project_session": "results",
+        "project_path": project_path,
+        "farfield_name": farfield_name,
+        "output_file": output_file,
+        "plot_mode": plot_mode,
+        "prime_with_cut": prime_with_cut,
+        "cut_axis": cut_axis,
+        "cut_angle": cut_angle,
+        "max_attempts": max_attempts,
+        "keep_prime_cut_file": keep_prime_cut_file,
+    }
+
+
+def export_existing_farfield_cut_fresh_session(
+    project_path: str,
+    tree_path: str,
+    output_file: str,
+):
+    """[已迁移] fresh-session Farfield Cut 导出必须走 results session。"""
+    return {
+        "status": "error",
+        "message": (
+            "export_existing_farfield_cut_fresh_session 已迁移到 cst_results_mcp。"
+            "请改用 cst_results_mcp.export_existing_farfield_cut_fresh_session。"
+        ),
+        "alternative_tool": "cst_results_mcp.export_existing_farfield_cut_fresh_session",
+        "project_session": "results",
+        "project_path": project_path,
+        "tree_path": tree_path,
+        "output_file": output_file,
     }
 
 
