@@ -2,25 +2,39 @@ param(
     [string]$BindHost = "127.0.0.1",
     [int]$Port = 8124,
     [string]$Path = "/mcp",
+    [string]$ProjectRoot = "",
     [switch]$ForceRestart
 )
 
-$repoRoot = "C:\Users\z1376\Documents\CST_MCP"
+if ([string]::IsNullOrWhiteSpace($ProjectRoot)) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+    $repoRoot = Split-Path -Parent $scriptDir
+} else {
+    $repoRoot = (Resolve-Path -LiteralPath $ProjectRoot).Path
+}
 $pythonExe = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $serverScript = Join-Path $repoRoot "mcp\cst_results_mcp_http.py"
 $logDir = Join-Path $repoRoot "tmp"
 $stdoutLog = Join-Path $logDir "cst_results_http_stdout.log"
 $stderrLog = Join-Path $logDir "cst_results_http_stderr.log"
 
+if (-not (Test-Path -LiteralPath $pythonExe -PathType Leaf)) {
+    throw "Python executable not found: $pythonExe. Run tools/setup_portable_workspace.ps1 first."
+}
+if (-not (Test-Path -LiteralPath $serverScript -PathType Leaf)) {
+    throw "MCP server script not found: $serverScript"
+}
+
 New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 
+$escapedServerScript = [regex]::Escape($serverScript)
 $running = Get-CimInstance Win32_Process |
     Where-Object {
-        $_.Name -match "python" -and $_.CommandLine -match "cst_results_mcp_http.py"
+        $_.Name -match "python" -and $_.CommandLine -match $escapedServerScript
     }
 
 if ($running -and -not $ForceRestart) {
-    Write-Output "cst-results-http 已在运行"
+    Write-Output "cst-results-http already running"
     $running | Select-Object ProcessId, CommandLine
     exit 0
 }

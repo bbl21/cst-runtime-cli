@@ -13,6 +13,12 @@
 
 - 当前阶段主线、阶段目标、验收标准、风险边界：[`project-goals-and-plan.md`](./project-goals-and-plan.md)
 - 本周优先级、是否支撑 P0、是否属于插队：[`current-priority-checklist.md`](./current-priority-checklist.md)
+- 当前唯一正式入口、旁路冻结范围和本周退出生产职责名单：[`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)
+- 阶段 B 主生产链、状态落盘工具和旁路降级结果：[`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md)
+- 阶段 C 系统集成、一键迁移模式和四类系统职责：[`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)
+- 轻量 CLI-first 架构决策、`prototype_optimizer` 剪枝、MCP 退场路线、runtime 与 adapter 边界：[`cli-architecture-decision.md`](./cli-architecture-decision.md)
+- CST CLI 原子工具 POC、项目身份校验和无 MCP 服务工具化验证：[`cst-cli-atomic-tools-poc.md`](./cst-cli-atomic-tools-poc.md)
+- 2026-04-20 工作收尾、知识回收和明日计划：[`2026-04-20-work-handoff.md`](./2026-04-20-work-handoff.md)
 - CST 建模、结果读取、导出、session 相关经验：[`cst-modeling-notes.md`](./cst-modeling-notes.md)
 - 仓库结构、标准任务目录、关键源码位置：[`project-layout.md`](./project-layout.md)
 - run 目录、日志、导出物和状态文件如何分层落盘：[`file_management_rules.md`](./file_management_rules.md)
@@ -24,6 +30,12 @@
 | --- | --- | --- | --- |
 | 当前主线与阶段边界 | [`project-goals-and-plan.md`](./project-goals-and-plan.md) | 当前要解决什么、验收标准是什么、什么暂不做 | `current` |
 | 本周优先级 | [`current-priority-checklist.md`](./current-priority-checklist.md) | 新任务是否直接支撑 P0、能不能插队 | `current` |
+| 正式入口与旁路冻结 | [`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md) | 当前唯一正式入口是什么、哪些脚本必须退出生产职责 | `current` |
+| 主生产链收口 | [`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md) | run 创建、执行、导出、对比、状态落盘如何统一到同一主链 | `current` |
+| 系统集成与一键迁移 | [`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md) | MCP、Skill、知识、计划如何集成，如何打包迁移 | `current` |
+| CLI-first 架构决策 | [`cli-architecture-decision.md`](./cli-architecture-decision.md) | CLI 是否应成为主调用界面、`prototype_optimizer` 是否保留、MCP 能否退场、runtime 与 adapter 如何分层 | `current` |
+| CLI 原子工具 POC | [`cst-cli-atomic-tools-poc.md`](./cst-cli-atomic-tools-poc.md) | 大量工具如何用轻量 CLI 暴露给 agent、项目身份如何校验、当前 POC 边界是什么 | `poc` |
+| 今日收尾与明日计划 | [`2026-04-20-work-handoff.md`](./2026-04-20-work-handoff.md) | 今天做了什么、知识如何分流、明天先做什么 | `handoff` |
 | 建模与结果经验 | [`cst-modeling-notes.md`](./cst-modeling-notes.md) | 建模细节、远场/S11/session/导出相关坑和经验 | `reference` |
 | 目录结构与源码入口 | [`project-layout.md`](./project-layout.md) | 仓库里各目录做什么、关键源码在哪 | `reference` |
 | 文件管理与 run 落盘 | [`file_management_rules.md`](./file_management_rules.md) | task/run 目录、日志、导出和分析产物如何归类 | `reference` |
@@ -32,9 +44,15 @@
 ## 按问题查
 
 - 想判断“这件事现在该不该做、算不算偏离主线”：先看 [`project-goals-and-plan.md`](./project-goals-and-plan.md)，再看 [`current-priority-checklist.md`](./current-priority-checklist.md)。
+- 想确认“当前唯一正式入口到底是什么、哪些旧路径本周必须退出生产职责”：先看 [`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)。
+- 想确认“主链每一步该用哪个 MCP 工具、状态和阶段记录怎么落盘”：先看 [`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md)，再看 [`skills/cst-simulation-optimization/SKILL.md`](../skills/cst-simulation-optimization/SKILL.md)。
+- 想确认“在保留 MCP 主链的同时，如何用 CLI/runtime 跑优化闭环”：看 [`skills/cst-runtime-cli-optimization/SKILL.md`](../skills/cst-runtime-cli-optimization/SKILL.md)。
+- 想确认“如何一键迁移、目标机怎么初始化和校验”：先看 [`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)。
+- 想确认“CLI 化应如何进入正式架构、是否会形成第二条生产链、`prototype_optimizer` 和 MCP 怎么剪枝”：先看 [`cli-architecture-decision.md`](./cli-architecture-decision.md)。
+- 想确认“能否不依赖 MCP 服务，用 CLI 原子工具给 agent 调用”：先看 [`cst-cli-atomic-tools-poc.md`](./cst-cli-atomic-tools-poc.md)。
 - 想确认“某个建模、results、导出或 session 坑以前有没有踩过”：先看 [`cst-modeling-notes.md`](./cst-modeling-notes.md)。
 - 想确认“路径应该放哪、run 结构怎么分、哪些文件该落在哪层”：先看 [`file_management_rules.md`](./file_management_rules.md)，再补看 [`project-layout.md`](./project-layout.md)。
-- 想快速知道“仓库哪里是正式入口、哪里只是辅助目录”：先看 [`project-layout.md`](./project-layout.md)。
+- 想快速知道“仓库哪里是正式入口、哪里只是辅助目录”：先看 [`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)，再看 [`project-layout.md`](./project-layout.md)。
 - 想了解“某个旧文档是不是当前主线依据”：先看其状态；标记为 `historical` 的文档只作背景参考，不直接指导当前任务。
 
 ## 维护规则

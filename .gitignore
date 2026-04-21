@@ -12,6 +12,8 @@ wheels/
 # CST project files (large binary + result directories)
 *.cst
 *_*/
+!cst_runtime/
+!cst_runtime/*.py
 *.mat
 
 # CST source/reference/test directories

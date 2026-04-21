@@ -112,7 +112,7 @@ def _now_iso() -> str:
 def _load_json_file(file_path: Path) -> dict[str, Any]:
     if not file_path.exists():
         return {}
-    return json.loads(file_path.read_text(encoding="utf-8"))
+    return json.loads(file_path.read_text(encoding="utf-8-sig"))
 
 
 def _find_next_run_index(runs_dir: Path) -> int:
@@ -199,6 +199,46 @@ def _copy_project_artifacts(source_project: Path, working_project: Path) -> Path
         ignore=shutil.ignore_patterns("*.lok", "*.tmp"),
     )
     return working_companion
+
+
+def _resolve_run_dir(task_path: str, run_id: str = "") -> tuple[Path, str, Path]:
+    task_dir = Path(task_path).expanduser().resolve()
+    if not task_dir.exists() or not task_dir.is_dir():
+        raise FileNotFoundError(f"task_path 不存在或不是目录: {task_path}")
+
+    resolved_run_id = (run_id or "").strip()
+    if not resolved_run_id:
+        latest_path = task_dir / "latest"
+        if not latest_path.exists():
+            raise FileNotFoundError(f"未提供 run_id，且未找到 latest 文件: {latest_path}")
+        resolved_run_id = latest_path.read_text(encoding="utf-8-sig").strip()
+    resolved_run_id = resolved_run_id.lstrip("\ufeff")
+
+    if not re.fullmatch(r"run_\d+", resolved_run_id):
+        raise ValueError(f"run_id 格式错误，应为 run_xxx: {resolved_run_id}")
+
+    run_dir = task_dir / "runs" / resolved_run_id
+    if not run_dir.exists() or not run_dir.is_dir():
+        raise FileNotFoundError(f"run 目录不存在: {run_dir}")
+    return task_dir, resolved_run_id, run_dir
+
+
+def _parse_json_object_arg(value: Any, field_name: str) -> dict[str, Any]:
+    if value in (None, ""):
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        parsed = json.loads(value)
+        if isinstance(parsed, dict):
+            return parsed
+    raise ValueError(f"{field_name} 必须是 JSON object 或 dict")
+
+
+def _safe_stage_filename(stage: str) -> str:
+    normalized = re.sub(r"[^A-Za-z0-9_.-]+", "_", stage.strip())
+    normalized = normalized.strip("._")
+    return normalized or "stage"
 
 
 # ============================================================
@@ -584,6 +624,175 @@ def prepare_new_run(
         }
     except Exception as e:
         return {"status": "error", "message": f"prepare_new_run 失败: {str(e)}"}
+
+
+@mcp.tool()
+def get_run_context(task_path: str, run_id: str = ""):
+    """读取正式 run 上下文和标准产物路径。"""
+    try:
+        task_dir, resolved_run_id, run_dir = _resolve_run_dir(task_path, run_id)
+        config_path = run_dir / "config.json"
+        status_path = run_dir / "status.json"
+        working_project = run_dir / "projects" / "working.cst"
+        payload = {
+            "status": "success",
+            "task_path": task_dir.as_posix(),
+            "run_id": resolved_run_id,
+            "run_dir": run_dir.as_posix(),
+            "working_project": working_project.as_posix(),
+            "projects_dir": (run_dir / "projects").as_posix(),
+            "exports_dir": (run_dir / "exports").as_posix(),
+            "logs_dir": (run_dir / "logs").as_posix(),
+            "stages_dir": (run_dir / "stages").as_posix(),
+            "analysis_dir": (run_dir / "analysis").as_posix(),
+            "config_path": config_path.as_posix(),
+            "status_path": status_path.as_posix(),
+            "summary_path": (run_dir / "summary.md").as_posix(),
+            "config": _load_json_file(config_path),
+            "run_status": _load_json_file(status_path),
+        }
+        return payload
+    except Exception as e:
+        return {"status": "error", "message": f"get_run_context 失败: {str(e)}"}
+
+
+@mcp.tool()
+def record_run_stage(
+    task_path: str,
+    stage: str,
+    run_id: str = "",
+    status: str = "completed",
+    message: str = "",
+    details_json: str = "",
+    update_status: bool = True,
+):
+    """记录正式主链阶段状态，写入 stages/ 并追加 logs/production_chain.md。"""
+    try:
+        _, resolved_run_id, run_dir = _resolve_run_dir(task_path, run_id)
+        if not stage or not stage.strip():
+            return {"status": "error", "message": "stage 不能为空"}
+
+        created_at = _now_iso()
+        details = _parse_json_object_arg(details_json, "details_json")
+        stage_payload = {
+            "run_id": resolved_run_id,
+            "stage": stage.strip(),
+            "status": status,
+            "message": message,
+            "details": details,
+            "recorded_at": created_at,
+        }
+
+        stages_dir = run_dir / "stages"
+        logs_dir = run_dir / "logs"
+        stages_dir.mkdir(parents=True, exist_ok=True)
+        logs_dir.mkdir(parents=True, exist_ok=True)
+
+        stage_path = stages_dir / f"{_safe_stage_filename(stage)}.json"
+        stage_path.write_text(
+            json.dumps(stage_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+        log_path = logs_dir / "production_chain.md"
+        log_entry = [
+            f"## {created_at} {stage.strip()}",
+            "",
+            f"- status: {status}",
+        ]
+        if message:
+            log_entry.append(f"- message: {message}")
+        if details:
+            log_entry.append(f"- details: `{json.dumps(details, ensure_ascii=False)}`")
+        log_entry.append("")
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write("\n".join(log_entry) + "\n")
+
+        status_path = run_dir / "status.json"
+        if update_status and status_path.exists():
+            status_payload = _load_json_file(status_path)
+            status_payload["stage"] = stage.strip()
+            status_payload["status"] = status
+            status_payload["updated_at"] = created_at
+            status_path.write_text(
+                json.dumps(status_payload, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+
+        return {
+            "status": "success",
+            "run_id": resolved_run_id,
+            "stage_path": stage_path.as_posix(),
+            "log_path": log_path.as_posix(),
+            "status_path": status_path.as_posix() if update_status else None,
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"record_run_stage 失败: {str(e)}"}
+
+
+@mcp.tool()
+def update_run_status(
+    task_path: str,
+    run_id: str = "",
+    status: str = "",
+    stage: str = "",
+    best_result_json: str = "",
+    output_files_json: str = "",
+    error_json: str = "",
+    extra_json: str = "",
+    mark_completed: bool = False,
+):
+    """统一更新正式 run 的 status.json。"""
+    try:
+        _, resolved_run_id, run_dir = _resolve_run_dir(task_path, run_id)
+        status_path = run_dir / "status.json"
+        status_payload = _load_json_file(status_path)
+        if not status_payload:
+            status_payload = {"run_id": resolved_run_id}
+
+        updated_at = _now_iso()
+        if status:
+            status_payload["status"] = status
+        if stage:
+            status_payload["stage"] = stage
+
+        best_result = _parse_json_object_arg(best_result_json, "best_result_json")
+        if best_result:
+            status_payload["best_result"] = best_result
+
+        output_files = _parse_json_object_arg(output_files_json, "output_files_json")
+        if output_files:
+            current_outputs = status_payload.get("output_files")
+            if not isinstance(current_outputs, dict):
+                current_outputs = {}
+            current_outputs.update(output_files)
+            status_payload["output_files"] = current_outputs
+
+        if error_json:
+            status_payload["error"] = _parse_json_object_arg(error_json, "error_json")
+        elif status_payload.get("status") not in {"error", "blocked"}:
+            status_payload["error"] = status_payload.get("error")
+
+        extra = _parse_json_object_arg(extra_json, "extra_json")
+        for key, value in extra.items():
+            status_payload[key] = value
+
+        status_payload["updated_at"] = updated_at
+        if mark_completed:
+            status_payload["completed_at"] = updated_at
+
+        status_path.write_text(
+            json.dumps(status_payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return {
+            "status": "success",
+            "run_id": resolved_run_id,
+            "status_path": status_path.as_posix(),
+            "run_status": status_payload,
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"update_run_status 失败: {str(e)}"}
 
 
 # ---------- 仿真运行（6个）----------

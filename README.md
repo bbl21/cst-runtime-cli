@@ -133,6 +133,47 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 ## Usage
 ## 使用方法
 
+## Portable Migration Mode
+## 一键迁移模式
+
+The current formal production entry is not the Streamlit prototype or a temporary script. Use a task directory and start from the modeler MCP:
+当前正式生产入口不是 Streamlit 原型，也不是临时脚本。请使用任务目录，并从 modeler MCP 开始：
+
+```text
+tasks/task_xxx_slug/ -> cst-modeler.prepare_new_run(task_path=...)
+```
+
+To build a portable system bundle:
+生成可迁移系统包：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/build_portable_bundle.ps1
+```
+
+Optional large-data switches:
+可选大数据开关：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/build_portable_bundle.ps1 -IncludeRef
+powershell -ExecutionPolicy Bypass -File tools/build_portable_bundle.ps1 -IncludeTasks
+```
+
+On the target machine, extract the zip and run:
+在目标机器解压后运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/install_mcp_one_click.ps1
+```
+
+If CST Studio Suite 2026 is not installed in the default path, pass `-CstLibraryPath`.
+如果 CST Studio Suite 2026 不在默认路径，请传入 `-CstLibraryPath`。
+
+The one-click installer initializes dependencies, writes `.codex/config.toml`, starts `cst-modeler-http` and `cst-results-http`, and verifies both MCP services with `tools/list`.
+一键安装脚本会初始化依赖、写入 `.codex/config.toml`、启动 `cst-modeler-http` 与 `cst-results-http`，并用 `tools/list` 验证两个 MCP 服务。
+
+See `docs/phase-c-system-integration-and-portable-mode.md` for the current system boundary.
+当前系统边界见 `docs/phase-c-system-integration-and-portable-mode.md`。
+
 ### Basic Usage
 ### 基本用法
 

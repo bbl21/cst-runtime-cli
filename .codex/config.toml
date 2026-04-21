@@ -1,17 +1,5 @@
-#[mcp_servers.cst-modeler]
-#command = "C:\\Users\\z1376\\Documents\\CST_MCP\\.venv\\Scripts\\python.exe"
-#args = ["C:\\Users\\z1376\\Documents\\CST_MCP\\mcp\\advanced_mcp.py"]
-#startup_timeout_sec = 60
-#tool_timeout_sec = 60
-
 [mcp_servers.cst-modeler-http]
 url = "http://127.0.0.1:8123/mcp"
-
-#[mcp_servers.cst-results]
-#command = "C:\\Users\\z1376\\Documents\\CST_MCP\\.venv\\Scripts\\python.exe"
-#args = ["C:\\Users\\z1376\\Documents\\CST_MCP\\mcp\\cst_results_mcp.py"]
-#startup_timeout_sec = 60
-#tool_timeout_sec = 60
 
 [mcp_servers.cst-results-http]
 url = "http://127.0.0.1:8124/mcp"
