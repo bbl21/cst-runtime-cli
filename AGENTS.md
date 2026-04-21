@@ -1,4 +1,4 @@
-# CST_MCP 项目规则
+﻿# CST_MCP 项目规则
 
 ## 项目概览
 - **名称**: CST MCP Project
@@ -169,7 +169,7 @@
 - `get_1d_result(..., export_path=...)` 的导出格式仅允许 `.json`
 - 禁止在生产流程中使用或依赖 S11 CSV 导出/CSV 对比
 - 生成 S11 对比页必须优先调用 `cst_results_mcp.generate_s11_comparison`
-- `tools/generate_s11_comparison.py` 仅保留为历史调试脚本，不作为生产流程默认入口
+- 历史 S11 对比脚本已归档到 `archive/tools-legacy-20260421/generate_s11_comparison.py`，不作为生产流程默认入口
 - 生产链路固定为：`get_1d_result(export_path=.json)` -> `generate_s11_comparison(file_paths=[...json...])`
 - 不满足上述链路时，任务状态应标记为 `blocked` 并在日志中说明原因
 

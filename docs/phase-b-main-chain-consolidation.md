@@ -1,4 +1,4 @@
-# 阶段 B 主生产链收口记录
+﻿# 阶段 B 主生产链收口记录
 
 > 本文档是阶段 B 交付物，用于说明正式主链的实际节点、旁路降级结果和后续验收要求。  
 > 它不是规则源；规则与红线仍以 `AGENTS.md` 为准，执行流程以 `skills/cst-simulation-optimization/SKILL.md` 为准。
@@ -28,12 +28,12 @@
 
 | 路径 | 阶段 B 判定 | 处理方式 |
 | --- | --- | --- |
-| `tools/e2e_clean.py` | 旧旁路 | 不再作为生产入口；仅保留历史排障参考 |
-| `tools/e2e_final.py` | 旧旁路 | 不再作为生产入口；仅保留历史排障参考 |
-| `tools/diag_refresh.py` | 调试辅助 | 不再承担默认 results 刷新职责 |
-| `tools/explore_results.py` | 调试辅助 | 不再承担默认结果读取职责 |
-| `tools/plot_farfield.py` | 调试辅助 | 不再承担默认远场展示职责 |
-| `tools/generate_s11_comparison.py` | 历史兼容 | 生产对比只走 `cst-results.generate_s11_comparison(...)` |
+| `archive/tools-legacy-20260421/e2e_clean.py` | 已归档旧旁路 | 不再作为生产入口 |
+| `archive/tools-legacy-20260421/e2e_final.py` | 已归档旧旁路 | 不再作为生产入口 |
+| `archive/tools-legacy-20260421/diag_refresh.py` | 已归档调试辅助 | 不再承担默认 results 刷新职责 |
+| `archive/tools-legacy-20260421/explore_results.py` | 已归档调试辅助 | 不再承担默认结果读取职责 |
+| `archive/tools-legacy-20260421/plot_farfield.py` | 已归档调试辅助 | 不再承担默认远场展示职责 |
+| `archive/tools-legacy-20260421/generate_s11_comparison.py` | 已归档历史兼容 | 生产对比只走 `cst-results.generate_s11_comparison(...)` 或 runtime `generate-s11-comparison` |
 | `tools/call_local_mcp_tool.py` | 开发期定位 | 不能作为生产验收依据 |
 | `prototype_optimizer/core/orchestrator.py` | 原型外围 | 不纳入本周正式主链 |
 | `tmp/` | 非生产路径 | 只允许临时测试和排障，不允许作为默认输入或输出 |

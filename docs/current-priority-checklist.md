@@ -11,9 +11,9 @@
 
 当前判断更新：
 
-**阶段 D 低上下文验证前，必须先完成轻量 CLI-first 架构门控。CLI 不作为第二条生产链，而应作为同一 `cst_runtime/` 能力层的主要调用界面；MCP 暂时只保留为兼容 adapter；`prototype_optimizer` 进入归档候选。架构决策见 [`cli-architecture-decision.md`](./cli-architecture-decision.md)。**
+**阶段 D 低上下文验证前，必须先完成轻量 CLI-first 架构门控。CLI 不作为第二条生产链，而应作为同一 `cst_runtime/` 能力层的主要调用界面；MCP 先保留为稳定生产链和兼容 adapter；`prototype_optimizer` 已退出默认主线和迁移包。架构决策见 [`cli-architecture-decision.md`](./cli-architecture-decision.md)。**
 
-当前执行策略更新：MCP 工具链先保留为稳定生产链；CLI/runtime 以独立 Skill 并行推进，完成覆盖和低上下文验证后再推动 MCP 退出。
+当前执行策略更新：MCP 工具链先保留为稳定生产链；CLI/runtime 以独立 Skill 并行推进。本地 CLI 兼容性自检已经完成，但第三方 agent 端到端低上下文验证和 fresh-session 远场实测仍未完成，P0 暂不标记为 `validated`。
 
 这件事优先于：
 
@@ -61,17 +61,21 @@
 
 - [x] 完成 CLI-first 架构门控：明确 `cst_runtime/`、CLI adapter、MCP 兼容 adapter 的职责边界
 - [x] 明确第一批 CLI 化落点只聚焦 run 管理与项目身份校验，不扩展成第二条生产链
-- [ ] 明确 `prototype_optimizer` 归档边界，默认主线和迁移包不再依赖它
-- [ ] 在低上下文条件下跑通一次完整流程
+- [x] 明确 `prototype_optimizer` 归档边界，默认主线和迁移包不再依赖它
+- [ ] 在 Trae/其他 coding agent 低上下文条件下跑通一次完整流程
 - [x] 验证第一版 runtime 的标准 `run_xxx/{projects,exports,logs,stages,analysis}` 产物完整落盘
 - [x] 验证第一版 runtime 的错误分支、状态文件和审计落盘可用
 - [x] 验证优化闭环 runtime 工具可用：参数读写、项目身份校验、关闭解锁、results run_id/参数组合/1D 导出、S11 对比
 - [x] 验证长流程：真实启动一次仿真、刷新 results、读取新增 run_id
 - [x] 新增 CLI/runtime 并行 Skill，避免把现有 MCP Skill 混成双入口流程
-- [ ] 输出残留问题清单：阻塞项、非阻塞项、观察项
-- [ ] 给出是否允许进入进阶目标的门控结论
+- [x] 增加 CLI `args-template`，降低低上下文/PowerShell 手写 JSON 调用风险
+- [x] 验证 CLI 跨 agent 基础兼容性：`doctor`、`usage-guide`、JSON 错误出口、stdin/显式参数合并规则、`python -m cst_runtime` fallback
+- [x] 迁移 results/farfield runtime 能力：S11/远场解析与 HTML 预览可用；fresh-session 真实 CST 远场导出仍标记 `needs_validation`
+- [x] 清理 `tools/` 旧旁路脚本并归档到 `archive/tools-legacy-20260421/`
+- [x] 输出残留问题清单：阻塞项、非阻塞项、观察项
+- [x] 给出是否允许进入进阶目标的门控结论：当前不进入 `P1`
 
-当前第一任务：完成轻量 CLI-first 架构研判，交付 `docs/cli-architecture-decision.md` 并据此确定是否可以继续阶段 D。CLI 原子工具 POC 先归类为 adapter POC，不替代正式主链；MCP 冻结为兼容层；`prototype_optimizer` 不再进入主线。
+明天第一任务：在 Trae/其他 coding agent 环境用最小上下文执行 `cst_runtime doctor`、`usage-guide`、工具发现和一次完整低上下文流程；并补做 fresh-session 真实 CST 远场导出/读取验证。完成前不进入 `P1`。
 
 ## 基础目标映射
 
@@ -104,20 +108,24 @@
 ### P0-5 验证可迁移性
 
 - [x] 阶段 D 前置：CLI-first 架构门控完成，确认不会形成第二条生产链
-- [x] 阶段 D 前置：MCP 已降级为兼容 adapter，后续新能力优先进入 `cst_runtime/` 与 CLI
-- [ ] 阶段 D 前置：`prototype_optimizer` 已明确归档/保留边界，不再作为主线依赖
-- [ ] 在低上下文条件下跑通一次完整流程
+- [x] 阶段 D 前置：MCP 先保留为稳定生产链和兼容 adapter，后续新能力优先进入 `cst_runtime/` 与 CLI
+- [x] 阶段 D 前置：`prototype_optimizer` 已明确归档/保留边界，不再作为主线依赖
+- [ ] 在 Trae/其他 coding agent 低上下文条件下跑通一次完整流程
 - [x] 验证第一版 runtime 标准 `run_xxx/{projects,exports,logs,stages,analysis}` 产物完整落盘
 - [x] 验证第一版 runtime 错误分支、状态文件和审计落盘可用
 - [x] 验证优化闭环 runtime 工具可用，不依赖旧 `mcp/*.py` 源文件加载
 - [x] 验证真实仿真启动后 results fresh-session 能读取新增 run_id
+- [x] 验证 CLI 能生成工具 args 模板，减少低上下文执行时的 shell JSON 阻塞
+- [x] 验证 CLI 误用和兼容性出口会返回结构化 JSON，不让其他 agent 在 argparse 文本或 stdin 阻塞中卡死
+- [x] `tools/` 旧旁路脚本已归档，默认调用入口回到 `cst_runtime/`、MCP client/helper 和正式 Skill
 
 ## 本周完成标准
 
 - [x] 阶段 A 完成后再进入阶段 B
 - [x] 阶段 B 完成后再进入阶段 C
-- [ ] 阶段 C 完成后先完成 CLI 架构门控，再进入阶段 D
-- [ ] 阶段 D 完成后再判断是否进入 `P1`
+- [x] 阶段 C 完成后先完成 CLI 架构门控，再进入阶段 D
+- [ ] 阶段 D 低上下文端到端验证完成后，再把 P0 标记为 `validated`
+- [x] 今日收尾门控结论已给出：暂不进入 `P1`
 
 ## 进阶目标
 
@@ -143,11 +151,12 @@
 - [ ] 不重做大规模 UI
 - [ ] 不顺手重构与正式入口无关的模块
 - [ ] 不为了“看起来先进”而加入未收口的新能力
-- [ ] CLI-first 架构门控通过前，不继续扩展 CLI 到仿真、results 或远场生产链
+- [ ] 第三方 agent 低上下文端到端验证通过前，不进入优化指导功能原型
 - [ ] 不继续围绕 `prototype_optimizer` 增加新功能；如需 UI，后续另建读取标准 `tasks/` / `runs/` 的轻量展示层
 - [ ] 不把新的 runtime CLI 入口放进 `tools/`；runtime 入口统一放在 `cst_runtime/cli.py`
 - [ ] 不修改原有 `mcp/*.py` 做第一阶段迁移；先另建 runtime 边界
 - [ ] 不迁移几何建模、材料、边界、网格等建模工具；当前只迁移优化闭环运行能力
+- [ ] 不把远场 runtime 代码迁移完成等同于 fresh-session 真实 CST 远场生产验证完成
 
 ## 使用规则
 

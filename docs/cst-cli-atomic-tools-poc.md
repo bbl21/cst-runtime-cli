@@ -1,6 +1,6 @@
-# CST CLI 原子工具 POC
+﻿# CST CLI 原子工具 POC
 
-> 本文档记录 `tools/cst_cli.py` 的最小验证结果。它不是规则源；规则与红线仍以 `AGENTS.md` 为准，正式执行流程以 `skills/cst-simulation-optimization/SKILL.md` 为准。
+> 本文档记录早期 `tools/cst_cli.py` 的最小验证结果。它不是规则源；规则与红线仍以 `AGENTS.md` 为准，正式执行流程以 `skills/cst-simulation-optimization/SKILL.md` 为准。2026-04-21 起脚本已归档到 `archive/tools-legacy-20260421/cst_cli.py`，当前 runtime 入口是 `uv run python -m cst_runtime`。
 
 ## 目标
 
@@ -17,7 +17,7 @@
 
 POC 文件：
 
-- `tools/cst_cli.py`
+- `archive/tools-legacy-20260421/cst_cli.py`
 
 当前工具：
 

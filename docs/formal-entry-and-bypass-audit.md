@@ -1,4 +1,4 @@
-# 正式入口与旁路盘点
+﻿# 正式入口与旁路盘点
 
 > 本文档是当前阶段 A 的交付物，用于冻结“唯一正式交互入口”与本周旁路清理范围。  
 > 它不是规则源；规则与红线仍以 `AGENTS.md` 为准，执行流程仍以 `skills/cst-simulation-optimization/SKILL.md` 为准。
@@ -27,9 +27,9 @@
 | 本地直调模块 | `tools/call_local_mcp_tool.py` | 调试辅助 | 规则已明确仅限开发期定位问题，不能作为生产或最终验收入口。 |
 | Streamlit UI | `prototype_optimizer/app.py` + `startup_prototype_optimizer.ps1` | 原型外围入口 | 当前只适合做人类交互、历史展示、报告外围能力，不是正式生产入口。 |
 | UI 后端编排 | `prototype_optimizer/core/orchestrator.py` | 原型/占位实现 | 当前是占位实现，不执行正式仿真闭环；默认输出路径仍是 `prototype_optimizer/data/runs`，不符合当前主线。 |
-| 一次性端到端脚本 | `tools/e2e_clean.py`、`tools/e2e_final.py` | 旧旁路 | 会绕开正式任务目录与正式 MCP 展示链路，本周必须退出生产职责。 |
-| 调试/探查脚本 | `tools/diag_refresh.py`、`tools/explore_results.py`、`tools/plot_farfield.py` | 调试辅助 | 仅保留为问题定位或本地分析，不再承担默认生产职责。 |
-| 历史对比脚本 | `tools/generate_s11_comparison.py` | 历史兼容 | 规则已要求生产链改走 `cst-results.generate_s11_comparison(...)`。 |
+| 一次性端到端脚本 | `archive/tools-legacy-20260421/e2e_clean.py`、`archive/tools-legacy-20260421/e2e_final.py` | 已归档旧旁路 | 会绕开正式任务目录与正式 MCP 展示链路，已退出 `tools/`。 |
+| 调试/探查脚本 | `archive/tools-legacy-20260421/diag_refresh.py`、`archive/tools-legacy-20260421/explore_results.py`、`archive/tools-legacy-20260421/plot_farfield.py` | 已归档调试辅助 | 不再承担默认生产职责；需要复用逻辑时迁入结构化 runtime/MCP tool。 |
+| 历史对比脚本 | `archive/tools-legacy-20260421/generate_s11_comparison.py` | 已归档历史兼容 | 规则已要求生产链改走 `cst-results.generate_s11_comparison(...)` 或 runtime `generate-s11-comparison`。 |
 | 临时目录 | `tmp/` 下脚本、日志、参数文件、测试产物 | 非生产路径 | 只允许临时测试与排障，不允许继续承担默认生产职责。 |
 
 ## 为什么 `prototype_optimizer` 不是当前正式入口
@@ -108,12 +108,12 @@
 - `prototype_optimizer/app.py`
 - `startup_prototype_optimizer.ps1`
 - `prototype_optimizer/core/orchestrator.py`
-- `tools/e2e_clean.py`
-- `tools/e2e_final.py`
-- `tools/diag_refresh.py`
-- `tools/explore_results.py`
-- `tools/generate_s11_comparison.py`
-- `tools/plot_farfield.py`
+- `archive/tools-legacy-20260421/e2e_clean.py`
+- `archive/tools-legacy-20260421/e2e_final.py`
+- `archive/tools-legacy-20260421/diag_refresh.py`
+- `archive/tools-legacy-20260421/explore_results.py`
+- `archive/tools-legacy-20260421/generate_s11_comparison.py`
+- `archive/tools-legacy-20260421/plot_farfield.py`
 - `tools/call_local_mcp_tool.py`
 - `tmp/` 下所有脚本、参数文件和一次性测试产物
 

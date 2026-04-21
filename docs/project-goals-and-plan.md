@@ -183,11 +183,12 @@
 - 阶段 A 已完成：唯一正式入口与旁路冻结见 `docs/formal-entry-and-bypass-audit.md`
 - 阶段 B 已完成并通过 MCP 验证：主生产链收口见 `docs/phase-b-main-chain-consolidation.md`
 - 阶段 C 已完成：系统集成与一键迁移模式见 `docs/phase-c-system-integration-and-portable-mode.md`
-- CLI 原子工具 POC 已完成，证明 `project_path` 显式校验 + JSON 输入输出 + run 审计落盘的轻量工具方向可行；该 POC 当前是架构观察项，不替代正式主链
-- 当前新增一个阶段 D 前置门控：先完成轻量 CLI-first 架构研判，明确 `cst_runtime/` 共享能力层、CLI 主界面、MCP 兼容 adapter 边界，见 `docs/cli-architecture-decision.md`
-- 第一版 `cst_runtime/` 已落地：runtime 包内提供 `python -m cst_runtime` CLI adapter，覆盖 run workspace、项目身份辅助、状态/阶段/审计落盘；当前不修改原有 `mcp/*.py`，也不把新入口放进 `tools/`
+- CLI 原子工具 POC 已归档为历史验证；`tools/cst_cli.py` 等旧旁路脚本已迁入 `archive/tools-legacy-20260421/`，不再作为默认调用入口
+- 阶段 D 的 CLI-first 架构门控已完成：`cst_runtime/` 是共享 runtime 能力层，`python -m cst_runtime` 是 CLI 主调用界面，MCP 先保留为稳定生产链和兼容 adapter，见 `docs/cli-architecture-decision.md`
+- 第一版 `cst_runtime/` 已落地并补齐跨 agent 基础兼容性：`doctor`、`usage-guide`、结构化 JSON 错误、显式参数优先于 stdin、`--args-stdin` 显式读管道、`python -m cst_runtime` fallback 和 `args-template`
+- results/S11 与远场解析、预览能力已迁入 runtime；远场 fresh-session 真实 CST 导出/读取仍为 `needs_validation`，不能宣称生产验证完成
 - `prototype_optimizer` 已判定不应继续作为主线保留；其 UI 源码最多作为旧展示原型归档，`prototype_optimizer/data/` 不再作为项目事实来源
-- 阶段 D 仍保留，但必须在 CLI 架构边界清楚后执行；否则低上下文验证只能标记为 `needs_validation`，不能宣称 P0 `validated`
+- 阶段 D 尚未 `validated`：还缺 Trae/其他 coding agent 低上下文端到端验证，以及 fresh-session 真实 CST 远场验证；今日门控结论是暂不进入 `P1`
 
 ## 5.1 本周基础目标
 
@@ -260,6 +261,7 @@
   - 一次低上下文端到端验证记录
   - 一份残留问题清单：阻塞项、非阻塞项、观察项
   - 一份门控结论：能否进入优化指导功能原型
+  - 一份跨 agent CLI 兼容性自检记录：`doctor`、`usage-guide`、错误 JSON、stdin/显式参数合并规则和 fallback 入口
 - 完成信号：
   - 非当前对话发起者也能根据正式入口和文档理解流程并执行
   - `run_xxx/{projects,exports,logs,stages,analysis}` 产物完整可追溯
@@ -311,6 +313,7 @@
 - 一份轻量 CLI-first 架构决策：明确 `cst_runtime/` 共享能力层、包内 CLI adapter、MCP 兼容 adapter、`prototype_optimizer` 归档边界
 - 一次完整的标准 run 验证产物
 - 一份说明 MCP、Skill、知识系统、计划系统如何协同的结构化说明
+- 一份阶段 D 收尾文档：记录 CLI 兼容性自检、工具清理、残留问题和是否进入 `P1` 的门控结论
 - 若进入进阶目标，一份基于建模代码、用户信息和论文研读的优化指导原型输出
 
 ## 6. 中期建设计划
