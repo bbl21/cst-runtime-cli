@@ -18,7 +18,7 @@ python -m cst_runtime <command>
 
 不要调用 `archive/tools-legacy-20260421/` 下的旧脚本；不要直接编辑 `ref/` 工程。
 
-## Agent 固定四步
+## Agent 固定入口
 
 0. 新环境、迁移包、不同 coding agent 或不同终端里，先做兼容性自检：
 
@@ -42,7 +42,9 @@ uv run python -m cst_runtime usage-guide
 
 ```powershell
 uv run python -m cst_runtime list-tools
+uv run python -m cst_runtime list-pipelines
 uv run python -m cst_runtime describe-tool --tool get-1d-result
+uv run python -m cst_runtime describe-pipeline --pipeline latest-s11-preview
 ```
 
 3. 生成参数模板，保存到当前 task/run 附近：
@@ -58,6 +60,17 @@ uv run python -m cst_runtime get-1d-result --args-file "$run\stages\get_1d_resul
 ```
 
 每一步都必须解析 stdout JSON。只有 `status == "success"` 才能进入下一步。
+
+低上下文 agent 不应自己发明管道。先用 `list-pipelines` 找现有链路，再用 `describe-pipeline` 读取步骤、停止规则和恢复建议；只有现有链路不覆盖当前任务时，才按 `describe-tool` / `args-template` 逐步组合。
+
+参数调用规则：
+
+- 首选：`describe-tool -> args-template --output <args.json> -> 编辑 JSON -> <tool> --args-file <args.json>`。
+- 常用字段可直接传 flags，但只在 `describe-tool` 返回 `direct_flags` 时使用，例如 `change-parameter --project-path <working.cst> --name g --value 24`。
+- `project_path` 必须指向具体 `.cst` 文件，不能只写工程目录。
+- `change-parameter` 字段名是 `name` 和 `value`，不是 `parameter_name` / `parameter_value`。
+- S11 JSON 的 `ydata` 是复数序列，元素通常包含 `real` / `imag`；转 dB 时先取模再 `20*log10`。
+- 异步仿真优先使用 `wait-simulation`，不要让低上下文 agent 手写轮询循环。
 
 ## 错误返回契约
 
@@ -140,6 +153,35 @@ final_args = stdin_json + explicit_args
 
 如果已经提供 `--args-file` / `--args-json` 且没有 `--args-stdin`，CLI 不会读取 stdin，避免 Trae 等非 TTY 终端阻塞。
 
+## 管道自学习入口
+
+管道能力现在是 CLI 的机器可读对象。固定发现顺序：
+
+```powershell
+uv run python -m cst_runtime list-pipelines
+uv run python -m cst_runtime describe-pipeline --pipeline self-learn-cli
+uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --output "$run\stages\latest_s11_pipeline_plan.json"
+```
+
+`list-pipelines` 只列出已登记链路；`describe-pipeline` 返回适用场景、所需上下文、步骤、示例命令和停止规则；`pipeline-template` 把同一份计划写成 JSON，便于 agent 放在 `stages/` 里审计。
+
+常用链路：
+
+- `self-learn-cli`：新 agent 入场自学，不启动 CST。
+- `args-file-tool-call`：先生成 args 文件，再调用单个工具，避免 PowerShell 内联 JSON。
+- `project-unlock-check`：从 `working.cst` 推断 run，并检查 `.lok`。
+- `latest-s11-preview`：`list-run-ids -> get-1d-result -> plot-exported-file`。
+- `async-simulation-refresh-results`：`start-simulation-async -> wait-simulation -> close-project(save=false) -> list-run-ids -> get-1d-result`。
+- `s11-json-comparison`：S11 JSON 输入生成 HTML 对比页。
+- `farfield-realized-gain-preview`：fresh-session Realized Gain 导出、检查和预览。
+
+管道规则：
+
+- 每一步都要解析 stdout JSON，不能只看退出码。
+- 任一步返回 `status="error"` 时停止，除非下一步是明确的恢复动作。
+- 管道配方只是 agent 可读计划，不是隐藏黑盒执行器；关键步骤仍要落入当前 run 的 `logs/` 或 `stages/`。
+- 用 `--args-file` 固定复杂参数；只有需要合并上游 JSON 时才加 `--args-stdin`。
+
 ## 迁移兼容性检查
 
 不同 coding agent 或不同机器上的常见问题：
@@ -157,6 +199,8 @@ final_args = stdin_json + explicit_args
 ```powershell
 uv run python -m cst_runtime doctor
 uv run python -m cst_runtime usage-guide
+uv run python -m cst_runtime list-pipelines
+uv run python -m cst_runtime describe-pipeline --pipeline self-learn-cli
 uv run python -m cst_runtime describe-tool --tool get-1d-result
 ```
 
@@ -171,9 +215,10 @@ python -m cst_runtime doctor
 - run：`prepare-run`、`get-run-context`
 - audit：`record-stage`、`update-status`
 - project_identity：`infer-run-dir`、`wait-project-unlocked`、`verify-project-identity`
-- modeler：`open-project`、`list-parameters`、`change-parameter`、`start-simulation-async`、`is-simulation-running`、`save-project`、`close-project`
+- modeler：`open-project`、`list-parameters`、`change-parameter`、`start-simulation-async`、`is-simulation-running`、`wait-simulation`、`save-project`、`close-project`
 - results：`list-run-ids`、`get-parameter-combination`、`get-1d-result`、`generate-s11-comparison`、`plot-exported-file`
 - farfield：`export-farfield-fresh-session`、`read-realized-gain-grid-fresh-session`、`inspect-farfield-ascii`、`plot-farfield-multi`
+- pipeline meta：`list-pipelines`、`describe-pipeline`、`pipeline-template`
 
 远场增益证据必须走 `Realized Gain` / `Gain` / `Directivity`；`Abs(E)` 只能作为场强，不得标记为 dBi。`ref_0` 10 GHz fresh-session 导出/读取已通过实机验证，见 [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)；新模型或新指标仍要按任务留痕验证。
 

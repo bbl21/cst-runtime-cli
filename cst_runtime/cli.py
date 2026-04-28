@@ -10,6 +10,7 @@ import queue
 import shutil
 import sys
 import threading
+import time
 import warnings
 from pathlib import Path
 from typing import Any, Callable
@@ -35,13 +36,18 @@ class JsonArgumentParser(argparse.ArgumentParser):
                 "Run: python -m cst_runtime doctor",
                 "Run: uv run python -m cst_runtime usage-guide",
                 "Run: uv run python -m cst_runtime list-tools",
+                "Run: uv run python -m cst_runtime list-pipelines",
                 "Run: uv run python -m cst_runtime describe-tool --tool <tool>",
+                "Run: uv run python -m cst_runtime describe-pipeline --pipeline <pipeline>",
                 "Run: uv run python -m cst_runtime args-template --tool <tool> --output <args.json>",
             ],
         }
         tools = globals().get("TOOLS")
         if isinstance(tools, dict):
             payload["available_tools"] = sorted(tools)
+        pipelines = globals().get("PIPELINES")
+        if isinstance(pipelines, dict):
+            payload["available_pipelines"] = sorted(pipelines)
         print(json.dumps(payload, ensure_ascii=True, indent=2, default=_json_default))
         raise SystemExit(2)
 
@@ -72,6 +78,8 @@ def _usage_guide() -> dict[str, Any]:
         "agent_steps": [
             "Run doctor first when using a new shell, machine, IDE agent, or migrated workspace.",
             "Run list-tools to discover tool names.",
+            "Run list-pipelines to discover known pipeable chains before inventing one.",
+            "Run describe-pipeline --pipeline <pipeline> before using a multi-tool chain.",
             "Run describe-tool --tool <tool> before first use.",
             "Run args-template --tool <tool> --output <run-or-task>\\stages\\<tool>_args.json.",
             "Edit the args file; prefer args-file over inline JSON for Windows paths.",
@@ -80,6 +88,7 @@ def _usage_guide() -> dict[str, Any]:
         ],
         "input_styles": {
             "args_file": "uv run python -m cst_runtime <tool> --args-file C:\\path\\to\\args.json",
+            "direct_flags": "For supported common fields, direct flags may be used, for example: uv run python -m cst_runtime change-parameter --project-path C:\\path\\working.cst --name g --value 24",
             "stdin": "@{ project_path = $workingProject } | ConvertTo-Json -Depth 8 | uv run python -m cst_runtime <tool>",
             "merge": "When using stdin together with --args-file/--args-json, add --args-stdin. Stdin JSON is loaded first; explicit args override same-name fields.",
         },
@@ -87,23 +96,36 @@ def _usage_guide() -> dict[str, Any]:
             "python -m cst_runtime doctor",
             "uv run python -m cst_runtime usage-guide",
             "uv run python -m cst_runtime list-tools",
+            "uv run python -m cst_runtime list-pipelines",
+            "uv run python -m cst_runtime describe-pipeline --pipeline latest-s11-preview",
             "uv run python -m cst_runtime describe-tool --tool get-1d-result",
             "uv run python -m cst_runtime args-template --tool get-1d-result",
         ],
+        "pipeline_discovery": {
+            "list": "uv run python -m cst_runtime list-pipelines",
+            "describe": "uv run python -m cst_runtime describe-pipeline --pipeline <pipeline>",
+            "template": "uv run python -m cst_runtime pipeline-template --pipeline <pipeline> --output <pipeline_plan.json>",
+            "available": sorted(PIPELINES),
+        },
         "tool_families": {
             "run": ["prepare-run", "get-run-context"],
             "audit": ["record-stage", "update-status"],
             "project_identity": ["infer-run-dir", "wait-project-unlocked", "verify-project-identity", "list-open-projects"],
             "process_cleanup": ["cleanup-cst-processes"],
-            "modeler": ["open-project", "list-parameters", "change-parameter", "start-simulation-async", "is-simulation-running", "save-project", "close-project"],
+            "modeler": ["open-project", "list-parameters", "change-parameter", "start-simulation-async", "is-simulation-running", "wait-simulation", "save-project", "close-project"],
             "results": ["open-results-project", "list-run-ids", "get-parameter-combination", "get-1d-result", "get-2d-result", "generate-s11-comparison", "plot-exported-file"],
             "farfield": ["export-farfield-fresh-session", "read-realized-gain-grid-fresh-session", "inspect-farfield-ascii", "plot-farfield-multi"],
         },
         "hard_rules": [
             "Use explicit project_path for CST project operations.",
+            "project_path must point to the concrete .cst file, not only to the project directory.",
+            "For change-parameter, use name and value; do not invent parameter_name or parameter_value.",
+            "For complex or unfamiliar calls, args-template plus --args-file is the preferred path; direct flags are convenience for known common fields.",
+            "After modeler simulation, close the modeler project with save=false, reopen results, list run_ids, and read the latest run_id.",
             "Do not edit ref/ source projects; operate on a run working copy.",
             "Do not treat Abs(E) as dBi; use Realized Gain/Gain/Directivity for gain evidence.",
             "Do not continue a pipeline after status == 'error' unless the recovery step is explicit.",
+            "Treat pipeline recipes as guidance, not a hidden black-box runner; keep checking each JSON result.",
             "Only force-kill CST process names in the cleanup allowlist; record Access is denied residuals instead of claiming they were killed.",
         ],
     }
@@ -223,7 +245,7 @@ def _doctor() -> dict[str, Any]:
 
 
 def _tool_runbook(tool_name: str) -> dict[str, Any]:
-    return {
+    runbook = {
         "discover": f"uv run python -m cst_runtime describe-tool --tool {tool_name}",
         "template": f"uv run python -m cst_runtime args-template --tool {tool_name} --output <args.json>",
         "invoke": f"uv run python -m cst_runtime {tool_name} --args-file <args.json>",
@@ -231,6 +253,11 @@ def _tool_runbook(tool_name: str) -> dict[str, Any]:
         "pipe_with_args_file": f"<json-producing-command> | uv run python -m cst_runtime {tool_name} --args-stdin --args-file <args.json>",
         "must_check": "Read stdout JSON and require status == 'success' before the next step.",
     }
+    direct_fields = DIRECT_ARG_SPECS.get(tool_name)
+    if direct_fields:
+        flags = " ".join(f"--{field.replace('_', '-')} <{field}>" for field in direct_fields)
+        runbook["direct_flags"] = f"uv run python -m cst_runtime {tool_name} {flags}"
+    return runbook
 
 
 def _loads_json_object(text: str, source: str) -> dict[str, Any]:
@@ -316,6 +343,87 @@ def _load_json_args(args: argparse.Namespace) -> dict[str, Any]:
     return {**stdin_args, **explicit_args}
 
 
+def _parse_cli_scalar(value: str) -> Any:
+    lowered = value.lower()
+    if lowered in {"true", "false"}:
+        return lowered == "true"
+    if lowered in {"null", "none"}:
+        return None
+    try:
+        return json.loads(value)
+    except Exception:
+        return value
+
+
+DIRECT_ARG_SPECS: dict[str, dict[str, str]] = {
+    "open-project": {"project_path": "project_path"},
+    "close-project": {"project_path": "project_path", "save": "save"},
+    "save-project": {"project_path": "project_path"},
+    "list-parameters": {"project_path": "project_path"},
+    "change-parameter": {"project_path": "project_path", "name": "name", "value": "value"},
+    "start-simulation": {"project_path": "project_path"},
+    "start-simulation-async": {"project_path": "project_path"},
+    "is-simulation-running": {"project_path": "project_path"},
+    "wait-simulation": {
+        "project_path": "project_path",
+        "timeout_seconds": "timeout_seconds",
+        "poll_interval_seconds": "poll_interval_seconds",
+    },
+    "infer-run-dir": {"project_path": "project_path"},
+    "wait-project-unlocked": {
+        "project_path": "project_path",
+        "timeout_seconds": "timeout_seconds",
+        "poll_interval_seconds": "poll_interval_seconds",
+    },
+    "verify-project-identity": {"project_path": "project_path"},
+    "open-results-project": {
+        "project_path": "project_path",
+        "allow_interactive": "allow_interactive",
+        "subproject_treepath": "subproject_treepath",
+    },
+    "list-run-ids": {
+        "project_path": "project_path",
+        "treepath": "treepath",
+        "module_type": "module_type",
+        "allow_interactive": "allow_interactive",
+        "subproject_treepath": "subproject_treepath",
+        "skip_nonparametric": "skip_nonparametric",
+        "max_mesh_passes_only": "max_mesh_passes_only",
+    },
+    "get-1d-result": {
+        "project_path": "project_path",
+        "treepath": "treepath",
+        "module_type": "module_type",
+        "run_id": "run_id",
+        "load_impedances": "load_impedances",
+        "export_path": "export_path",
+        "allow_interactive": "allow_interactive",
+        "subproject_treepath": "subproject_treepath",
+    },
+    "plot-exported-file": {"file_path": "file_path", "output_html": "output_html", "page_title": "page_title"},
+    "cleanup-cst-processes": {
+        "project_path": "project_path",
+        "dry_run": "dry_run",
+        "settle_seconds": "settle_seconds",
+    },
+}
+
+
+def _add_direct_args(parser: argparse.ArgumentParser, tool_name: str) -> None:
+    for field in DIRECT_ARG_SPECS.get(tool_name, {}):
+        flag = "--" + field.replace("_", "-")
+        parser.add_argument(flag, dest=field)
+
+
+def _direct_args_from_namespace(args: argparse.Namespace, tool_name: str) -> dict[str, Any]:
+    values: dict[str, Any] = {}
+    for field, target in DIRECT_ARG_SPECS.get(tool_name, {}).items():
+        value = getattr(args, field, None)
+        if value is not None:
+            values[target] = _parse_cli_scalar(str(value))
+    return values
+
+
 def _attach_captured_stdout(result: dict[str, Any], captured: str) -> dict[str, Any]:
     lines = [line for line in captured.splitlines() if line.strip()]
     if not lines:
@@ -358,7 +466,10 @@ def _with_audit(tool_name: str, tool_args: dict[str, Any], result: dict[str, Any
 
 
 def _project_path_from_args(args: dict[str, Any]) -> str:
-    return project_identity.project_path_from_args(args)
+    project_path = project_identity.project_path_from_args(args)
+    if Path(project_path).suffix.lower() != ".cst":
+        raise ValueError("project_path must point to a concrete .cst file, not a directory")
+    return project_path
 
 
 def tool_prepare_run(args: dict[str, Any]) -> dict[str, Any]:
@@ -420,6 +531,42 @@ def tool_start_simulation_async(args: dict[str, Any]) -> dict[str, Any]:
 
 def tool_is_simulation_running(args: dict[str, Any]) -> dict[str, Any]:
     return modeler.is_simulation_running(_project_path_from_args(args))
+
+
+def tool_wait_simulation(args: dict[str, Any]) -> dict[str, Any]:
+    project_path = _project_path_from_args(args)
+    timeout_seconds = float(args.get("timeout_seconds", 3600.0))
+    poll_interval_seconds = float(args.get("poll_interval_seconds", 10.0))
+    started = time.monotonic()
+    polls = 0
+    last_result: dict[str, Any] | None = None
+    while True:
+        polls += 1
+        last_result = modeler.is_simulation_running(project_path)
+        if last_result.get("status") == "error":
+            return {**last_result, "polls": polls, "waited_seconds": round(time.monotonic() - started, 3)}
+        if not bool(last_result.get("running")):
+            return {
+                "status": "success",
+                "project_path": last_result.get("project_path", project_path),
+                "running": False,
+                "polls": polls,
+                "waited_seconds": round(time.monotonic() - started, 3),
+                "runtime_module": "cst_runtime.cli",
+            }
+        if time.monotonic() - started >= timeout_seconds:
+            return {
+                "status": "error",
+                "error_type": "simulation_wait_timeout",
+                "message": "simulation still running after timeout",
+                "project_path": project_path,
+                "running": True,
+                "polls": polls,
+                "timeout_seconds": timeout_seconds,
+                "last_result": last_result,
+                "runtime_module": "cst_runtime.cli",
+            }
+        time.sleep(poll_interval_seconds)
 
 
 def tool_infer_run_dir(args: dict[str, Any]) -> dict[str, Any]:
@@ -702,6 +849,11 @@ ARGS_TEMPLATES: dict[str, dict[str, Any]] = {
     "is-simulation-running": {
         "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
     },
+    "wait-simulation": {
+        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
+        "timeout_seconds": 3600,
+        "poll_interval_seconds": 10,
+    },
     "infer-run-dir": {
         "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
     },
@@ -828,6 +980,170 @@ ARGS_TEMPLATES: dict[str, dict[str, Any]] = {
 }
 
 
+PIPELINES: dict[str, dict[str, Any]] = {
+    "self-learn-cli": {
+        "category": "meta",
+        "risk": "read",
+        "description": "No-CST-start discovery path for a low-context agent learning the CLI.",
+        "when_to_use": "First contact in a fresh shell, migrated workspace, or external coding agent.",
+        "required_context": ["repo_root"],
+        "commands": [
+            "uv run python -m cst_runtime doctor",
+            "uv run python -m cst_runtime usage-guide",
+            "uv run python -m cst_runtime list-tools",
+            "uv run python -m cst_runtime list-pipelines",
+            "uv run python -m cst_runtime describe-pipeline --pipeline latest-s11-preview",
+            "uv run python -m cst_runtime describe-tool --tool get-1d-result",
+            "uv run python -m cst_runtime args-template --tool get-1d-result --output <run-or-task>\\stages\\get_1d_result_args.json",
+        ],
+        "steps": [
+            {"tool": "doctor", "purpose": "Check entrypoint and CST Python import readiness."},
+            {"tool": "usage-guide", "purpose": "Read the CLI calling convention and JSON error contract."},
+            {"tool": "list-tools", "purpose": "Discover available single-tool commands."},
+            {"tool": "list-pipelines", "purpose": "Discover known multi-tool chains."},
+            {"tool": "describe-pipeline", "purpose": "Read one pipeline recipe before composing commands."},
+            {"tool": "describe-tool", "purpose": "Inspect an unfamiliar tool before calling it."},
+            {"tool": "args-template", "purpose": "Generate UTF-8 JSON args files near the task/run."},
+        ],
+        "stop_rules": [
+            "If doctor returns readiness=blocked, stop and report the missing dependency.",
+            "If any command returns status=error, inspect error_type/message before continuing.",
+        ],
+    },
+    "args-file-tool-call": {
+        "category": "meta",
+        "risk": "read",
+        "description": "Generate an args file, edit it, then call a tool without inline JSON.",
+        "when_to_use": "Windows paths or complex parameters make inline --args-json fragile.",
+        "required_context": ["tool_name", "task_or_run_stages_dir"],
+        "commands": [
+            "uv run python -m cst_runtime describe-tool --tool <tool>",
+            "uv run python -m cst_runtime args-template --tool <tool> --output <stages>\\<tool>_args.json",
+            "uv run python -m cst_runtime <tool> --args-file <stages>\\<tool>_args.json",
+        ],
+        "steps": [
+            {"tool": "describe-tool", "purpose": "Read required fields, runbook, risk, and output style."},
+            {"tool": "args-template", "purpose": "Create a concrete JSON args skeleton."},
+            {"tool": "<tool>", "purpose": "Run the target tool with --args-file."},
+        ],
+        "stop_rules": [
+            "Do not hand-write complex inline JSON in PowerShell.",
+            "Only continue when the target tool returns status=success.",
+        ],
+    },
+    "project-unlock-check": {
+        "category": "project-identity",
+        "risk": "read",
+        "description": "Infer the run directory from working.cst and verify the project is unlocked.",
+        "when_to_use": "Before copying, reopening, fresh-session export, or cleanup decisions.",
+        "required_context": ["working_project"],
+        "commands": [
+            "@{ project_path = \"<run>\\projects\\working.cst\" } | ConvertTo-Json -Depth 8 | uv run python -m cst_runtime infer-run-dir | uv run python -m cst_runtime wait-project-unlocked",
+        ],
+        "steps": [
+            {"tool": "infer-run-dir", "purpose": "Verify that project_path belongs to a standard run."},
+            {"tool": "wait-project-unlocked", "purpose": "Check that the companion CST directory has no .lok lock files."},
+        ],
+        "recovery": [
+            "If wait-project-unlocked reports a lock, close the matching CST project before retrying.",
+            "If cleanup is needed, use cleanup-cst-processes and record Access is denied residuals.",
+        ],
+        "stop_rules": [
+            "Do not copy or reopen a locked project.",
+            "Do not claim Access is denied processes were killed.",
+        ],
+    },
+    "latest-s11-preview": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Read latest S11 run_id, export JSON, then render an HTML preview.",
+        "when_to_use": "After a simulation has finished and the modeler project has been closed.",
+        "required_context": ["working_project", "S11 treepath"],
+        "commands": [
+            "@{ project_path = \"<run>\\projects\\working.cst\"; treepath = \"1D Results\\S-Parameters\\S1,1\"; module_type = \"3d\"; max_mesh_passes_only = $false } | ConvertTo-Json -Depth 8 | uv run python -m cst_runtime list-run-ids | uv run python -m cst_runtime get-1d-result | uv run python -m cst_runtime plot-exported-file",
+        ],
+        "steps": [
+            {"tool": "list-run-ids", "purpose": "Read available result run IDs for the S11 treepath."},
+            {"tool": "get-1d-result", "purpose": "Default to the largest run_id from run_ids and export S11 JSON."},
+            {"tool": "plot-exported-file", "purpose": "Use export_path from get-1d-result to create an HTML preview."},
+        ],
+        "stop_rules": [
+            "Do not use export_s_parameter in an optimization loop.",
+            "If list-run-ids does not return the expected new run_id, refresh/close/reopen results before reading.",
+        ],
+    },
+    "async-simulation-refresh-results": {
+        "category": "modeler-results",
+        "risk": "long-running",
+        "description": "Start async simulation, wait for completion, close modeler, then refresh results before reading latest run_id.",
+        "when_to_use": "When a low-context agent needs the async solver path without hand-written polling loops.",
+        "required_context": ["working_project", "S11 treepath"],
+        "commands": [
+            "uv run python -m cst_runtime start-simulation-async --project-path <run>\\projects\\working.cst",
+            "uv run python -m cst_runtime wait-simulation --project-path <run>\\projects\\working.cst --timeout-seconds 3600 --poll-interval-seconds 10",
+            "uv run python -m cst_runtime close-project --project-path <run>\\projects\\working.cst --save false",
+            "uv run python -m cst_runtime list-run-ids --project-path <run>\\projects\\working.cst --treepath \"1D Results\\S-Parameters\\S1,1\" --module-type 3d --allow-interactive true --max-mesh-passes-only false",
+            "uv run python -m cst_runtime get-1d-result --args-file <stages>\\get_1d_result_args.json",
+        ],
+        "steps": [
+            {"tool": "start-simulation-async", "purpose": "Start the solver without blocking the process."},
+            {"tool": "wait-simulation", "purpose": "Poll is-simulation-running until running=false or timeout."},
+            {"tool": "close-project", "purpose": "Release the modeler project with save=false before results refresh."},
+            {"tool": "list-run-ids", "purpose": "Open/refresh results and discover the latest run_id."},
+            {"tool": "get-1d-result", "purpose": "Read the latest run_id and export JSON."},
+        ],
+        "stop_rules": [
+            "Do not read results before wait-simulation reports running=false.",
+            "Do not save after reading results.",
+            "If the latest run_id is missing, mark needs_validation instead of reading stale data.",
+        ],
+    },
+    "s11-json-comparison": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Turn one or more exported S11 JSON files into an HTML comparison page.",
+        "when_to_use": "After get-1d-result has produced JSON files in the run exports directory.",
+        "required_context": ["S11 JSON export_path or file_paths", "output_html optional"],
+        "commands": [
+            "<get-1d-result JSON output> | uv run python -m cst_runtime generate-s11-comparison",
+            "<json-producing-command> | uv run python -m cst_runtime generate-s11-comparison --args-stdin --args-file <stages>\\s11_comparison_args.json",
+        ],
+        "steps": [
+            {"tool": "get-1d-result", "purpose": "Produce JSON inputs; CSV is not allowed."},
+            {"tool": "generate-s11-comparison", "purpose": "Render JSON inputs to HTML."},
+        ],
+        "stop_rules": [
+            "Only feed .json inputs produced by get-1d-result.",
+            "If multiple files are needed, use --args-file with file_paths and --args-stdin only for explicit merge.",
+        ],
+    },
+    "farfield-realized-gain-preview": {
+        "category": "farfield",
+        "risk": "long-running",
+        "description": "Fresh-session Realized Gain TXT export, grid inspection, and HTML preview.",
+        "when_to_use": "At the end of a results workflow when true gain/dBi farfield evidence is required.",
+        "required_context": ["working_project", "farfield_name", "exports_dir", "analysis_dir"],
+        "commands": [
+            "uv run python -m cst_runtime export-farfield-fresh-session --args-file <stages>\\export_farfield_args.json",
+            "uv run python -m cst_runtime inspect-farfield-ascii --args-file <stages>\\inspect_farfield_args.json",
+            "uv run python -m cst_runtime plot-farfield-multi --args-file <stages>\\plot_farfield_args.json",
+            "uv run python -m cst_runtime read-realized-gain-grid-fresh-session --args-file <stages>\\read_gain_grid_args.json",
+        ],
+        "steps": [
+            {"tool": "export-farfield-fresh-session", "purpose": "Export Realized Gain/Gain/Directivity TXT through a fresh CST session."},
+            {"tool": "inspect-farfield-ascii", "purpose": "Verify row_count and theta/phi counts before trusting the file."},
+            {"tool": "plot-farfield-multi", "purpose": "Render farfield TXT/JSON to HTML."},
+            {"tool": "read-realized-gain-grid-fresh-session", "purpose": "Read true Realized Gain dBi grid through FarfieldCalculator."},
+        ],
+        "stop_rules": [
+            "Never use Abs(E) as dBi gain evidence.",
+            "Farfield export/read is a terminal results step; close with save=false and do not save after reading.",
+            "Validate output_file/output_json existence and grid counts, not only status=success.",
+        ],
+    },
+}
+
+
 TOOLS: dict[str, dict[str, Any]] = {
     "prepare-run": {
         "category": "run",
@@ -906,6 +1222,12 @@ TOOLS: dict[str, dict[str, Any]] = {
         "risk": "read",
         "description": "Check whether the CST solver is currently running for the verified working project.",
         "function": tool_is_simulation_running,
+    },
+    "wait-simulation": {
+        "category": "modeler",
+        "risk": "long-running",
+        "description": "Poll is-simulation-running until the solver finishes or timeout expires.",
+        "function": tool_wait_simulation,
     },
     "infer-run-dir": {
         "category": "project-identity",
@@ -1033,6 +1355,34 @@ def _public_tool_record(name: str, record: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _public_pipeline_record(name: str, record: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "name": name,
+        "category": record["category"],
+        "risk": record["risk"],
+        "description": record["description"],
+        "when_to_use": record.get("when_to_use", ""),
+        "steps": [step.get("tool") for step in record.get("steps", [])],
+    }
+
+
+def _pipeline_record(pipeline_name: str) -> dict[str, Any] | None:
+    record = PIPELINES.get(pipeline_name)
+    if record is None:
+        return None
+    return json.loads(json.dumps(record, ensure_ascii=False))
+
+
+def _pipeline_runbook(pipeline_name: str) -> dict[str, Any]:
+    return {
+        "discover": "uv run python -m cst_runtime list-pipelines",
+        "describe": f"uv run python -m cst_runtime describe-pipeline --pipeline {pipeline_name}",
+        "template": f"uv run python -m cst_runtime pipeline-template --pipeline {pipeline_name} --output <pipeline_plan.json>",
+        "must_check": "After each step, parse stdout JSON and require status == 'success' before continuing.",
+        "rule": "Pipeline recipes are guidance for agent-controlled chaining, not an opaque runner.",
+    }
+
+
 def _tool_args_template(tool_name: str) -> dict[str, Any] | None:
     template = ARGS_TEMPLATES.get(tool_name)
     if template is None:
@@ -1081,10 +1431,18 @@ def main() -> int:
 
     subparsers.add_parser("doctor", help="Run a no-CST-start compatibility self-check.")
     subparsers.add_parser("list-tools", help="List available runtime tools.")
+    subparsers.add_parser("list-pipelines", help="List known runtime pipeline recipes.")
     subparsers.add_parser("usage-guide", help="Print a machine-readable agent usage guide.")
 
     describe = subparsers.add_parser("describe-tool", help="Describe a runtime tool.")
     describe.add_argument("--tool", required=True)
+
+    describe_pipeline = subparsers.add_parser("describe-pipeline", help="Describe a runtime pipeline recipe.")
+    describe_pipeline.add_argument("--pipeline", required=True)
+
+    pipeline_template = subparsers.add_parser("pipeline-template", help="Print or write a JSON pipeline plan.")
+    pipeline_template.add_argument("--pipeline", required=True)
+    pipeline_template.add_argument("--output")
 
     args_template = subparsers.add_parser("args-template", help="Print or write a JSON args template for a runtime tool.")
     args_template.add_argument("--tool", required=True)
@@ -1101,6 +1459,7 @@ def main() -> int:
         direct.add_argument("--args-json")
         direct.add_argument("--args-file")
         direct.add_argument("--args-stdin", action="store_true")
+        _add_direct_args(direct, tool_name)
 
     args = parser.parse_args()
 
@@ -1113,6 +1472,15 @@ def main() -> int:
                 "status": "success",
                 "adapter": "cst_runtime_cli",
                 "tools": [_public_tool_record(name, TOOLS[name]) for name in sorted(TOOLS)],
+            }
+        )
+
+    if args.command == "list-pipelines":
+        return _json_response(
+            {
+                "status": "success",
+                "adapter": "cst_runtime_cli",
+                "pipelines": [_public_pipeline_record(name, PIPELINES[name]) for name in sorted(PIPELINES)],
             }
         )
 
@@ -1137,10 +1505,60 @@ def main() -> int:
                 "tool": _public_tool_record(args.tool, record),
                 "args_template": _tool_args_template(args.tool),
                 "runbook": _tool_runbook(args.tool),
-                "input_style": "Pass arguments with --args-file path.json, --args-json '{...}', --args-stdin, or pipe JSON to stdin. Stdin args merge first; explicit args override them.",
+                "input_style": "Preferred: generate args-template, edit JSON, invoke with --args-file. Direct flags are available for common fields only. Stdin args merge first; --args-file/--args-json/direct flags override earlier values.",
+                "direct_flags": sorted("--" + field.replace("_", "-") for field in DIRECT_ARG_SPECS.get(args.tool, {})),
                 "output_style": "JSON object; production calls also write run audit when project_path maps to a run.",
             }
         )
+
+    if args.command == "describe-pipeline":
+        record = _pipeline_record(args.pipeline)
+        if record is None:
+            return _json_response(
+                {
+                    "status": "error",
+                    "error_type": "unknown_pipeline",
+                    "pipeline": args.pipeline,
+                    "available_pipelines": sorted(PIPELINES),
+                    "adapter": "cst_runtime_cli",
+                }
+            )
+        return _json_response(
+            {
+                "status": "success",
+                "adapter": "cst_runtime_cli",
+                "pipeline": args.pipeline,
+                "recipe": record,
+                "runbook": _pipeline_runbook(args.pipeline),
+            }
+        )
+
+    if args.command == "pipeline-template":
+        record = _pipeline_record(args.pipeline)
+        if record is None:
+            return _json_response(
+                {
+                    "status": "error",
+                    "error_type": "unknown_pipeline",
+                    "pipeline": args.pipeline,
+                    "available_pipelines": sorted(PIPELINES),
+                    "adapter": "cst_runtime_cli",
+                }
+            )
+        plan = {
+            "status": "success",
+            "adapter": "cst_runtime_cli",
+            "pipeline": args.pipeline,
+            "pipeline_plan": record,
+            "runbook": _pipeline_runbook(args.pipeline),
+        }
+        output_path = ""
+        if args.output:
+            output = Path(args.output).expanduser().resolve()
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            output_path = str(output)
+        return _json_response({**plan, "output_path": output_path or None})
 
     if args.command == "args-template":
         record = TOOLS.get(args.tool)
@@ -1186,6 +1604,7 @@ def main() -> int:
                 "adapter": "cst_runtime_cli",
             }
         )
+    tool_args = {**tool_args, **_direct_args_from_namespace(args, tool_name)}
     return _json_response(_invoke_tool(tool_name, tool_args))
 
 

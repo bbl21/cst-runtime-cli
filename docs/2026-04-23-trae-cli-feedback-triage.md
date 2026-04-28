@@ -56,5 +56,5 @@ Trae 已经证明“能跑通”，但反馈说明 `cst_runtime` 对低上下文
 - 任一工具参数写错时，返回 JSON 明确列出错误字段、期望字段和可直接修改的示例。
 - `describe-tool` 与 `args-template` 对同一工具的参数名一致。
 - Access denied 残留必须记录 PID、进程名、原因、锁文件扫描结果和阻塞判断。
-- 低上下文 agent 可以只看 Skill、`usage-guide`、`args-template` 和 troubleshooting 完成一次标准流程。
+- 低上下文 agent 可以只看 Skill、`usage-guide`、`list-pipelines`、`describe-pipeline`、`args-template` 和 troubleshooting 完成一次标准流程。
 - 自动化程度提升不能牺牲可审计性；阶段级命令必须写入关键调用摘要、输入参数、输出路径、状态和错误。

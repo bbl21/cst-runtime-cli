@@ -18,7 +18,7 @@
 - 阶段 C 系统集成、一键迁移模式和四类系统职责：[`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)
 - 轻量 CLI-first 架构决策、`prototype_optimizer` 剪枝、MCP 退场路线、runtime 与 adapter 边界：[`cli-architecture-decision.md`](./cli-architecture-decision.md)
 - 其他 agent 如何正确调用 `cst_runtime`、`doctor` 兼容性自检、错误 JSON 契约和最小自检：[`cst-runtime-agent-usage.md`](./cst-runtime-agent-usage.md)
-- `cst_runtime` 原生管道协议、stdin 合并规则、可串联示例和新增 results/farfield 工具：[`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)
+- `cst_runtime` 原生管道协议、stdin 合并规则、`list-pipelines` / `describe-pipeline` 自学习入口、直接 flags、`wait-simulation` 和新增 results/farfield 工具：[`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)
 - Trae 低上下文 ref_0 CLI-only 验证提示词、任务命名和 ref_0 参考模型路径：[`trae-ref0-cli-low-context-prompt.md`](./trae-ref0-cli-low-context-prompt.md)
 - Trae 低上下文 ref_0 CLI-only 验证结果与阶段判断：[`2026-04-23-trae-ref0-cli-low-context-validation.md`](./2026-04-23-trae-ref0-cli-low-context-validation.md)
 - ref_0 10 GHz fresh-session 真实 CST 远场导出/读取验证结果：[`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)
@@ -42,7 +42,7 @@
 | 系统集成与一键迁移 | [`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md) | MCP、Skill、知识、计划如何集成，如何打包迁移 | `current` |
 | CLI-first 架构决策 | [`cli-architecture-decision.md`](./cli-architecture-decision.md) | CLI 是否应成为主调用界面、`prototype_optimizer` 是否保留、MCP 能否退场、runtime 与 adapter 如何分层 | `current` |
 | Runtime Agent 使用 | [`cst-runtime-agent-usage.md`](./cst-runtime-agent-usage.md) | 其他 agent 如何发现工具、生成 args、调用 CLI、跑兼容性自检、处理错误 JSON | `current` |
-| Runtime 原生管道 | [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md) | CLI 如何读取 stdin JSON、如何合并显式参数、哪些 results/farfield 能力已经迁入 runtime | `current` |
+| Runtime 原生管道 | [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md) | CLI 如何读取 stdin JSON、如何合并显式参数、如何用 `list-pipelines`/`describe-pipeline` 自学习常用链路、直接 flags、`wait-simulation` 和 results/farfield 迁入能力 | `current` |
 | Trae ref_0 CLI 验证提示词 | [`trae-ref0-cli-low-context-prompt.md`](./trae-ref0-cli-low-context-prompt.md) | 给 Trae 的低上下文提示词、ref_0 路径、任务命名和 CLI-only 验收要求 | `current` |
 | Trae ref_0 CLI 验证结果 | [`2026-04-23-trae-ref0-cli-low-context-validation.md`](./2026-04-23-trae-ref0-cli-low-context-validation.md) | Trae 实际完成的低上下文 CLI-only 验证产物、指标和剩余门控 | `current` |
 | ref_0 fresh-session 远场验证 | [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md) | ref_0 10 GHz 真实 CST fresh-session 远场导出、Realized Gain dBi 读取和 P0 门控结论 | `current` |
@@ -63,7 +63,7 @@
 - 想确认“在保留 MCP 主链的同时，如何用 CLI/runtime 跑优化闭环”：看 [`skills/cst-runtime-cli-optimization/SKILL.md`](../skills/cst-runtime-cli-optimization/SKILL.md)。
 - 想确认“如何一键迁移、目标机怎么初始化和校验”：先看 [`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)。
 - 想确认“CLI 化应如何进入正式架构、是否会形成第二条生产链、`prototype_optimizer` 和 MCP 怎么剪枝”：先看 [`cli-architecture-decision.md`](./cli-architecture-decision.md)。
-- 想确认“哪些 `cst_runtime` 命令可以用管道串起来、stdin 和 args-file 如何合并”：先看 [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)。
+- 想确认“哪些 `cst_runtime` 命令可以用管道串起来、stdin 和 args-file 如何合并”：先运行 `uv run python -m cst_runtime list-pipelines`，再看 [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)。
 - 想让其他 agent 照着调用 `cst_runtime`，或确认错误用法是否会返回 JSON：先看 [`cst-runtime-agent-usage.md`](./cst-runtime-agent-usage.md)。
 - 想直接让 Trae 跑 ref_0 的 CLI-only 低上下文验证：复制 [`trae-ref0-cli-low-context-prompt.md`](./trae-ref0-cli-low-context-prompt.md) 中的提示词。
 - 想确认“能否不依赖 MCP 服务，用 CLI 原子工具给 agent 调用”：当前先看 [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)；早期 POC 背景再看 [`cst-cli-atomic-tools-poc.md`](./cst-cli-atomic-tools-poc.md)。

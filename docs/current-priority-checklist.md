@@ -77,7 +77,17 @@
 
 Trae 使用反馈已分流到 [`2026-04-23-trae-cli-feedback-triage.md`](./2026-04-23-trae-cli-feedback-triage.md)。其中与 P0 门控直接相关的是 CST 连接诊断、锁文件检测、`Access is denied` 清理证据和故障排除；参数一致性、严格校验、端到端示例属于 P0 后加固；结果可视化、批量比较、性能和并行处理进入 P1/P2 观察项。
 
-下一任务：先做门控复盘，确认是进入 `P1` 优化指导原型，还是先处理 Trae 反馈中的 P0 后加固项；在用户确认前不自动启动新主线。
+当前任务：加固 Skill + CLI 工具链，确保低上下文 agent 阅读 Skill 后能自学习 CLI 工具与管道操作；先让管道操作可发现、可学习，再把常用链路做成 `list-pipelines` / `describe-pipeline` 可读配方，并同步进 Skill。完成前不启动 `P1` 优化指导原型。
+
+当前 P0 后加固清单：
+
+- [x] CLI 提供机器可读管道发现入口：`list-pipelines`、`describe-pipeline`、`pipeline-template`
+- [x] `usage-guide` 指向固定学习顺序：`doctor -> usage-guide -> list-tools -> list-pipelines -> describe-pipeline -> describe-tool -> args-template`
+- [x] Skill 中列出常用管道链、适用场景和停止规则
+- [x] 文档说明管道链不是黑盒执行器，每一步仍要检查 JSON `status` 并保留审计
+- [x] 验证未知 pipeline、缺 pipeline 参数、`pipeline-template` 输出等错误/正常分支均返回结构化 JSON
+- [x] Skill 明确 `args-template` / `--args-file` 为低上下文首选，补充 `.cst` 文件路径、`change-parameter name/value`、S11 `ydata` 复数结构和 results 刷新流程
+- [x] CLI 对常用字段提供直接 flags，并新增 `wait-simulation` 解决异步仿真手动轮询问题
 
 ## 基础目标映射
 

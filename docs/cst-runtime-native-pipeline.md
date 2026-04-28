@@ -16,6 +16,8 @@
 ```powershell
 uv run python -m cst_runtime doctor
 uv run python -m cst_runtime usage-guide
+uv run python -m cst_runtime list-pipelines
+uv run python -m cst_runtime describe-pipeline --pipeline self-learn-cli
 uv run python -m cst_runtime describe-tool --tool <tool>
 uv run python -m cst_runtime args-template --tool <tool> --output <args.json>
 ```
@@ -52,6 +54,36 @@ final_args = stdin_json + explicit_args
 同名字段以显式参数为准。若未加 `--args-stdin`，存在 `--args-file` / `--args-json` 时 stdin 会被忽略，避免 Trae 等非 TTY 终端卡住。
 
 ## 已验证串联
+
+管道能力已经有机器可读发现入口：
+
+```powershell
+uv run python -m cst_runtime list-pipelines
+uv run python -m cst_runtime describe-pipeline --pipeline latest-s11-preview
+uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --output "$run\stages\latest_s11_pipeline_plan.json"
+```
+
+当前登记的常用链路：
+
+| pipeline | 用途 |
+|---|---|
+| `self-learn-cli` | 新 agent 自学 CLI，不启动 CST |
+| `args-file-tool-call` | 生成 args 文件后调用单个工具 |
+| `project-unlock-check` | 推断 run 并检查 `.lok` |
+| `latest-s11-preview` | 读取最新 S11、导出 JSON、生成 HTML 预览 |
+| `async-simulation-refresh-results` | 异步仿真、内置等待、关闭 modeler、刷新 results、读取最新 run |
+| `s11-json-comparison` | 用 S11 JSON 生成 HTML 对比页 |
+| `farfield-realized-gain-preview` | Realized Gain 远场导出、检查和预览 |
+
+这些链路是 agent 可读计划，不是黑盒执行器。每个步骤仍要检查 JSON `status`，必要时记录到 `stages/`。
+
+低上下文参数规则：
+
+- 不熟悉的工具必须先 `args-template --tool <tool> --output <args.json>`，编辑 JSON 后用 `--args-file` 调用。
+- `project_path` 必须是具体 `.cst` 文件；目录路径应返回结构化错误。
+- `change-parameter` 使用 `name` / `value`；直接 flags 示例：`change-parameter --project-path <working.cst> --name g --value 24`。
+- S11 JSON 的 `ydata` 是复数序列，不是 dB 数组。
+- 异步仿真后使用 `wait-simulation`，再 `close-project --save false`，然后 results 侧重新 `list-run-ids` 并取最新 `run_id`。
 
 项目身份和锁检查：
 
@@ -118,8 +150,10 @@ final_args = stdin_json + explicit_args
 
 ## 验收要求
 
+- 低上下文 agent 应能从 `usage-guide -> list-pipelines -> describe-pipeline -> describe-tool -> args-template` 自学调用方式。
 - 每个管道命令仍必须检查最终 JSON 的 `status`。
 - 缺命令、缺必要 CLI 参数、未知命令等使用错误必须返回 `status="error"` 的 JSON，不能只输出普通 argparse usage 文本。
+- 未知 pipeline 必须返回 `error_type="unknown_pipeline"` 和 `available_pipelines`。
 - 写操作和 session 操作不得被压成不可审计的长黑盒；关键步骤仍写入当前 run 的 `logs/tool_calls.jsonl` 和 `stages/cli_*.json`。
 - 若管道中某一步返回 `status="error"`，后续步骤应停止或显式记录失败，不得继续伪装为完成。
 
