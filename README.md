@@ -1,300 +1,109 @@
-# CST MCP Project
-# CST MCP 项目
+# CST_MCP
 
-This project is a Python package that integrates with CST Studio Suite and MCP (Model Center Platform).
-本项目是一个集成了 CST Studio Suite 和 MCP (Model Center Platform) 的 Python 包。
+CST_MCP 是一套面向 **LLM 主导、人工监督** 的 CST 参数化优化执行系统。项目当前重点不是全自动 3D 建模，而是把已有参数化 CST 工程的优化流程做成可迁移、可审计、低上下文可执行的正式底座。
 
-## Project Structure
-## 项目结构
+当前系统已经覆盖任务创建、工程副本管理、参数读写、仿真启动、仿真等待、结果刷新、S11/远场导出、HTML 可视化、状态审计和知识沉淀。
 
-- `Materials/`: Contains material definitions for CST Studio Suite
-- `Materials/`: 包含 CST Studio Suite 的材料定义
-- `.gitignore`: Git ignore file
-- `.gitignore`: Git 忽略文件
-- `.python-version`: Python version specification
-- `.python-version`: Python 版本规范
-- `pyproject.toml`: Project configuration file
-- `pyproject.toml`: 项目配置文件
+## 当前成果
 
-## Prerequisites
-## 先决条件
+- **统一生产链路**：标准任务与 run 结构已固定，参考工程只读，所有实验在独立工作副本中执行。
+- **MCP + CLI 双层协同**：MCP 保留为稳定生产链与兼容 adapter，`cst_runtime` CLI 作为低上下文、可迁移的 agent 调用界面。
+- **低上下文自学习**：agent 可通过 `doctor -> usage-guide -> list-tools -> list-pipelines -> describe-pipeline -> describe-tool -> args-template` 自学习工具和管道。
+- **结果能力成型**：已支持 results run_id 读取、1D/S11 JSON 导出、S11 HTML 对比、远场 Realized Gain/Gain/Directivity 导出与预览。
+- **管道操作可发现**：`list-pipelines`、`describe-pipeline`、`pipeline-template` 提供常用链路配方，不把流程封成不可审计黑盒。
+- **P0 底座已验证**：低上下文 CLI-only 流程与 ref_0 10 GHz fresh-session 远场导出/读取均已完成实机验证。
 
-- Python 3.13 or higher
-- Python 3.13 或更高版本
-- CST Studio Suite 2026
-- CST Studio Suite 2026
-- MCP (Model Center Platform) 1.25.0 or higher
-- MCP (Model Center Platform) 1.25.0 或更高版本
-- uv package manager
-- uv 包管理器
-
-### Installing uv
-### 安装 uv
-
-```bash
-# Install uv using pip
-# 使用 pip 安装 uv
-pip install uv
-
-# Or install uv directly
-# 或直接安装 uv
-# For Windows:
-# Windows系统：
-winget install uv.uv
-
-# For macOS:
-# macOS系统：
-brew install uv
-
-# For Linux:
-# Linux系统：
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-## Installation
-## 安装
-
-### Using uv (Recommended)
-### 使用 uv（推荐）
-
-1. **Clone the repository**
-1. **克隆仓库**
-   ```bash
-   git clone <repository-url>
-   cd CST_MCP
-   ```
-
-2. **Create and activate virtual environment using uv**
-2. **使用 uv 创建并激活虚拟环境**
-   ```bash
-   # Create virtual environment
-   # 创建虚拟环境
-   uv venv
-
-   # Activate virtual environment
-   # 激活虚拟环境
-   # Windows:
-   # Windows系统：
-   .venv\Scripts\activate
-   # macOS/Linux:
-   # macOS/Linux系统：
-   source .venv/bin/activate
-   ```
-
-3. **Install dependencies using uv**
-3. **使用 uv 安装依赖**
-   ```bash
-   uv add .
-   ```
-
-### Using Traditional pip
-### 使用传统 pip
-
-1. **Clone the repository**
-1. **克隆仓库**
-   ```bash
-   git clone <repository-url>
-   cd CST_MCP
-   ```
-
-2. **Create a virtual environment**
-2. **创建虚拟环境**
-   ```bash
-   python -m venv .venv
-   ```
-
-3. **Activate the virtual environment**
-3. **激活虚拟环境**
-   - Windows:
-   - Windows系统：
-     ```bash
-     .venv\Scripts\activate
-     ```
-   - macOS/Linux:
-   - macOS/Linux系统：
-     ```bash
-     source .venv/bin/activate
-     ```
-
-4. **Install dependencies**
-4. **安装依赖**
-   ```bash
-   uv pip install -e .
-   ```
-
-## Dependencies
-## 依赖项
-
-- `cst-studio-suite-link`: CST Studio Suite Python libraries
-- `cst-studio-suite-link`: CST Studio Suite Python 库
-- `mcp[cli]>=1.25.0`: Model Center Platform CLI
-- `mcp[cli]>=1.25.0`: Model Center Platform 命令行工具
-
-## Usage
-## 使用方法
-
-## Portable Migration Mode
-## 一键迁移模式
-
-The current formal production entry is not the Streamlit prototype or a temporary script. Use a task directory and start from the modeler MCP:
-当前正式生产入口不是 Streamlit 原型，也不是临时脚本。请使用任务目录，并从 modeler MCP 开始：
+## 标准 run 结构
 
 ```text
-tasks/task_xxx_slug/ -> cst-modeler.prepare_new_run(task_path=...)
+tasks/task_xxx_slug/
+  task.json
+  runs/
+    run_001/
+      projects/
+      exports/
+      logs/
+      stages/
+      analysis/
+      status.json
+      summary.md
 ```
 
-To build a portable system bundle:
-生成可迁移系统包：
+关键约束：
+
+- `ref/`、`ref_model/` 等参考工程只读。
+- 每次任务必须创建独立 run 和工作工程副本。
+- `project_path` 必须指向具体 `.cst` 文件，例如 `...\projects\working.cst`。
+- 结果读取、导出和状态变化必须落盘到当前 run。
+
+## 快速入口
+
+项目依赖 `uv`、Python 3.13+、CST Studio Suite 2026。
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools/build_portable_bundle.ps1
+uv run python -m cst_runtime doctor
+uv run python -m cst_runtime usage-guide
+uv run python -m cst_runtime list-tools
+uv run python -m cst_runtime list-pipelines
 ```
 
-Optional large-data switches:
-可选大数据开关：
+查看单个工具：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools/build_portable_bundle.ps1 -IncludeRef
-powershell -ExecutionPolicy Bypass -File tools/build_portable_bundle.ps1 -IncludeTasks
+uv run python -m cst_runtime describe-tool --tool change-parameter
+uv run python -m cst_runtime args-template --tool change-parameter --output .\tmp\change_parameter_args.json
+uv run python -m cst_runtime change-parameter --args-file .\tmp\change_parameter_args.json
 ```
 
-On the target machine, extract the zip and run:
-在目标机器解压后运行：
+常用字段也支持直接参数：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools/install_mcp_one_click.ps1
+uv run python -m cst_runtime change-parameter --project-path .\tasks\task_xxx\runs\run_001\projects\working.cst --name g --value 24
+uv run python -m cst_runtime wait-simulation --project-path .\tasks\task_xxx\runs\run_001\projects\working.cst --timeout-seconds 3600 --poll-interval-seconds 10
 ```
 
-If CST Studio Suite 2026 is not installed in the default path, pass `-CstLibraryPath`.
-如果 CST Studio Suite 2026 不在默认路径，请传入 `-CstLibraryPath`。
+## 常用管道
 
-The one-click installer initializes dependencies, writes `.codex/config.toml`, starts `cst-modeler-http` and `cst-results-http`, and verifies both MCP services with `tools/list`.
-一键安装脚本会初始化依赖、写入 `.codex/config.toml`、启动 `cst-modeler-http` 与 `cst-results-http`，并用 `tools/list` 验证两个 MCP 服务。
-
-See `docs/phase-c-system-integration-and-portable-mode.md` for the current system boundary.
-当前系统边界见 `docs/phase-c-system-integration-and-portable-mode.md`。
-
-### Basic Usage
-### 基本用法
-
-
-### Adding the MCP in Trae
-### 在 Trae 中添加 MCP
-
-> **Note:** This MCP relies on the uv package manager for virtual environment management and startup.
-> **注意：** 此 MCP 依赖 uv 包管理器进行虚拟环境管理和启动。
-
-#### Method 1: Using JSON Configuration
-#### 方法 1: 使用 JSON 配置
-
-1. **Create a JSON configuration file** with the following content:
-1. **创建一个 JSON 配置文件**，内容如下：
-
-```json
-{
-  "mcpServers": {
-    "cst_interface": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "...\\CST_MCP",
-        "run",
-        "advanced_mcp.py"
-      ]
-    }
-  }
-}
+```powershell
+uv run python -m cst_runtime list-pipelines
+uv run python -m cst_runtime describe-pipeline --pipeline async-simulation-refresh-results
+uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --output .\tmp\latest_s11_pipeline_plan.json
 ```
 
-#### About the uv Startup Configuration
-#### 关于 uv 启动配置
+当前已登记的主要管道：
 
-The JSON configuration uses `uv` as the command to start the MCP, which:
-JSON 配置使用 `uv` 作为启动 MCP 的命令，它会：
+- `self-learn-cli`：低上下文 agent 入场自学习。
+- `args-file-tool-call`：生成 args 文件并调用工具。
+- `project-unlock-check`：推断 run 并检查 `.lok`。
+- `async-simulation-refresh-results`：异步仿真、等待、关闭 modeler、刷新 results、读取最新 run。
+- `latest-s11-preview`：读取最新 S11、导出 JSON、生成 HTML 预览。
+- `s11-json-comparison`：用 S11 JSON 生成 HTML 对比页。
+- `farfield-realized-gain-preview`：远场真实增益导出、检查和预览。
 
-1. **Sets the working directory** to the project folder using `--directory`
-1. **设置工作目录** 到项目文件夹，使用 `--directory`
-2. **Runs the advanced_mcp.py script** using `uv run`
-2. **运行 advanced_mcp.py 脚本**，使用 `uv run`
-3. **Automatically uses the virtual environment** created by uv
-3. **自动使用** uv 创建的虚拟环境
+## 结果读取规则
 
-This ensures that the MCP runs with all the necessary dependencies installed in the uv-managed virtual environment.
-这确保了 MCP 在 uv 管理的虚拟环境中运行，包含所有必要的依赖项。
+- 仿真完成后，先关闭 modeler 工程：`close-project --save false`。
+- results 侧重新打开/刷新后，以 `list-run-ids` 返回的最新 `run_id` 为准。
+- S11 JSON 中 `xdata` 是频率序列，`ydata` 是复数序列，元素通常为 `{"real": ..., "imag": ...}`。
+- S11 dB 需要按 `20*log10(sqrt(real^2 + imag^2))` 计算。
+- 远场绝对增益只能使用 `Realized Gain` / `Gain` / `Directivity`；`Abs(E)` 不能标记为 dBi。
 
-2. **Import the JSON file** in Trae:
-2. **在 Trae 中导入 JSON 文件**：
-   - Open Trae IDE
-   - 打开 Trae IDE
-   - Navigate to the MCP section
-   - 导航到 MCP 部分
-   - Click on "Import MCP Configuration" or similar option
-   - 点击 "导入 MCP 配置" 或类似选项
-   - Select the JSON file you created
-   - 选择你创建的 JSON 文件
-   - Confirm the import
-   - 确认导入
+## 关键文档
 
-### Verifying the MCP in Trae
-### 在 Trae 中验证 MCP
+- 项目目标与阶段计划：[`docs/project-goals-and-plan.md`](docs/project-goals-and-plan.md)
+- 当前优先清单：[`docs/current-priority-checklist.md`](docs/current-priority-checklist.md)
+- 文档导航：[`docs/topic-index.md`](docs/topic-index.md)
+- CLI agent 使用指南：[`docs/cst-runtime-agent-usage.md`](docs/cst-runtime-agent-usage.md)
+- Runtime 原生管道：[`docs/cst-runtime-native-pipeline.md`](docs/cst-runtime-native-pipeline.md)
+- CLI 架构决策：[`docs/cli-architecture-decision.md`](docs/cli-architecture-decision.md)
+- Runtime Skill：[`skills/cst-runtime-cli-optimization/SKILL.md`](skills/cst-runtime-cli-optimization/SKILL.md)
 
-1. **Check the MCP list** in Trae
-1. **检查 Trae 中的 MCP 列表**
-2. **Ensure the CST MCP project is listed**
-2. **确保 CST MCP 项目已列出**
-3. **Test the MCP** by running a simple workflow
-3. **通过运行简单工作流测试 MCP**
+## 当前边界
 
-## Materials
-## 材料
+当前 P0 底座已验证，但系统仍按阶段推进：
 
-The project includes a comprehensive set of material definitions in the `Materials/` directory, including:
-项目在 `Materials/` 目录中包含了一套全面的材料定义，包括：
-
-- Conductors (Aluminum, Copper, Gold, etc.)
-- 导体（铝、铜、金等）
-- Dielectrics (FR-4, PTFE, etc.)
-- 电介质（FR-4、PTFE 等）
-- Absorbers (ECCOSORB series)
-- 吸收体（ECCOSORB 系列）
-- Semiconductors (Gallium Arsenide)
-- 半导体（砷化镓）
-- And many more...
-- 以及更多...
-
-## Configuration
-## 配置
-
-The project is configured using `pyproject.toml`, which specifies:
-项目使用 `pyproject.toml` 进行配置，其中指定了：
-
-- Project metadata
-- 项目元数据
-- Python version requirements
-- Python 版本要求
-- Dependencies
-- 依赖项
-- Source locations for CST Studio Suite libraries
-- CST Studio Suite 库的源位置
-
-## Troubleshooting
-## 故障排除
-
-### Common Issues
-### 常见问题
-
-1. **CST Studio Suite path not found**
-1. **找不到 CST Studio Suite 路径**
-   - Ensure CST Studio Suite 2026 is installed in the default location
-   - 确保 CST Studio Suite 2026 安装在默认位置
-   - Verify the path in `pyproject.toml` is correct
-   - 验证 `pyproject.toml` 中的路径是否正确
-
-2. **Python version compatibility**
-2. **Python 版本兼容性**
-   - Ensure you're using Python 3.13 or higher
-   - 确保使用 Python 3.13 或更高版本
-   - Check the `.python-version` file for the recommended version
-   - 查看 `.python-version` 文件了解推荐版本
-
+- 不把 CLI 当成第二条生产链；它是 `cst_runtime` 能力层的主要低上下文调用界面。
+- MCP 仍保留为稳定生产链和兼容 adapter。
+- 不把自然语言直接生成 3D 模型作为当前阶段目标。
+- 进入 P1 优化指导原型前，应继续保持底座稳定、可审计、可迁移。
 
