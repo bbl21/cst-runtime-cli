@@ -42,7 +42,7 @@
 
 本次验证关闭了“第三方 coding agent 低上下文端到端验证”缺口，说明 Trae 可以按 Skill 和 CLI 工具完成 ref_0 S11 闭环。
 
-本文写成时，P0 尚有一个开放门控：`fresh-session` 真实 CST 远场导出/读取生产验证。该缺口已在后续 `ref_0` 10 GHz 验证中关闭，见 [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)。
+本文写成时，P0 尚有一个开放门控：`fresh-session` 真实 CST 远场导出/读取生产验证。该缺口已在后续 `ref_0` 10 GHz 验证中关闭，见 [`validations/2026-04-23-ref0-fresh-session-farfield-validation.md`](2026-04-23-ref0-fresh-session-farfield-validation.md)。
 
 ## 收尾残留
 

@@ -1,4 +1,4 @@
-# CST_MCP
+﻿# CST_MCP
 
 CST_MCP 是一套面向 **LLM 主导、人工监督** 的 CST 参数化优化执行系统。项目当前重点不是全自动 3D 建模，而是把已有参数化 CST 工程的优化流程做成可迁移、可审计、低上下文可执行的正式底座。
 
@@ -115,7 +115,7 @@ uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --o
 
 ## 展示案例
 
-- 近轴方向图平坦度优化：[`docs/showcase-flatness-optimization.md`](docs/showcase-flatness-optimization.md)
+- 近轴方向图平坦度优化：[`docs/validations/showcase-flatness-optimization.md`](docs/validations/showcase-flatness-optimization.md)
 
 该案例展示了系统如何从 baseline 出发，通过目标函数重定义、单参数探针、负例排除和局部细化，把多频点近轴 flatness 的 worst-case 从 `18.423 dB` 优化到 `14.107 dB`。案例只保留脱敏后的指标和决策链，不包含 CST 原始工程或大结果文件。
 
@@ -124,9 +124,9 @@ uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --o
 - 项目目标与阶段计划：[`docs/project-goals-and-plan.md`](docs/project-goals-and-plan.md)
 - 当前优先清单：[`docs/current-priority-checklist.md`](docs/current-priority-checklist.md)
 - 文档导航：[`docs/topic-index.md`](docs/topic-index.md)
-- CLI agent 使用指南：[`docs/cst-runtime-agent-usage.md`](docs/cst-runtime-agent-usage.md)
-- Runtime 原生管道：[`docs/cst-runtime-native-pipeline.md`](docs/cst-runtime-native-pipeline.md)
-- CLI 架构决策：[`docs/cli-architecture-decision.md`](docs/cli-architecture-decision.md)
+- CLI agent 使用指南：[`docs/runtime/cst-runtime-agent-usage.md`](docs/runtime/cst-runtime-agent-usage.md)
+- Runtime 原生管道：[`docs/runtime/cst-runtime-native-pipeline.md`](docs/runtime/cst-runtime-native-pipeline.md)
+- CLI 架构决策：[`docs/architecture/cli-architecture-decision.md`](docs/architecture/cli-architecture-decision.md)
 - Runtime Skill：[`skills/cst-runtime-cli-optimization/SKILL.md`](skills/cst-runtime-cli-optimization/SKILL.md)
 
 ## 当前边界

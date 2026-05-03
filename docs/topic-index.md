@@ -1,79 +1,130 @@
-# docs 专题索引
+﻿# docs 专题索引
 
 > 本页是 `docs/` 的专题导航，不是规则源。  
-> 红线与约束以 `AGENTS.md` 为准；执行流程以 `skills/cst-simulation-optimization/SKILL.md` 为准；稳定事实与长期共识以 `MEMORY.md` 为准。
+> 红线与约束以 `AGENTS.md` 为准；阶段目标以 `project-goals-and-plan.md` 与 `current-priority-checklist.md` 为准；执行流程以对应 Skill 为准；稳定事实与长期共识以 `MEMORY.md` 为准。
 
 ## 使用方式
 
-1. 只有在确认问题属于背景说明、历史方案、经验细节、结构说明时，才进入 `docs/`。
-2. 若不知道该看哪篇，先看本页，再按主题下钻。
-3. 若 `docs/` 内容与 `AGENTS.md`、`docs/project-goals-and-plan.md`、`SKILL.md`、`MEMORY.md` 冲突，以上四者优先。
+1. 先判断问题类型：当前状态、阶段计划、执行流程、架构边界、经验参考、验证记录或历史背景。
+2. 只读对应分类下的文档，不从平铺文件名里猜入口。
+3. 若文档之间冲突，优先级为：`AGENTS.md` > `project-goals-and-plan.md` / `current-priority-checklist.md` > Skill > `MEMORY.md` > 其他 `docs/`。
+4. 文档生命周期、是否常维护、是否历史归档，见 [`core/docs-maintenance-map.md`](core/docs-maintenance-map.md)。
 
-## 当前高频入口
+## 高频入口
 
-- 当前阶段主线、阶段目标、验收标准、风险边界：[`project-goals-and-plan.md`](./project-goals-and-plan.md)
-- 本周优先级、是否支撑 P0、是否属于插队：[`current-priority-checklist.md`](./current-priority-checklist.md)
-- 当前唯一正式入口、旁路冻结范围和本周退出生产职责名单：[`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)
-- 阶段 B 主生产链、状态落盘工具和旁路降级结果：[`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md)
-- 阶段 C 系统集成、一键迁移模式和四类系统职责：[`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)
-- 轻量 CLI-first 架构决策、`prototype_optimizer` 剪枝、MCP 退场路线、runtime 与 adapter 边界：[`cli-architecture-decision.md`](./cli-architecture-decision.md)
-- 其他 agent 如何正确调用 `cst_runtime`、`doctor` 兼容性自检、错误 JSON 契约和最小自检：[`cst-runtime-agent-usage.md`](./cst-runtime-agent-usage.md)
-- `cst_runtime` 原生管道协议、stdin 合并规则、`list-pipelines` / `describe-pipeline` 自学习入口、直接 flags、`wait-simulation` 和新增 results/farfield 工具：[`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)
-- Trae 低上下文 ref_0 CLI-only 验证提示词、任务命名和 ref_0 参考模型路径：[`trae-ref0-cli-low-context-prompt.md`](./trae-ref0-cli-low-context-prompt.md)
-- Trae 低上下文 ref_0 CLI-only 验证结果与阶段判断：[`2026-04-23-trae-ref0-cli-low-context-validation.md`](./2026-04-23-trae-ref0-cli-low-context-validation.md)
-- ref_0 10 GHz fresh-session 真实 CST 远场导出/读取验证结果：[`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)
-- Trae CLI 使用反馈、P0/P1 分流和后续加固验收标准：[`2026-04-23-trae-cli-feedback-triage.md`](./2026-04-23-trae-cli-feedback-triage.md)
-- 2026-04-21 工作收尾、CLI 兼容性知识回收、残留问题和明日门控任务：[`2026-04-21-work-handoff.md`](./2026-04-21-work-handoff.md)
-- 已归档的 CST CLI 原子工具 POC、项目身份校验和无 MCP 服务工具化验证：[`cst-cli-atomic-tools-poc.md`](./cst-cli-atomic-tools-poc.md)
-- 2026-04-20 工作收尾、知识回收和明日计划：[`2026-04-20-work-handoff.md`](./2026-04-20-work-handoff.md)
-- CST 建模、结果读取、导出、session 相关经验：[`cst-modeling-notes.md`](./cst-modeling-notes.md)
-- 仓库结构、标准任务目录、关键源码位置：[`project-layout.md`](./project-layout.md)
-- run 目录、日志、导出物和状态文件如何分层落盘：[`file_management_rules.md`](./file_management_rules.md)
-- 历史优化方案与旧架构思路：[`optimization_plan.md`](./optimization_plan.md)
+- 想知道项目现在做到哪、哪些能力已验证、下一步工程主线是什么：[`core/project-current-status.md`](core/project-current-status.md)
+- 想判断当前任务该不该做、是否偏离主线：[`project-goals-and-plan.md`](./project-goals-and-plan.md) -> [`current-priority-checklist.md`](./current-priority-checklist.md)
+- 想确认文档该看哪篇、哪些文档常维护或已归档：[`core/docs-maintenance-map.md`](core/docs-maintenance-map.md)
+- 想让低上下文 agent 学会 runtime/CLI：[`runtime/cst-runtime-agent-usage.md`](runtime/cst-runtime-agent-usage.md) -> [`runtime/cst-runtime-native-pipeline.md`](runtime/cst-runtime-native-pipeline.md)
+- 想确认正式入口、run 落盘和主生产链：[`workflow/formal-entry-and-bypass-audit.md`](workflow/formal-entry-and-bypass-audit.md) -> [`architecture/phase-b-main-chain-consolidation.md`](architecture/phase-b-main-chain-consolidation.md)
 
-## 按主题查
+## Core
 
-| 主题 | 先看文档 | 主要回答什么 | 状态 |
-| --- | --- | --- | --- |
-| 当前主线与阶段边界 | [`project-goals-and-plan.md`](./project-goals-and-plan.md) | 当前要解决什么、验收标准是什么、什么暂不做 | `current` |
-| 本周优先级 | [`current-priority-checklist.md`](./current-priority-checklist.md) | 新任务是否直接支撑 P0、能不能插队 | `current` |
-| 正式入口与旁路冻结 | [`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md) | 当前唯一正式入口是什么、哪些脚本必须退出生产职责 | `current` |
-| 主生产链收口 | [`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md) | run 创建、执行、导出、对比、状态落盘如何统一到同一主链 | `current` |
-| 系统集成与一键迁移 | [`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md) | MCP、Skill、知识、计划如何集成，如何打包迁移 | `current` |
-| CLI-first 架构决策 | [`cli-architecture-decision.md`](./cli-architecture-decision.md) | CLI 是否应成为主调用界面、`prototype_optimizer` 是否保留、MCP 能否退场、runtime 与 adapter 如何分层 | `current` |
-| Runtime Agent 使用 | [`cst-runtime-agent-usage.md`](./cst-runtime-agent-usage.md) | 其他 agent 如何发现工具、生成 args、调用 CLI、跑兼容性自检、处理错误 JSON | `current` |
-| Runtime 原生管道 | [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md) | CLI 如何读取 stdin JSON、如何合并显式参数、如何用 `list-pipelines`/`describe-pipeline` 自学习常用链路、直接 flags、`wait-simulation` 和 results/farfield 迁入能力 | `current` |
-| Trae ref_0 CLI 验证提示词 | [`trae-ref0-cli-low-context-prompt.md`](./trae-ref0-cli-low-context-prompt.md) | 给 Trae 的低上下文提示词、ref_0 路径、任务命名和 CLI-only 验收要求 | `current` |
-| Trae ref_0 CLI 验证结果 | [`2026-04-23-trae-ref0-cli-low-context-validation.md`](./2026-04-23-trae-ref0-cli-low-context-validation.md) | Trae 实际完成的低上下文 CLI-only 验证产物、指标和剩余门控 | `current` |
-| ref_0 fresh-session 远场验证 | [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md) | ref_0 10 GHz 真实 CST fresh-session 远场导出、Realized Gain dBi 读取和 P0 门控结论 | `current` |
-| Trae CLI 使用反馈分流 | [`2026-04-23-trae-cli-feedback-triage.md`](./2026-04-23-trae-cli-feedback-triage.md) | Trae 使用反馈如何分为 P0 门控、P0 后加固和 P1/P2 观察项 | `current` |
-| 今日收尾与明日门控 | [`2026-04-21-work-handoff.md`](./2026-04-21-work-handoff.md) | CLI 兼容性、工具清理、残留问题、明天第一任务和 P1 门控结论 | `handoff` |
-| CLI 原子工具 POC | [`cst-cli-atomic-tools-poc.md`](./cst-cli-atomic-tools-poc.md) | 早期 `tools/cst_cli.py` POC 如何验证轻量 CLI 暴露给 agent；当前脚本已归档 | `historical` |
-| 早期收尾与次日计划 | [`2026-04-20-work-handoff.md`](./2026-04-20-work-handoff.md) | CLI POC 后的知识回收、次日阶段 D 计划和禁止事项 | `handoff` |
-| 建模与结果经验 | [`cst-modeling-notes.md`](./cst-modeling-notes.md) | 建模细节、远场/S11/session/导出相关坑和经验 | `reference` |
-| 目录结构与源码入口 | [`project-layout.md`](./project-layout.md) | 仓库里各目录做什么、关键源码在哪 | `reference` |
-| 文件管理与 run 落盘 | [`file_management_rules.md`](./file_management_rules.md) | task/run 目录、日志、导出和分析产物如何归类 | `reference` |
-| 历史优化思路 | [`optimization_plan.md`](./optimization_plan.md) | 旧阶段的优化架构设想和背景 | `historical` |
+这些文档是当前状态和阶段管理入口，应保持短、准、可维护。
 
-## 按问题查
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`core/project-current-status.md`](core/project-current-status.md) | 当前已验证能力、工程边界、ref_0/ref_2 状态、下一步工程主线 | `current` |
+| [`project-goals-and-plan.md`](./project-goals-and-plan.md) | 项目定位、阶段目标、当前主攻方向、验收标准 | `current` |
+| [`current-priority-checklist.md`](./current-priority-checklist.md) | 当前优先级、当前主线、明确不做事项 | `current` |
+| [`core/docs-maintenance-map.md`](core/docs-maintenance-map.md) | docs 文档分类、生命周期、维护建议 | `current` |
+| [`topic-index.md`](./topic-index.md) | docs 导航入口 | `current` |
 
-- 想判断“这件事现在该不该做、算不算偏离主线”：先看 [`project-goals-and-plan.md`](./project-goals-and-plan.md)，再看 [`current-priority-checklist.md`](./current-priority-checklist.md)。
-- 想确认“当前唯一正式入口到底是什么、哪些旧路径本周必须退出生产职责”：先看 [`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)。
-- 想确认“主链每一步该用哪个 MCP 工具、状态和阶段记录怎么落盘”：先看 [`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md)，再看 [`skills/cst-simulation-optimization/SKILL.md`](../skills/cst-simulation-optimization/SKILL.md)。
-- 想确认“在保留 MCP 主链的同时，如何用 CLI/runtime 跑优化闭环”：看 [`skills/cst-runtime-cli-optimization/SKILL.md`](../skills/cst-runtime-cli-optimization/SKILL.md)。
-- 想确认“如何一键迁移、目标机怎么初始化和校验”：先看 [`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)。
-- 想确认“CLI 化应如何进入正式架构、是否会形成第二条生产链、`prototype_optimizer` 和 MCP 怎么剪枝”：先看 [`cli-architecture-decision.md`](./cli-architecture-decision.md)。
-- 想确认“哪些 `cst_runtime` 命令可以用管道串起来、stdin 和 args-file 如何合并”：先运行 `uv run python -m cst_runtime list-pipelines`，再看 [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)。
-- 想让其他 agent 照着调用 `cst_runtime`，或确认错误用法是否会返回 JSON：先看 [`cst-runtime-agent-usage.md`](./cst-runtime-agent-usage.md)。
-- 想直接让 Trae 跑 ref_0 的 CLI-only 低上下文验证：复制 [`trae-ref0-cli-low-context-prompt.md`](./trae-ref0-cli-low-context-prompt.md) 中的提示词。
-- 想确认“能否不依赖 MCP 服务，用 CLI 原子工具给 agent 调用”：当前先看 [`cst-runtime-native-pipeline.md`](./cst-runtime-native-pipeline.md)；早期 POC 背景再看 [`cst-cli-atomic-tools-poc.md`](./cst-cli-atomic-tools-poc.md)。
-- 想确认“某个建模、results、导出或 session 坑以前有没有踩过”：先看 [`cst-modeling-notes.md`](./cst-modeling-notes.md)。
-- 想确认“路径应该放哪、run 结构怎么分、哪些文件该落在哪层”：先看 [`file_management_rules.md`](./file_management_rules.md)，再补看 [`project-layout.md`](./project-layout.md)。
-- 想快速知道“仓库哪里是正式入口、哪里只是辅助目录”：先看 [`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)，再看 [`project-layout.md`](./project-layout.md)。
-- 想了解“某个旧文档是不是当前主线依据”：先看其状态；标记为 `historical` 的文档只作背景参考，不直接指导当前任务。
+## Architecture
+
+这些文档解释架构决策、阶段收口和系统职责边界。
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`architecture/cli-architecture-decision.md`](architecture/cli-architecture-decision.md) | CLI-first 架构决策、runtime 与 MCP adapter 边界、`prototype_optimizer` 剪枝 | `current` |
+| [`architecture/phase-b-main-chain-consolidation.md`](architecture/phase-b-main-chain-consolidation.md) | 阶段 B 主生产链收口、状态落盘、旁路降级 | `current` |
+| [`architecture/phase-c-system-integration-and-portable-mode.md`](architecture/phase-c-system-integration-and-portable-mode.md) | 阶段 C 系统集成、一键迁移、四类系统职责 | `current` |
+
+## Runtime
+
+这些文档面向 `cst_runtime`、CLI、低上下文 agent 和管道调用。
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`runtime/cst-runtime-agent-usage.md`](runtime/cst-runtime-agent-usage.md) | agent 如何发现工具、生成 args、调用 CLI、处理错误 JSON | `current` |
+| [`runtime/cst-runtime-native-pipeline.md`](runtime/cst-runtime-native-pipeline.md) | CLI 管道协议、stdin/args 合并、`list-pipelines`、`wait-simulation`、results/farfield 能力 | `current` |
+| [`runtime/cst-session-process-management-test-plan.md`](runtime/cst-session-process-management-test-plan.md) | CST 进程/session 管理系统的 full gate 测试矩阵，覆盖 inspect/open/reattach/close/quit/Access denied 残留 | `current` |
+| [`runtime/mcp-cli-skill-migration-plan.md`](runtime/mcp-cli-skill-migration-plan.md) | 按通用开发标准规划 MCP/CLI/Skill 分类迁移、管道适配标记和问题工具登记 | `current` |
+| [`runtime/mcp-cli-skill-migration-execution-2026-05-03.md`](runtime/mcp-cli-skill-migration-execution-2026-05-03.md) | MCP/CLI/Skill 迁移计划执行记录、台账统计、首批 file-only 迁移和分层验收结果 | `execution-record` |
+| [`runtime/trae-ref0-cli-low-context-prompt.md`](runtime/trae-ref0-cli-low-context-prompt.md) | 给 Trae/低上下文 agent 的 ref_0 CLI-only 验证提示词 | `reference` |
+
+## Workflow
+
+这些文档说明正式入口、文件布局、run 落盘和主链流程。
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`workflow/formal-entry-and-bypass-audit.md`](workflow/formal-entry-and-bypass-audit.md) | 当前唯一正式入口、旁路冻结范围、旧路径退出生产职责 | `current` |
+| [`workflow/file_management_rules.md`](workflow/file_management_rules.md) | task/run 目录、日志、导出物、状态文件如何分层落盘 | `reference` |
+| [`workflow/project-layout.md`](workflow/project-layout.md) | 仓库结构、标准任务目录、关键源码位置 | `reference` |
+
+## Reference
+
+这些文档提供背景经验、专题调研和学习路径。它们不能覆盖 `AGENTS.md`、阶段计划或 Skill。
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`reference/cst-modeling-notes.md`](reference/cst-modeling-notes.md) | CST 建模、结果读取、导出、session 相关经验 | `reference` |
+| [`reference/model-intent-check-solid-research.md`](reference/model-intent-check-solid-research.md) | LEAM 调研、model intent、Check Solid 设计结论 | `reference` |
+| [`reference/cst-project-experience-mining.md`](reference/cst-project-experience-mining.md) | 从历史 CST 工程和可能保留的 `run_id`/`1D Results` 中提炼经验库的设想 | `reference` |
+| [`reference/cst-mcp-learning-plan.md`](reference/cst-mcp-learning-plan.md) | 项目负责人补齐操作系统、测试、数据建模、CLI 协议和架构能力的学习计划 | `reference` |
+
+## Validations
+
+这些文档是一次性验证或案例记录。它们提供证据，但不自动成为当前流程入口。
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`validations/2026-04-23-trae-ref0-cli-low-context-validation.md`](validations/2026-04-23-trae-ref0-cli-low-context-validation.md) | Trae 低上下文 ref_0 CLI-only 验证结果 | `validated-record` |
+| [`validations/2026-04-23-ref0-fresh-session-farfield-validation.md`](validations/2026-04-23-ref0-fresh-session-farfield-validation.md) | ref_0 10 GHz fresh-session 远场导出和 Realized Gain dBi 读取验证 | `validated-record` |
+| [`validations/2026-04-23-trae-cli-feedback-triage.md`](validations/2026-04-23-trae-cli-feedback-triage.md) | Trae 使用反馈分流、P0/P1/P2 归类 | `triage-record` |
+| [`validations/showcase-flatness-optimization.md`](validations/showcase-flatness-optimization.md) | 近轴方向图平坦度优化展示案例 | `case-record` |
+
+## Handoffs
+
+这些文档是日终收尾和次日计划记录。它们只作为历史上下文，不作为当前入口。
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`handoffs/2026-04-20-work-handoff.md`](handoffs/2026-04-20-work-handoff.md) | 2026-04-20 工作收尾、知识回收、次日计划 | `archived-record` |
+| [`handoffs/2026-04-21-work-handoff.md`](handoffs/2026-04-21-work-handoff.md) | 2026-04-21 工作收尾、残留问题、次日门控 | `archived-record` |
+
+## Historical
+
+这些文档默认不指导当前任务，只在追溯背景时阅读。
+
+| 文档 | 用途 | 状态 |
+| --- | --- | --- |
+| [`archive/cst-cli-atomic-tools-poc.md`](archive/cst-cli-atomic-tools-poc.md) | 早期 CLI 原子工具 POC，当前已被 `cst_runtime` 路线取代 | `historical` |
+| [`archive/optimization_plan.md`](archive/optimization_plan.md) | 旧 CST Antenna Optimizer Skill 优化计划 | `historical` |
+| [`archive/2026-04-24-cli-first-rearchitecture-ppt.md`](archive/2026-04-24-cli-first-rearchitecture-ppt.md) | CLI-first runtime 底座汇报稿 | `historical` |
+| [`archive/p0-completion-checklist-2026-04-23.md`](archive/p0-completion-checklist-2026-04-23.md) | P0 完成长清单归档 | `historical` |
+| [`archive/project-goals-and-plan-pre-cleanup-2026-05-02.md`](archive/project-goals-and-plan-pre-cleanup-2026-05-02.md) | 项目目标文档清洗前长版归档 | `historical` |
+
+## 常见问题入口
+
+- 当前任务是否能插队：先看 [`project-goals-and-plan.md`](./project-goals-and-plan.md)，再看 [`current-priority-checklist.md`](./current-priority-checklist.md)。
+- 当前项目状态和下一步工程主线：看 [`core/project-current-status.md`](core/project-current-status.md)。
+- 文档应该归哪类、是否常维护：看 [`core/docs-maintenance-map.md`](core/docs-maintenance-map.md)。
+- 低上下文 agent 如何调用 `cst_runtime`：看 [`runtime/cst-runtime-agent-usage.md`](runtime/cst-runtime-agent-usage.md)。
+- CLI 管道和参数如何使用：看 [`runtime/cst-runtime-native-pipeline.md`](runtime/cst-runtime-native-pipeline.md)。
+- 要先全量验证 CST 进程/session 管理系统：看 [`runtime/cst-session-process-management-test-plan.md`](runtime/cst-session-process-management-test-plan.md)。
+- MCP 工具迁入 CLI/Skill 时如何分类、标记管道适配性、记录问题工具：看 [`runtime/mcp-cli-skill-migration-plan.md`](runtime/mcp-cli-skill-migration-plan.md)。
+- MCP/CLI/Skill 迁移计划当前执行到哪一步、哪些验收没有覆盖真实 CST：看 [`runtime/mcp-cli-skill-migration-execution-2026-05-03.md`](runtime/mcp-cli-skill-migration-execution-2026-05-03.md)。
+- 正式入口和旁路边界：看 [`workflow/formal-entry-and-bypass-audit.md`](workflow/formal-entry-and-bypass-audit.md)。
+- run 目录和导出文件怎么放：看 [`workflow/file_management_rules.md`](workflow/file_management_rules.md)。
+- CST session、远场、S11、导出经验：看 [`reference/cst-modeling-notes.md`](reference/cst-modeling-notes.md)。
+- 想把历史手工优化后的 `CST` 项目整理成经验库：看 [`reference/cst-project-experience-mining.md`](reference/cst-project-experience-mining.md)。
+- 某个文档是不是过时：先看 [`core/docs-maintenance-map.md`](core/docs-maintenance-map.md) 的状态列。
 
 ## 维护规则
 
-- `docs/` 新增、删除或明显改边界后，必须同步更新本页。
-- 每篇文档至少应能在本页标明：主题、主要用途、当前状态。
-- 若某篇文档已经过时但仍保留，应明确标记为 `historical`，避免被误当成当前依据。
+- `docs/` 新增、删除、拆分或明显改边界后，必须同步更新本文档和 [`core/docs-maintenance-map.md`](core/docs-maintenance-map.md)。
+- 索引只做导航；详细状态和维护建议放在 [`core/docs-maintenance-map.md`](core/docs-maintenance-map.md)。
+- 标记为 `historical`、`handoff` 或 `validated-record` 的文档，默认不作为当前主线入口。
+- 若要做物理目录搬迁，先更新维护地图并盘点链接，再移动文件。

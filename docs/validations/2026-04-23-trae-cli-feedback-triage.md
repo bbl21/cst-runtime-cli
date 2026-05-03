@@ -1,4 +1,4 @@
-# 2026-04-23 Trae CLI 使用反馈分流
+﻿# 2026-04-23 Trae CLI 使用反馈分流
 
 > 本文记录 Trae 完成 ref_0 CLI 低上下文验证后的使用反馈分流。  
 > 当前主线仍以 `docs/current-priority-checklist.md` 为准；本文不改变 P0 门控顺序。
@@ -9,7 +9,7 @@ Trae 已经证明“能跑通”，但反馈说明 `cst_runtime` 对低上下文
 
 本反馈全部接受，但不一次性展开实现。处理顺序如下：
 
-1. `fresh-session` 真实 CST 远场导出/读取验证已完成，记录见 [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)。
+1. `fresh-session` 真实 CST 远场导出/读取验证已完成，记录见 [`validations/2026-04-23-ref0-fresh-session-farfield-validation.md`](2026-04-23-ref0-fresh-session-farfield-validation.md)。
 2. P0 已通过后，优先做 CLI 低上下文可用性加固，再进入 P1 优化指导原型。
 3. 结果可视化、批量比较、性能和并行处理进入 P1/P2，不回填到 P0。
 

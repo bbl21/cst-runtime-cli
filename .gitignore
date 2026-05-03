@@ -49,6 +49,10 @@ startup_prototype_optimizer.ps1
 opencode.json
 .codex/*.bak
 
+# Local historical/non-business documentation
+docs/archive/
+docs/handoffs/
+
 # IDE/tool caches
 .trae/
 .workbuddy/

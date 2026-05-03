@@ -58,10 +58,10 @@ tasks/
 - 正式任务入口：`tasks/task_xxx_slug/`
 - 正式执行起点：`cst-modeler.prepare_new_run(task_path=...)`
 - 正式执行主链：`skills/cst-simulation-optimization/SKILL.md` 约束下的 GUI 可见 MCP tool call
-- 旁路与冻结范围：见 [`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)
-- 主链收口与状态落盘：见 [`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md)
-- 系统集成与一键迁移：见 [`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)
-- CLI-first 剪枝、runtime 和 adapter 边界：见 [`cli-architecture-decision.md`](./cli-architecture-decision.md)
+- 旁路与冻结范围：见 [`workflow/formal-entry-and-bypass-audit.md`](formal-entry-and-bypass-audit.md)
+- 主链收口与状态落盘：见 [`architecture/phase-b-main-chain-consolidation.md`](../architecture/phase-b-main-chain-consolidation.md)
+- 系统集成与一键迁移：见 [`architecture/phase-c-system-integration-and-portable-mode.md`](../architecture/phase-c-system-integration-and-portable-mode.md)
+- CLI-first 剪枝、runtime 和 adapter 边界：见 [`architecture/cli-architecture-decision.md`](../architecture/cli-architecture-decision.md)
 - 第一版 runtime CLI 入口：`python -m cst_runtime list-tools`；复杂入参优先用 `python -m cst_runtime args-template --tool <tool>` 生成模板
 
 ## 常用脚本

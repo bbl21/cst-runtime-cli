@@ -1,4 +1,4 @@
-# CST Runtime Native Pipeline
+﻿# CST Runtime Native Pipeline
 
 本文记录 `cst_runtime` CLI 的原生管道协议。它服务于当前 CLI-first runtime 方向，但不改变正式任务入口：生产任务仍从 `tasks/task_xxx_slug/` 和标准 `runs/run_xxx/` 结构开始。
 
@@ -141,7 +141,7 @@ uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --o
 远场迁移状态：
 
 - 解析和 HTML 预览已用既有 `Abs(Realized Gain)[dBi]` 与 `Abs(E)[V/m]` 文件验证；`Abs(E)` 只按场强单位展示，不标记为 dBi。
-- 真正启动 CST 的 fresh-session 远场导出/读取已在 `ref_0` 10 GHz 正式 run 上通过实机验收：`export-farfield-fresh-session` 导出 `Abs(Realized Gain)[dBi]` TXT，`read-realized-gain-grid-fresh-session` 读取 `Realized Gain` dBi JSON，记录见 [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)。
+- 真正启动 CST 的 fresh-session 远场导出/读取已在 `ref_0` 10 GHz 正式 run 上通过实机验收：`export-farfield-fresh-session` 导出 `Abs(Realized Gain)[dBi]` TXT，`read-realized-gain-grid-fresh-session` 读取 `Realized Gain` dBi JSON，记录见 [`validations/2026-04-23-ref0-fresh-session-farfield-validation.md`](../validations/2026-04-23-ref0-fresh-session-farfield-validation.md)。
 - 这关闭了当前 P0 门控，但不取消 MCP 作为稳定生产链和兼容 adapter；新模型、新指标或用户要求 GUI 可见 MCP tool call 时，仍按对应任务重新判断验证入口。
 
 仍不迁移的能力：
@@ -157,4 +157,4 @@ uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --o
 - 写操作和 session 操作不得被压成不可审计的长黑盒；关键步骤仍写入当前 run 的 `logs/tool_calls.jsonl` 和 `stages/cli_*.json`。
 - 若管道中某一步返回 `status="error"`，后续步骤应停止或显式记录失败，不得继续伪装为完成。
 
-面向其他 agent 的更短说明见 [`cst-runtime-agent-usage.md`](./cst-runtime-agent-usage.md)。
+面向其他 agent 的更短说明见 [`runtime/cst-runtime-agent-usage.md`](cst-runtime-agent-usage.md)。

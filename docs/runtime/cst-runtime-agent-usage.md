@@ -1,4 +1,4 @@
-# CST Runtime Agent 使用说明
+﻿# CST Runtime Agent 使用说明
 
 本文是给其他 agent 使用 `cst_runtime` CLI 的最小说明。它不是规则源；项目红线仍以 `AGENTS.md` 为准。
 
@@ -220,7 +220,7 @@ python -m cst_runtime doctor
 - farfield：`export-farfield-fresh-session`、`read-realized-gain-grid-fresh-session`、`inspect-farfield-ascii`、`plot-farfield-multi`
 - pipeline meta：`list-pipelines`、`describe-pipeline`、`pipeline-template`
 
-远场增益证据必须走 `Realized Gain` / `Gain` / `Directivity`；`Abs(E)` 只能作为场强，不得标记为 dBi。`ref_0` 10 GHz fresh-session 导出/读取已通过实机验证，见 [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)；新模型或新指标仍要按任务留痕验证。
+远场增益证据必须走 `Realized Gain` / `Gain` / `Directivity`；`Abs(E)` 只能作为场强，不得标记为 dBi。`ref_0` 10 GHz fresh-session 导出/读取已通过实机验证，见 [`validations/2026-04-23-ref0-fresh-session-farfield-validation.md`](../validations/2026-04-23-ref0-fresh-session-farfield-validation.md)；新模型或新指标仍要按任务留痕验证。
 
 ## 最小安全自检
 

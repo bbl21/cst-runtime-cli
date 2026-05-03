@@ -1,179 +1,51 @@
 # 当前优先清单
 
-> 本清单服务于当前这一周的近期目标。  
-> 若与新想法、局部优化或高不确定扩展冲突，以本清单和 `docs/project-goals-and-plan.md` 的当前阶段主攻方向为准。
+> 本清单只维护当前应优先推进的工程事项。  
+> 已完成的 P0 长清单已归档到 [`archive/p0-completion-checklist-2026-04-23.md`](./archive/p0-completion-checklist-2026-04-23.md)。
 
-## 当前唯一主线
+## 1. 当前状态
 
-当前只集中做一件事：
+- P0 基础目标已完成并标记为 `validated`。
+- 低上下文 CLI-only 验证已完成，记录见 [`validations/2026-04-23-trae-ref0-cli-low-context-validation.md`](./validations/2026-04-23-trae-ref0-cli-low-context-validation.md)。
+- ref_0 10 GHz fresh-session 远场 Realized Gain dBi 验证已完成，记录见 [`validations/2026-04-23-ref0-fresh-session-farfield-validation.md`](./validations/2026-04-23-ref0-fresh-session-farfield-validation.md)。
+- 当前项目状态摘要见 [`core/project-current-status.md`](./core/project-current-status.md)。
 
-**把现有生产链收口成一个可迁移、可复用、不依赖上下文和特定 coding agent 的正式交互入口。**
+## 2. 当前唯一主线
 
-当前判断更新：
+当前默认只集中推进一件事：
 
-**阶段 D 低上下文验证前，必须先完成轻量 CLI-first 架构门控。CLI 不作为第二条生产链，而应作为同一 `cst_runtime/` 能力层的主要调用界面；MCP 先保留为稳定生产链和兼容 adapter；`prototype_optimizer` 已退出默认主线和迁移包。架构决策见 [`cli-architecture-decision.md`](./cli-architecture-decision.md)。**
+**把 ref_2 多频 realized-gain flatness 优化整理成一个正式、可复现、约束清晰的工程优化闭环。**
 
-当前执行策略更新：MCP 工具链先保留为稳定生产链；CLI/runtime 以独立 Skill 并行推进。本地 CLI 兼容性自检已经完成，Trae 低上下文端到端验证已通过，记录见 [`2026-04-23-trae-ref0-cli-low-context-validation.md`](./2026-04-23-trae-ref0-cli-low-context-validation.md)。fresh-session 真实 CST 远场导出/读取验证也已完成，记录见 [`2026-04-23-ref0-fresh-session-farfield-validation.md`](./2026-04-23-ref0-fresh-session-farfield-validation.md)。P0 当前标记为 `validated`。
+这件事的第一步不是继续跑仿真，而是先固定任务定义：
 
-这件事优先于：
+- 优化对象：`ref_2` port1。
+- 频点：`4 / 8 / 13 / 18 GHz`。
+- 主指标：`theta <= 15 deg` 范围内 realized-gain flatness。
+- 约束：S11 阈值、boresight realized gain 下降阈值、仿真预算。
+- 证据链：每轮必须读取当前 run 的 S11 JSON 与 Realized Gain dBi 网格。
+- 落盘：每轮均创建新的 `run_xxx`，不得覆盖已有 run。
 
-- 优化指导功能原型
-- 论文研读能力扩展
-- 全自动 3D 建模探索
-- 大规模 UI 美化或重构
-- 与正式入口收口无关的系统泛化工作
+## 3. 当前待办
 
-## 当前基础目标
+- [ ] 写清 ref_2 正式优化任务的目标、输入、指标、约束、停止条件和验收标准。
+- [ ] 明确 baseline 采用 `tasks/task_008_ref2_multifreq_realgain_optimization/runs/run_001`，并核对其 S11 与 Realized Gain 证据链。
+- [ ] 明确候选对比是否使用 `run_009`，以及其低频 boresight gain 下滑是否可接受。
+- [ ] 明确角度采样策略：链路验证可用 5 deg；正式指标需要按任务精度重新定义角分辨率或角窗。
+- [ ] 确认不引用 `Abs(E)` 作为 dBi 增益证据。
+- [ ] 任务边界确认后，再创建新的正式 run 继续优化。
 
-## 本周推进顺序
+## 4. 当前明确不做
 
-**顺序固定为：入口定义 -> 主链收口 -> 四类系统协同 -> 低上下文验证。**
+- 不重启旧 `prototype_optimizer` 作为主线。
+- 不把临时脚本或旧 `tools/` 路径重新提升为生产入口。
+- 不把 CLI 当成第二条生产链；`cst_runtime/` 仍是共享能力层。
+- 不在任务指标和约束未固定前继续扩大参数扫描。
+- 不用 `Abs(E)` 场强代理量冒充 dBi 增益。
+- 不在本清单里堆积已完成历史过程；完成项应进入状态文档、验证记录或 run 记录。
 
-阶段 A 当前交付物：[`formal-entry-and-bypass-audit.md`](./formal-entry-and-bypass-audit.md)
-阶段 B 当前交付物：[`phase-b-main-chain-consolidation.md`](./phase-b-main-chain-consolidation.md)
-阶段 C 当前交付物：[`phase-c-system-integration-and-portable-mode.md`](./phase-c-system-integration-and-portable-mode.md)
+## 5. 维护规则
 
-### 第 1 天：冻结范围并定义正式入口
-
-- [x] 盘点当前所有实际会触发生产流程的入口、脚本、手工步骤和文档约束
-- [x] 明确唯一正式交互入口是什么，写清它的职责边界
-- [x] 明确正式入口的最小输入、输出和上下文要求
-- [x] 列出本周必须退出生产职责的临时脚本、旧入口和旁路流程
-
-### 第 2-3 天：统一主生产链并清理旁路依赖
-
-- [x] 将 run 创建、执行、导出、对比、状态落盘统一到同一主链路
-- [x] 确认不同入口不会再走出不同生产结果
-- [x] 找出当前仍承担生产职责的 `tmp/`、一次性脚本或旧入口
-- [x] 将可保留内容迁回正式链路，不能保留的标记为非生产路径
-- [x] 确认正式流程不依赖特定 coding agent 的隐式记忆
-
-### 第 4-5 天：打通四类系统协同
-
-- [x] MCP 负责稳定接口与执行能力，边界清楚
-- [x] Skill 负责正式方法和流程约束，边界清楚
-- [x] 知识系统负责规则、经验、长期共识的分层落点，边界清楚
-- [x] 计划系统负责当前主线、阶段目标和清单维护，边界清楚
-- [x] 当前主链的关键步骤都能找到对应的工具、规则或计划归属
-- [x] 明确工具粒度原则：固定长流程可阶段级封装，灵活判断点保留小粒度工具，由 agent 按 Skill 指导调用
-
-### 第 6-7 天：轻量 CLI-first 架构门控、验证可迁移性并收尾
-
-- [x] 完成 CLI-first 架构门控：明确 `cst_runtime/`、CLI adapter、MCP 兼容 adapter 的职责边界
-- [x] 明确第一批 CLI 化落点只聚焦 run 管理与项目身份校验，不扩展成第二条生产链
-- [x] 明确 `prototype_optimizer` 归档边界，默认主线和迁移包不再依赖它
-- [x] 在 Trae/其他 coding agent 低上下文条件下跑通一次完整流程：`task_009_ref0_cli_low_context_validation/run_001` 已 `validated`
-- [x] 验证第一版 runtime 的标准 `run_xxx/{projects,exports,logs,stages,analysis}` 产物完整落盘
-- [x] 验证第一版 runtime 的错误分支、状态文件和审计落盘可用
-- [x] 验证优化闭环 runtime 工具可用：参数读写、项目身份校验、关闭解锁、results run_id/参数组合/1D 导出、S11 对比
-- [x] 验证长流程：真实启动一次仿真、刷新 results、读取新增 run_id
-- [x] 新增 CLI/runtime 并行 Skill，避免把现有 MCP Skill 混成双入口流程
-- [x] 增加 CLI `args-template`，降低低上下文/PowerShell 手写 JSON 调用风险
-- [x] 验证 CLI 跨 agent 基础兼容性：`doctor`、`usage-guide`、JSON 错误出口、stdin/显式参数合并规则、`python -m cst_runtime` fallback
-- [x] 迁移 results/farfield runtime 能力：S11/远场解析与 HTML 预览可用；fresh-session 真实 CST 远场导出/读取已通过 `ref_0` 10 GHz 实机验证
-- [x] 清理 `tools/` 旧旁路脚本并归档到 `archive/tools-legacy-20260421/`
-- [x] 输出残留问题清单：阻塞项、非阻塞项、观察项
-- [x] 给出是否允许进入进阶目标的门控结论：P0 已通过，但不自动启动 `P1`
-
-Trae 使用反馈已分流到 [`2026-04-23-trae-cli-feedback-triage.md`](./2026-04-23-trae-cli-feedback-triage.md)。其中与 P0 门控直接相关的是 CST 连接诊断、锁文件检测、`Access is denied` 清理证据和故障排除；参数一致性、严格校验、端到端示例属于 P0 后加固；结果可视化、批量比较、性能和并行处理进入 P1/P2 观察项。
-
-当前任务：加固 Skill + CLI 工具链，确保低上下文 agent 阅读 Skill 后能自学习 CLI 工具与管道操作；先让管道操作可发现、可学习，再把常用链路做成 `list-pipelines` / `describe-pipeline` 可读配方，并同步进 Skill。完成前不启动 `P1` 优化指导原型。
-
-当前 P0 后加固清单：
-
-- [x] CLI 提供机器可读管道发现入口：`list-pipelines`、`describe-pipeline`、`pipeline-template`
-- [x] `usage-guide` 指向固定学习顺序：`doctor -> usage-guide -> list-tools -> list-pipelines -> describe-pipeline -> describe-tool -> args-template`
-- [x] Skill 中列出常用管道链、适用场景和停止规则
-- [x] 文档说明管道链不是黑盒执行器，每一步仍要检查 JSON `status` 并保留审计
-- [x] 验证未知 pipeline、缺 pipeline 参数、`pipeline-template` 输出等错误/正常分支均返回结构化 JSON
-- [x] Skill 明确 `args-template` / `--args-file` 为低上下文首选，补充 `.cst` 文件路径、`change-parameter name/value`、S11 `ydata` 复数结构和 results 刷新流程
-- [x] CLI 对常用字段提供直接 flags，并新增 `wait-simulation` 解决异步仿真手动轮询问题
-
-## 基础目标映射
-
-### P0-1 定义唯一正式入口
-
-- [x] 明确唯一正式交互入口是什么
-- [x] 明确它负责哪些阶段，哪些内容不应再由外部脚本或人工兜底
-- [x] 明确正式入口的最小输入、输出和上下文要求
-
-### P0-2 统一主生产链
-
-- [x] 盘点当前 MCP、Skill、知识系统、计划系统的实际使用点
-- [x] 将 run 创建、执行、导出、对比、状态落盘统一到同一主链路
-- [x] 确认不同入口不会再走出不同生产结果
-
-### P0-3 清理临时脚本与旁路流程依赖
-
-- [x] 找出当前仍承担生产职责的 `tmp/`、一次性脚本或旧入口
-- [x] 将可保留内容迁回正式链路，不能保留的标记为非生产路径
-- [x] 确认正式流程不依赖特定 coding agent 的隐式记忆
-
-### P0-4 打通四类系统协同
-
-- [x] MCP 负责稳定接口与执行能力
-- [x] Skill 负责正式方法和流程约束
-- [x] 知识系统负责规则、经验、长期共识的分层落点
-- [x] 计划系统负责当前主线、阶段目标和清单维护
-- [x] 工具粒度按“固定封装 / 灵活小工具”分层，避免黑盒化或过度碎片化
-
-### P0-5 验证可迁移性
-
-- [x] 阶段 D 前置：CLI-first 架构门控完成，确认不会形成第二条生产链
-- [x] 阶段 D 前置：MCP 先保留为稳定生产链和兼容 adapter，后续新能力优先进入 `cst_runtime/` 与 CLI
-- [x] 阶段 D 前置：`prototype_optimizer` 已明确归档/保留边界，不再作为主线依赖
-- [x] 在 Trae/其他 coding agent 低上下文条件下跑通一次完整流程：`task_009_ref0_cli_low_context_validation/run_001` 已 `validated`
-- [x] 验证第一版 runtime 标准 `run_xxx/{projects,exports,logs,stages,analysis}` 产物完整落盘
-- [x] 验证第一版 runtime 错误分支、状态文件和审计落盘可用
-- [x] 验证优化闭环 runtime 工具可用，不依赖旧 `mcp/*.py` 源文件加载
-- [x] 验证真实仿真启动后 results fresh-session 能读取新增 run_id
-- [x] 验证 CLI 能生成工具 args 模板，减少低上下文执行时的 shell JSON 阻塞
-- [x] 验证 CLI 误用和兼容性出口会返回结构化 JSON，不让其他 agent 在 argparse 文本或 stdin 阻塞中卡死
-- [x] `tools/` 旧旁路脚本已归档，默认调用入口回到 `cst_runtime/`、MCP client/helper 和正式 Skill
-
-## 本周完成标准
-
-- [x] 阶段 A 完成后再进入阶段 B
-- [x] 阶段 B 完成后再进入阶段 C
-- [x] 阶段 C 完成后先完成 CLI 架构门控，再进入阶段 D
-- [x] 阶段 D 低上下文端到端验证已完成：Trae 已跑通 ref_0 S11 CLI-only 闭环
-- [x] fresh-session 真实 CST 远场导出/读取验证完成，P0 已标记为 `validated`
-- [x] 今日收尾门控结论已更新：P0 已通过，但不自动启动 `P1`
-
-## 进阶目标
-
-### P1-1 优化指导功能原型
-
-进入条件：
-
-- [x] P0 全部完成
-- [x] 正式生产链已不依赖临时脚本、旁路流程、特定 agent 或隐式上下文
-
-原型目标：
-
-- [ ] 能基于建模代码识别当前天线对象、结构线索和已有参数信息
-- [ ] 能主动向用户询问缺失的天线需求、约束和目标指标
-- [ ] 能围绕具体需求寻找并研读相关论文
-- [ ] 能输出面向当前任务的结构化优化指导，而不是泛泛综述
-
-## 当前明确不做
-
-- [ ] 不把优化指导功能和基础目标并行推进
-- [ ] 不插入新的建模主线
-- [ ] 不扩展到其他器件类型
-- [ ] 不重做大规模 UI
-- [ ] 不顺手重构与正式入口无关的模块
-- [ ] 不为了“看起来先进”而加入未收口的新能力
-- [ ] 第三方 agent 低上下文端到端验证通过前，不进入优化指导功能原型
-- [ ] 不继续围绕 `prototype_optimizer` 增加新功能；如需 UI，后续另建读取标准 `tasks/` / `runs/` 的轻量展示层
-- [ ] 不把新的 runtime CLI 入口放进 `tools/`；runtime 入口统一放在 `cst_runtime/cli.py`
-- [ ] 不修改原有 `mcp/*.py` 做第一阶段迁移；先另建 runtime 边界
-- [ ] 不迁移几何建模、材料、边界、网格等建模工具；当前只迁移优化闭环运行能力
-- [ ] 不把远场 runtime 代码迁移完成等同于 fresh-session 真实 CST 远场生产验证完成
-
-## 使用规则
-
-- 每次开始新任务前，先判断它是否直接支撑 `P0`
-- 若不能直接支撑 `P0`，默认归类为“后续计划”或“观察项”
-- 只有在 `P0` 完成后，才允许进入 `P1`
-- 若本清单失效，应同步更新本文件和 `docs/project-goals-and-plan.md`
+- 若当前主线改变，必须同步更新本文档和 [`core/project-current-status.md`](./core/project-current-status.md)。
+- 若新增事项属于规则或红线，应进入 `AGENTS.md`，不写在本文档。
+- 若新增事项属于执行流程，应进入对应 Skill，本文档只保留优先级和边界。
+- 若某个待办完成并形成长期事实，应分流到状态文档、验证记录或 run 产物，而不是长期留在 checklist 中。
