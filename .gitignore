@@ -56,6 +56,17 @@ docs/handoffs/
 # IDE/tool caches
 .trae/
 .workbuddy/
+.agent_handoff/
+
+# Agent/skill sync copies (generated from skills/)
+.codex/
+.opencode/
+
+# Skill build artifacts
+*.zip
+
+# Docs (manually curated commits only)
+docs/
 
 # Prototype optimizer data (large workspace files)
 prototype_optimizer/data/

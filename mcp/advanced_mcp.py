@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import warnings
 from datetime import datetime
 from typing import Any, Union
 from mcp.server import FastMCP
@@ -12,6 +13,51 @@ from pathlib import Path
 
 # 创建MCP实例
 mcp = FastMCP("cst_interface", log_level="ERROR")
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+def _load_allowlist() -> list[str]:
+    """加载CST进程白名单配置，带错误处理和回退"""
+    config_path = REPO_ROOT / "cst_process_allowlist.json"
+    default_allowlist = [
+        "cstd",
+        "CST DESIGN ENVIRONMENT_AMD64",
+        "CSTDCMainController_AMD64",
+        "CSTDCSolverServer_AMD64",
+    ]
+    
+    if not config_path.exists():
+        warnings.warn(
+            f"CST process allowlist config not found at {config_path}, using default",
+            UserWarning
+        )
+        return default_allowlist
+    
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+            allowlist = config.get("cst_force_kill_process_allowlist", [])
+            if not allowlist:
+                warnings.warn(
+                    f"Empty allowlist in {config_path}, using default",
+                    UserWarning
+                )
+                return default_allowlist
+            return allowlist
+    except Exception as exc:
+        warnings.warn(
+            f"Failed to load allowlist from {config_path}: {exc}, using default",
+            UserWarning
+        )
+        return default_allowlist
+
+def _get_powershell_allowlist_filter() -> str:
+    """生成PowerShell进程名过滤表达式"""
+    allowlist = _load_allowlist()
+    if allowlist:
+        names = ",".join(f"'{name}'" for name in allowlist)
+        return f"@({names})"
+    return "@()"
 
 # ============================================================
 # 全局变量
@@ -414,6 +460,7 @@ def quit_cst(project_path: str = None, force: bool = False):
                 ),
             }
 
+        allowlist_filter = _get_powershell_allowlist_filter()
         verify = subprocess.run(
             [
                 "powershell.exe",
@@ -422,12 +469,7 @@ def quit_cst(project_path: str = None, force: bool = False):
                 "-Command",
                 (
                     "Get-Process -ErrorAction SilentlyContinue | "
-                    "Where-Object { $_.ProcessName -in @("
-                    "'CST DESIGN ENVIRONMENT_AMD64',"
-                    "'cstd',"
-                    "'CSTDCMainController_AMD64',"
-                    "'CSTDCSolverServer_AMD64'"
-                    ") } | "
+                    f"Where-Object {{ $_.ProcessName -in {allowlist_filter} }} | "
                     "Select-Object -ExpandProperty ProcessName"
                 ),
             ],

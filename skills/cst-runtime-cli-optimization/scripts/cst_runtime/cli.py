@@ -46,6 +46,7 @@ WORKSPACE_OPTIONAL_TOOLS = {
     "calculate-farfield-neighborhood-flatness",
 }
 CST_INTERFACE_TOOLS = {
+    "create-blank-project",
     "open-project",
     "close-project",
     "save-project",
@@ -721,6 +722,7 @@ DIRECT_ARG_SPECS: dict[str, dict[str, str]] = {
         "dry_run": "dry_run",
         "settle_seconds": "settle_seconds",
     },
+    "create-blank-project": {"project_path": "project_path"},
     "define-brick": {
         "project_path": "project_path",
         "name": "name",
@@ -927,6 +929,10 @@ def tool_cst_session_quit(args: dict[str, Any]) -> dict[str, Any]:
         dry_run=bool(args.get("dry_run", False)),
         settle_seconds=float(args.get("settle_seconds", 0.5)),
     )
+
+
+def tool_create_blank_project(args: dict[str, Any]) -> dict[str, Any]:
+    return modeler.create_blank_project(_project_path_from_args(args))
 
 
 def tool_open_project(args: dict[str, Any]) -> dict[str, Any]:
@@ -1755,6 +1761,9 @@ ARGS_TEMPLATES: dict[str, dict[str, Any]] = {
         "g": 0,
         "b": 0,
     },
+    "create-blank-project": {
+        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
+    },
 }
 
 
@@ -2068,6 +2077,12 @@ TOOLS: dict[str, dict[str, Any]] = {
         "risk": "process-control",
         "description": "Quit CST through the central session manager using only the process allowlist and lock evidence.",
         "function": tool_cst_session_quit,
+    },
+    "create-blank-project": {
+        "category": "modeler",
+        "risk": "write",
+        "description": "Create a new blank CST project at the specified path.",
+        "function": tool_create_blank_project,
     },
     "open-project": {
         "category": "modeler",

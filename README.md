@@ -57,25 +57,25 @@ pip install --editable "C:\Program Files\CST Studio Suite 2026\AMD64\python_cst_
 低上下文 agent 使用本项目时，先读 Skill，再用 CLI 自学习工具和管道：
 
 1. 阅读 [`skills/cst-runtime-cli-optimization/SKILL.md`](skills/cst-runtime-cli-optimization/SKILL.md)。
-2. 在仓库根目录运行 CLI 发现命令。
+2. 通过 Skill 内入口运行 CLI 发现命令；可在仓库根目录，也可在已初始化工作区。
 3. 对每个不熟悉的工具先执行 `describe-tool` 和 `args-template`。
 4. 对每条不熟悉的链路先执行 `describe-pipeline` 和 `pipeline-template`。
 5. 每次调用后解析 stdout JSON，只有 `status == "success"` 才进入下一步。
 
 ```powershell
-uv run python -m cst_runtime doctor
-uv run python -m cst_runtime usage-guide
-uv run python -m cst_runtime list-tools
-uv run python -m cst_runtime list-pipelines
-uv run python -m cst_runtime describe-pipeline --pipeline self-learn-cli
+python <skill-root>\scripts\cst_runtime_cli.py doctor
+python <skill-root>\scripts\cst_runtime_cli.py usage-guide
+python <skill-root>\scripts\cst_runtime_cli.py list-tools
+python <skill-root>\scripts\cst_runtime_cli.py list-pipelines
+python <skill-root>\scripts\cst_runtime_cli.py describe-pipeline --pipeline self-learn-cli
 ```
 
 查看单个工具：
 
 ```powershell
-uv run python -m cst_runtime describe-tool --tool change-parameter
-uv run python -m cst_runtime args-template --tool change-parameter --output .\tmp\change_parameter_args.json
-uv run python -m cst_runtime change-parameter --args-file .\tmp\change_parameter_args.json
+python <skill-root>\scripts\cst_runtime_cli.py describe-tool --tool change-parameter
+python <skill-root>\scripts\cst_runtime_cli.py args-template --tool change-parameter --output .\tmp\change_parameter_args.json
+python <skill-root>\scripts\cst_runtime_cli.py change-parameter --args-file .\tmp\change_parameter_args.json
 ```
 
 `args-template` + `--args-file` 是首选调用方式，尤其适合 Windows 路径、复杂参数和跨 agent 交接。直接 flags 只用于已经确认支持的常用字段。
@@ -83,16 +83,16 @@ uv run python -m cst_runtime change-parameter --args-file .\tmp\change_parameter
 常用字段也支持直接参数：
 
 ```powershell
-uv run python -m cst_runtime change-parameter --project-path .\tasks\task_xxx\runs\run_001\projects\working.cst --name g --value 24
-uv run python -m cst_runtime wait-simulation --project-path .\tasks\task_xxx\runs\run_001\projects\working.cst --timeout-seconds 3600 --poll-interval-seconds 10
+python <skill-root>\scripts\cst_runtime_cli.py change-parameter --project-path .\tasks\task_xxx\runs\run_001\projects\working.cst --name g --value 24
+python <skill-root>\scripts\cst_runtime_cli.py wait-simulation --project-path .\tasks\task_xxx\runs\run_001\projects\working.cst --timeout-seconds 3600 --poll-interval-seconds 10
 ```
 
 ## 常用管道
 
 ```powershell
-uv run python -m cst_runtime list-pipelines
-uv run python -m cst_runtime describe-pipeline --pipeline async-simulation-refresh-results
-uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --output .\tmp\latest_s11_pipeline_plan.json
+python <skill-root>\scripts\cst_runtime_cli.py list-pipelines
+python <skill-root>\scripts\cst_runtime_cli.py describe-pipeline --pipeline async-simulation-refresh-results
+python <skill-root>\scripts\cst_runtime_cli.py pipeline-template --pipeline latest-s11-preview --output .\tmp\latest_s11_pipeline_plan.json
 ```
 
 当前已登记的主要管道：
@@ -137,3 +137,4 @@ uv run python -m cst_runtime pipeline-template --pipeline latest-s11-preview --o
 - MCP 仍保留为稳定生产链和兼容 adapter。
 - 不把自然语言直接生成 3D 模型作为当前阶段目标。
 - 进入 P1 优化指导原型前，应继续保持底座稳定、可审计、可迁移。
+

@@ -2,12 +2,8 @@ param(
     [switch]$DryRun
 )
 
-$CstForceKillAllowlist = @(
-    'cstd',
-    'CST DESIGN ENVIRONMENT_AMD64',
-    'CSTDCMainController_AMD64',
-    'CSTDCSolverServer_AMD64'
-)
+. "$PSScriptRoot\LoadCstAllowlist.ps1"
+$CstForceKillAllowlist = Get-CstForceKillAllowlist
 
 $attempts = @()
 foreach ($name in $CstForceKillAllowlist) {

@@ -1,37 +1,29 @@
-﻿param(
+param(
     [string]$SkillName = "",
-    [string]$SourceDir = "<repo>\skills",
-    [string]$TargetDir = "<user-home>\.config\opencode\skills"
+    [switch]$DryRun,
+    [switch]$PruneRemoved,
+    [ValidateSet("Copy", "Junction")]
+    [string]$Mode = "Copy"
 )
 
 $ErrorActionPreference = "Stop"
 
-if (-not (Test-Path $SourceDir)) {
-    throw "Source skills directory not found: $SourceDir"
+$syncScript = Join-Path $PSScriptRoot "sync_agent_skills.ps1"
+$forwardParams = @{
+    Targets = @("opencode", "opencode_user")
+    Mode = $Mode
 }
 
-if (-not (Test-Path $TargetDir)) {
-    New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+if (-not [string]::IsNullOrWhiteSpace($SkillName)) {
+    $forwardParams.SkillName = $SkillName
 }
 
-if ([string]::IsNullOrWhiteSpace($SkillName)) {
-    $sourcePath = $SourceDir
-    $targetPath = $TargetDir
-    Copy-Item "$sourcePath\*" $targetPath -Recurse -Force
-    Write-Output "Synced all skills: $SourceDir -> $TargetDir"
-    exit 0
+if ($DryRun) {
+    $forwardParams.DryRun = $true
 }
 
-$singleSource = Join-Path $SourceDir $SkillName
-$singleTarget = Join-Path $TargetDir $SkillName
-
-if (-not (Test-Path $singleSource)) {
-    throw "Skill not found: $singleSource"
+if ($PruneRemoved) {
+    $forwardParams.PruneRemoved = $true
 }
 
-if (Test-Path $singleTarget) {
-    Remove-Item $singleTarget -Recurse -Force
-}
-
-Copy-Item $singleSource $singleTarget -Recurse -Force
-Write-Output "Synced skill: $SkillName"
+& $syncScript @forwardParams

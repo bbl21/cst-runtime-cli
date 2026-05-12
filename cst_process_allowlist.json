@@ -1,0 +1,8 @@
+{
+  "cst_force_kill_process_allowlist": [
+    "cstd",
+    "CST DESIGN ENVIRONMENT_AMD64",
+    "CSTDCMainController_AMD64",
+    "CSTDCSolverServer_AMD64"
+  ]
+}

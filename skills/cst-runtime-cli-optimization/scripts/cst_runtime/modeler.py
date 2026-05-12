@@ -21,6 +21,36 @@ def _connect_new_design_environment():
     return cst.interface.DesignEnvironment()
 
 
+def create_blank_project(project_path: str) -> dict[str, Any]:
+    normalized_project = _abs_project_path(project_path)
+    if Path(normalized_project).is_file():
+        return error_response(
+            "project_already_exists",
+            "project_path already exists; choose a different path or delete it first",
+            project_path=normalized_project,
+            runtime_module="cst_runtime.modeler",
+        )
+    project_dir = Path(normalized_project).parent
+    project_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        import cst.interface
+        de = cst.interface.DesignEnvironment.new()
+        project = de.new_mws()
+        project.save(normalized_project)
+        return {
+            "status": "success",
+            "project_path": normalized_project,
+            "runtime_module": "cst_runtime.modeler",
+        }
+    except Exception as exc:
+        return error_response(
+            "create_blank_project_failed",
+            str(exc),
+            project_path=normalized_project,
+            runtime_module="cst_runtime.modeler",
+        )
+
+
 def open_project(project_path: str) -> dict[str, Any]:
     normalized_project = _abs_project_path(project_path)
     if not Path(normalized_project).is_file():

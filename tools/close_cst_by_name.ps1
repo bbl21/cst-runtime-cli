@@ -3,12 +3,8 @@ param(
     [switch]$Force
 )
 
-$CstForceKillAllowlist = @(
-    'cstd',
-    'CST DESIGN ENVIRONMENT_AMD64',
-    'CSTDCMainController_AMD64',
-    'CSTDCSolverServer_AMD64'
-)
+. "$PSScriptRoot\LoadCstAllowlist.ps1"
+$CstForceKillAllowlist = Get-CstForceKillAllowlist
 
 function Stop-AllowlistedCstProcesses {
     param([string[]]$Names)
@@ -26,11 +22,8 @@ if ($Force -or -not $ProjectName) {
         Stop-Process -Force -ErrorAction SilentlyContinue
     $remainingDesign = @(Get-Process 'CST DESIGN ENVIRONMENT_AMD64' -ErrorAction SilentlyContinue)
     if ($remainingDesign.Count -eq 0) {
-        Stop-AllowlistedCstProcesses -Names @(
-            'cstd',
-            'CSTDCMainController_AMD64',
-            'CSTDCSolverServer_AMD64'
-        )
+        $remainingAllowlist = $CstForceKillAllowlist | Where-Object { $_ -ne 'CST DESIGN ENVIRONMENT_AMD64' }
+        Stop-AllowlistedCstProcesses -Names $remainingAllowlist
     }
     Write-Output "closed: $ProjectName"
 }

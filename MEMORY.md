@@ -7,8 +7,8 @@
 ## 稳定事实
 - 当前主蓝本是 `<repo>/ref/ref_model/ref_0/`
 - `ref_0` 是四脊喇叭天线蓝本，S 参数频段为 2-18 GHz，远场关注点为 10 GHz
-- 当前正式维护的执行 Skill 是 `skills/cst-simulation-optimization/SKILL.md`
-- 项目内 Codex 生效副本位于 `.codex/cst-simulation-optimization/SKILL.md`
+- 当前维护的执行 Skill 是 `skills/cst-runtime-cli-optimization/SKILL.md`
+- 旧 `skills/cst-simulation-optimization/` 流程已过时并移入备份，不再作为生产入口或 agent 生效副本维护
 - 当前稳定生产链仍以 MCP + Skill 为基准；`cst_runtime/` 是正在验证的共享 runtime/CLI 能力层，不是第二条正式生产链
 - 当前重点能力目录是 `<repo>/cst_runtime/`；`prototype_optimizer/` 不再作为主线和默认迁移包依赖
 - 标准任务目录根路径是 `<repo>/tasks/task_xxx_slug/runs/run_xxx/`
@@ -25,8 +25,8 @@
 ## 新增共识（2026-04-15）
 - 远场 GUI 直导出的稳定做法是 `fresh CST process + fresh open project + 单项导出 + close(save=False)`。
 
-## 新增共识（2026-04-16）
-- 当前 PowerShell 环境里 `rg` 不稳定且可能不可用；跨任务检索默认优先用 `Select-String` 和 `Get-ChildItem`，不要把 `rg` 当作可靠前提。
+## 新增共识（2026-04-16，2026-05-03 更新）
+- 当前项目已可使用 `rg` / `ripgrep` 做文件与内容检索；若 `rg` 不可用、输出异常或权限受限，再回退到 `Select-String` 和 `Get-ChildItem`。
 - `mcp/advanced_mcp.py` 等历史文件存在编码异常注释时，编辑应避开乱码注释做补丁锚点；优先用稳定的函数名、装饰器或返回语句定位。
 
 ## 新增共识（2026-04-17）

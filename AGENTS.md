@@ -10,8 +10,8 @@
 ## 沟通偏好
 - 中文交流，直接高效
 - 一次只做一件事，禁止四面出击
-- 生产流程优先走 MCP tools / skills 链路
-- 本项目内禁止再使用 `rg` / `ripgrep`；检索文件或内容时改用 PowerShell 原生命令，例如 `Get-ChildItem`、`Select-String`、`Get-Content`
+- 生产流程优先走 CLI / Skill 链路
+- 本项目检索文件或内容时可以使用 `rg` / `ripgrep`；若 `rg` 不可用、输出异常或权限受限，再回退到 PowerShell 原生命令，例如 `Get-ChildItem`、`Select-String`、`Get-Content`
 - 需求没说清楚时，先多问几句把目标、边界、输入输出和验收标准问清楚，再开始动手
 - 当用户在对话中明确提出原则性要求、知识治理要求或“以后应如何做”的约束时，默认视为规则候选；若其适用范围是当前项目全局，应触发写入规则，而不是只留在聊天记录里
 
@@ -38,7 +38,7 @@
 - 任何会影响结果读取的新实现，必须显式定义何时 `save`、何时 `close`、何时 `reopen`、何时失效缓存
 - 禁止依赖隐式全局状态完成关键流程；关键上下文必须显式传递或集中封装
 - 若某个操作会触发大量请求、读取大量数据或明显消耗大量 token，必须先判断是否真的必要，并优先选择更小范围、更灵活、更节省额度的替代方式
-- 禁止新增旁路生产链路；生产流程必须继续遵守既定 MCP tools / skills 链路
+- 禁止新增旁路生产链路；生产流程必须继续遵守既定 CLI / Skill 链路
 - 工具封装粒度必须按职责划分：稳定、固定、长流程的机械部分可以封装为阶段级工具或编排命令；需要 agent 根据返回信息判断、选择、重试或询问用户的环节，必须保留小粒度工具接口，并返回足够结构化事实供 agent 决策
 - 禁止保留不可达死代码；已禁用工具若保留函数，函数体只能直接返回 error 与替代方案
 - 新增或修改导出能力时，必须明确输出目录、文件格式、覆盖策略和失败状态
@@ -56,6 +56,8 @@
 
 ### 隐私与远端发布
 - 涉及个人信息、个人本机绝对路径、用户名、私有任务数据、未脱敏工程路径或本地环境细节的内容，禁止推送到远端仓库或公开发布
+- `docs/` 在本项目中可作为本地规则、计划和经验承接路径使用，但默认不随普通代码改动提交或推送；即使文件已被 git 跟踪，也必须把 docs diff 单独列出并经用户明确同意后才可 staged / commit / push
+- 只有涉及项目实际运作的业务记录、验证记录、优化记录、经验沉淀或用户明确要求的公开说明时，`docs/` 内容才允许进入提交/推送范围
 - 执行 `git push`、创建 PR、生成对外发布包或整理公开文档前，必须检查 staged diff / 发布内容中是否包含个人信息；发现后必须先脱敏或移出发布范围
 - 允许保留在本地调试、任务审计或私有 run 记录中的个人路径，不得直接复制到 README、公开文档、提交信息或远端工件
 
@@ -74,10 +76,10 @@
 
 ### 文档边界
 - `AGENTS.md` 只写规则、约束、禁令、分层标准、修改前置条件；不写建模经验、不写完整流程手册、不写历史排障长文
-- `skills/cst-simulation-optimization/SKILL.md` 负责执行流程、MCP 调用链、任务闭环、失败恢复；不重复全局规则正文
+- 当前维护的执行 Skill 负责执行流程、调用顺序、任务闭环、失败恢复；不重复全局规则正文
 - `docs/` 负责背景解释、建模经验、方案比较、设计说明、历史记录；允许细节丰富，但不冒充全局规则
 - 仓库根目录 `MEMORY.md` 只记录稳定事实、长期共识、已确认决策；不记录一次性任务日志和临时排障过程
-- `AGENTS.md` 不再维护 `opencode`、`trae` 或其他非当前主工作流工具的路径、命令和同步说明
+- `AGENTS.md` 不再维护 `opencode`、`trae` 或其他非当前主工作流工具的路径、命令和同步说明；OpenCode 跨项目分工见用户级 `%USERPROFILE%\.codex\docs\opencode-worker-division.md`，本项目接线覆盖见 `docs/runtime/opencode-worker-division.md`，Skill 分发见 `docs/runtime/agent-skill-distribution.md`
 
 ### 知识查阅规则（2026-04-17）
 - 知识分层不只规定“存在哪里”，也必须规定“先去哪里查”；任务开始时必须先判断当前问题属于：规则约束、阶段目标、执行流程、稳定事实、专题经验中的哪一类，再决定查阅入口
@@ -110,6 +112,10 @@
 - 做知识回收时，只保留对正确执行有直接帮助的稳定原则；禁止混入测试过程里暴露出的次要信息、临时变量或枝节
 
 ### Subagent 组织原则
+- OpenCode / 外部 worker 的跨项目默认分工、任务卡原则和回收要求属于用户级规则，见 `%USERPROFILE%\.codex\docs\opencode-worker-division.md`
+- 本项目只维护 CST_MCP 特有的 worker 接线与红线，见 `docs/runtime/opencode-worker-division.md`
+- worker 未经任务卡明确授权，不得执行 CST/MCP/runtime 生产动作、修改 `mcp/*.py`、创建正式 run、修改 ref 工程、升级规则或改变项目主线
+- worker 输出只能作为待验收事实或候选草稿；Codex 主 agent 必须回收摘要、检查产物、核对项目红线后，才能纳入结论
 - 只有任务可明确拆分、子任务边界清晰、并行确有收益时，才考虑 subagent
 - 主 agent 负责定义目标、分配边界、回收结果、整合输出和最终验收
 - subagent 只负责其边界内的探索、实现或验证，禁止自创全局规则
@@ -144,7 +150,13 @@
 - `analysis/` 只放分析结论、计算中间产物、对比表和结构化摘要
 - `summary.md` 用于记录本次 run 的结果摘要；`status.json` 用于记录当前状态；`config.json` 用于记录输入参数与运行配置
 - 若需要基于已有 run 派生新尝试，必须创建新的 `run_xxx`，不要覆盖旧 run 的工程和导出结果
-- `cst_results_mcp` 默认生成的 HTML 预览应优先写入当前 run 的 `exports/`；仅在无法识别 run 上下文时回退到项目根 `plot_previews/`
+- runtime/CLI 生成的 HTML 预览应优先写入当前 run 的 `exports/`；仅在无法识别 run 上下文时回退到项目根 `plot_previews/`
+
+### 自动化优化循环红线（2026-05-04）
+- 自动优化循环每轮执行流程必须包含早停判断：`仿真 → 读结果 → 解析指标 → 判断是否达目标 → 达则 break，不达则继续`
+- "执行"和"评估"不得拆分为两个独立阶段；目标指标必须在每轮循环体内部实时解析和判断
+- 自动化脚本或管道定义的停止条件（target S11 ≤ -40 dB、轮数上限、或用户指定阈值）必须在执行循环代码中显式实现，不得仅写在 config.json 或文档中
+- 若未实现早停导致超过目标后继续执行额外轮次，任务输出必须明确标记为 `overrun` 并说明浪费了多少轮
 
 ### 结果与导出红线
 - 读取结果后禁止保存，以免造成项目报错
@@ -156,31 +168,31 @@
 - 若任务约束使用“峰值增益 dBi”，必须走真实 gain/dBi 结果读取链路或以 CST 图上/结果树中的 gain 读数为准；禁止拿 `Abs(E)` 代理量冒充绝对增益
 
 ### Session 与结果一致性
-- `advanced_mcp`（modeler）与 `cst_results_mcp`（results）是两个独立 session，禁止混用对象和缓存假设
+- modeler session 与 results session 是两个独立 session，禁止混用对象和缓存假设
 - 仿真结果先存在 modeler 内存，不会自动传递到 results
 - 当前参数优化任务已验证：仿真完成后结果会自动保存，但 results 侧不一定立刻看到最新 `run_id`
 - 当前稳定读取流程是：results 侧使用 `allow_interactive=True`；仿真结束后先关闭 modeler 项目 `close_project(save=False)` 释放工程，再由 results 侧执行 `close + reopen` 刷新 session，并以 `list_run_ids` 返回的最新 `run_id` 为准
 - 禁止把 `save_project()` 当作结果可读的默认前置条件；若后续发现某类工程不满足上述自动保存行为，必须在对应任务记录中明确标注适用范围
-- `cst-modeler_close_project` 的正确做法是：`save=True` 时先 `project.save()`，再调用无参 `project.close()`；禁止向 `project.close()` 传 `SaveChanges` 等 kwargs
+- 关闭 project 的正确做法是：`save=True` 时先 `project.save()`，再调用无参 `project.close()`；禁止向 `project.close()` 传 `SaveChanges` 等 kwargs
 
-### MCP 源码与工具管理
-- 修改 `mcp/*.py` 前必须先备份到 `backup/mcp_sources/`
-- 备份命名：`{原文件名}_{timestamp}.py`
-- 每次备份必须更新 `backup/mcp_sources/backup_log.md`
-- 发现工具失效后，先备份源文件，再标记/删除，并记录原因与替代方案
-- 开发或修改 MCP tool 时，开发期可用 `tools/call_local_mcp_tool.py`、按文件路径加载模块或直接调用函数做快速定位，但这些只能作为调试辅助，不能作为交付验收依据
-- 开发或修改 MCP tool 的最终交付验收标准必须是真实 MCP 调用成功：启动对应 MCP server 后，通过 MCP client 执行 `tools/list` 确认工具已注册，再通过 `tools/call` 调用该工具并验证功能结果落盘或返回结构正确
-- 生产流程必须继续走正式 MCP tools / skills 链路，但 tool call 的可见性按环境分层处理：交互式调试、开发验收、用户明确要求可见时，优先使用当前 GUI 会话中可见的 MCP tool call；自动化生产或批处理流程允许由编排器内部调用 MCP，不要求暴露每一步内部 tool call，但必须把关键调用摘要、输入参数、输出路径、状态、错误和必要的 MCP 返回/`flow_log` 写入当前 run 的 `logs/`、`stages/` 或 `status.json`，确保可审计、可复现、可追责
+### CLI/runtime 源码与工具管理
+- 当前正式执行实现位于 `skills/cst-runtime-cli-optimization/scripts/cst_runtime/` 与 `skills/cst-runtime-cli-optimization/scripts/cst_runtime_cli.py`
+- 新功能默认只进入 Skill 内 CLI/runtime；`mcp/*.py` 不再作为正式生产实现入口
+- 发现旧 MCP 工具失效后，不再把修复它作为默认方向；应优先在 CLI/runtime 中提供替代入口，并记录遗留原因与替代路径
+- 开发或修改 CLI/runtime 时，开发期可按文件路径加载模块、直接调用函数或运行 `cst_runtime_cli.py` 做快速定位，但这些只能作为调试辅助，不能作为交付验收依据
+- CLI/runtime 的最终交付验收标准必须是真实 CLI 调用成功：通过 `python <skill-root>\scripts\cst_runtime_cli.py` 发现命令、生成参数模板、执行目标命令，并验证功能结果落盘或返回结构正确
+- 生产流程必须继续走正式 CLI / Skill 链路。交互式调试、开发验收、用户明确要求可见时，可以保留 GUI 可见执行；自动化生产或批处理流程不要求暴露每一步 GUI 操作，但必须把关键调用摘要、输入参数、输出路径、状态、错误和必要的 `flow_log` 写入当前 run 的 `logs/`、`stages/` 或 `status.json`，确保可审计、可复现、可追责
 - 仓库内需要项目依赖的 Python 调试、验证、一次性调用，默认使用 `uv run python ...`；禁止直接依赖系统 `python`，除非确认该命令只用标准库且不触发项目依赖
-- 从命令行做最终验收时，必须连接已启动的 MCP server 并走 MCP 协议调用；可使用 `tools/call_mcp_tool.py` 执行 `tools/list` 与 `tools/call`
 - `get_1d_result(..., export_path=...)` 的导出格式仅允许 `.json`
 - 禁止在生产流程中使用或依赖 S11 CSV 导出/CSV 对比
-- 生成 S11 对比页必须优先调用 `cst_results_mcp.generate_s11_comparison`
+- 生成 S11 对比页必须优先调用 CLI/runtime 的 `generate-s11-comparison`
 - 历史 S11 对比脚本已归档到 `archive/tools-legacy-20260421/generate_s11_comparison.py`，不作为生产流程默认入口
-- 生产链路固定为：`get_1d_result(export_path=.json)` -> `generate_s11_comparison(file_paths=[...json...])`
+- 生产链路固定为：`get-1d-result(export_path=.json)` -> `generate-s11-comparison(file_paths=[...json...])`
 - 不满足上述链路时，任务状态应标记为 `blocked` 并在日志中说明原因
 
 ### Skill 维护
-- 当前正式维护的执行 Skill 为 `skills/cst-simulation-optimization/SKILL.md`
-- 修改正式 Skill 时，优先修改仓库内版本，再同步到项目内 `.codex` 生效副本
-- 不要只修改 `.codex` 下的副本而不回写仓库版本
+- 当前维护的执行 Skill 为 `skills/cst-runtime-cli-optimization/SKILL.md`
+- `skills/cst-simulation-optimization/` 流程已过时并移入备份；不得作为当前生产流程入口或 agent 生效副本继续分发
+- 仓库内 `skills/` 是 Skill 唯一维护源；修改正式 Skill 时，必须先修改仓库内版本
+- 需要刷新各 agent 的本地生效副本时，使用 `tools/sync_agent_skills.ps1` 从仓库 `skills/` 分发；具体目标目录说明放入 `docs/`，不写入本规则文件
+- 不要只修改 `.codex`、`.opencode`、`.trae` 等 agent 生效副本而不回写仓库版本
