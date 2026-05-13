@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-05-12T06:44:49+00:00",
+  "generated_at": "2026-05-12T09:08:26+00:00",
   "generator": "skills/cst-runtime-cli-optimization/scripts/generate_mcp_cli_inventory.py",
   "status": "phase1_static_inventory",
   "scope": "MCP tool decorators plus current cst_runtime CLI tool registry.",
   "summary": {
-    "total_records": 109,
+    "total_records": 113,
     "mcp_tool_count": 95,
-    "cli_tool_count": 67,
-    "implemented_or_replaced": 72,
-    "not_migrated_needs_design": 36,
+    "cli_tool_count": 84,
+    "implemented_or_replaced": 87,
+    "not_migrated_needs_design": 25,
     "disabled_or_blocked": 1
   },
   "records": [
@@ -63,7 +63,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "boolean-insert",
       "notes": "布尔插入运算 参数: - shape1: 目标实体，支持 'component:name' 或 'name' 格式 - shape2: 插入的实体，支持 'component:name' 或 'name' 格式"
@@ -77,7 +77,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "boolean-intersect",
       "notes": "布尔交集运算"
@@ -105,7 +105,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "change-frequency-range",
       "notes": "修改仿真频率范围"
@@ -119,7 +119,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "change-material",
       "notes": "更改实体的材料"
@@ -158,12 +158,12 @@
       "line": 381,
       "category": "modeler",
       "risk": "session",
-      "cli_status": "implemented_needs_validation",
+      "cli_status": "not_migrated_needs_design",
       "pipeline_mode": "not_pipeable_session",
-      "mcp_retention": "mcp_preferred",
+      "mcp_retention": "not_decided",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "close-project",
+      "replacement": "",
       "notes": "关闭当前项目 Args: save: 是否保存更改，默认为 True。远场导出后必须传 save=False 避免项目损坏。"
     },
     {
@@ -228,12 +228,12 @@
       "line": 2780,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "create-mesh-group",
       "notes": "创建网格组并添加项目"
     },
     {
@@ -259,7 +259,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "define-background",
       "notes": "定义背景"
@@ -273,7 +273,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "define-boundary",
       "notes": "定义边界条件"
@@ -385,7 +385,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "define-mesh",
       "notes": "定义网格"
@@ -427,7 +427,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "define-port",
       "notes": "定义端口"
@@ -441,7 +441,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "define-rectangle",
       "notes": "定义长方形"
@@ -455,7 +455,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "define-solver",
       "notes": "定义求解器"
@@ -466,12 +466,12 @@
       "line": 1968,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "define-units",
       "notes": "定义单位系统"
     },
     {
@@ -494,12 +494,12 @@
       "line": 2652,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "delete-monitor",
       "notes": "删除监视器"
     },
     {
@@ -648,12 +648,12 @@
       "line": 325,
       "category": "modeler",
       "risk": "session",
-      "cli_status": "implemented_needs_validation",
+      "cli_status": "not_migrated_needs_design",
       "pipeline_mode": "not_pipeable_session",
-      "mcp_retention": "mcp_preferred",
+      "mcp_retention": "not_decided",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "open-project",
+      "replacement": "",
       "notes": "打开现有CST项目"
     },
     {
@@ -749,7 +749,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "rename-entity",
       "notes": "重命名几何实体"
@@ -788,12 +788,12 @@
       "line": 2748,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-background-with-space",
       "notes": "设置背景空间"
     },
     {
@@ -802,12 +802,12 @@
       "line": 2707,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-efield-monitor",
       "notes": "设置电场监视器"
     },
     {
@@ -819,7 +819,7 @@
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
       "replacement": "set-entity-color",
       "notes": "设置实体的颜色"
@@ -830,12 +830,12 @@
       "line": 2664,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-farfield-monitor",
       "notes": "设置远场监视器"
     },
     {
@@ -844,12 +844,12 @@
       "line": 2858,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-farfield-plot-cuts",
       "notes": "设置远场图切割线"
     },
     {
@@ -858,12 +858,12 @@
       "line": 2801,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-fdsolver-extrude-open-bc",
       "notes": "设置FD求解器展开开放边界"
     },
     {
@@ -872,12 +872,12 @@
       "line": 2974,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-field-monitor",
       "notes": "设置场监视器"
     },
     {
@@ -886,12 +886,12 @@
       "line": 2813,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-mesh-fpbavoid-nonreg-unite",
       "notes": "设置网格避免非正则联合"
     },
     {
@@ -900,12 +900,12 @@
       "line": 2828,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-mesh-minimum-step-number",
       "notes": "设置网格最小步数"
     },
     {
@@ -914,12 +914,12 @@
       "line": 2991,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-probe",
       "notes": "设置探针"
     },
     {
@@ -928,12 +928,12 @@
       "line": 2612,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "set-solver-acceleration",
       "notes": "设置求解器并行计算加速"
     },
     {
@@ -942,12 +942,12 @@
       "line": 3018,
       "category": "modeler",
       "risk": "write",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_destructive",
       "mcp_retention": "mcp_preferred",
-      "validation_status": "static_inventory_only",
+      "validation_status": "implemented_validated",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "show-bounding-box",
       "notes": "显示边界框"
     },
     {
@@ -984,12 +984,12 @@
       "line": 918,
       "category": "modeler",
       "risk": "session",
-      "cli_status": "not_migrated_needs_design",
+      "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_session",
       "mcp_retention": "mcp_preferred",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "",
+      "replacement": "stop-simulation",
       "notes": "停止仿真"
     },
     {
@@ -1054,12 +1054,12 @@
       "line": 2394,
       "category": "results",
       "risk": "session",
-      "cli_status": "implemented_needs_validation",
+      "cli_status": "not_migrated_needs_design",
       "pipeline_mode": "not_pipeable_session",
-      "mcp_retention": "mcp_preferred",
+      "mcp_retention": "not_decided",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "close-project",
+      "replacement": "",
       "notes": "关闭当前项目上下文"
     },
     {
@@ -1264,12 +1264,12 @@
       "line": 2356,
       "category": "results",
       "risk": "session",
-      "cli_status": "implemented_needs_validation",
+      "cli_status": "not_migrated_needs_design",
       "pipeline_mode": "not_pipeable_session",
-      "mcp_retention": "mcp_preferred",
+      "mcp_retention": "not_decided",
       "validation_status": "static_inventory_only",
       "known_issue": "",
-      "replacement": "open-project",
+      "replacement": "",
       "notes": "打开 CST 项目文件（用于结果查询） 使用 cst.results.ProjectFile 打开项目文件并保存上下文。 allow_interactive=True 时可读取正在 CST 中打开且已保存的项目，但性能较低， 且未保存状态下数据可能过时或不完整。 参数: - fullpath: 项目文件完整路径 - allow_interactive: 是否允许交互模式打开，默认 False 返回: - status: 操作状态 - f"
     },
     {
@@ -1343,6 +1343,34 @@
       "notes": "从当前子项目切回根项目"
     },
     {
+      "name": "activate-post-process",
+      "source": "scripts/cst_runtime/cli.py",
+      "line": null,
+      "category": "modeling",
+      "risk": "write",
+      "cli_status": "implemented_needs_validation",
+      "pipeline_mode": "not_pipeable_destructive",
+      "mcp_retention": "cli_native",
+      "validation_status": "static_inventory_only",
+      "known_issue": "",
+      "replacement": "",
+      "notes": "Activate or deactivate a post-processing operation."
+    },
+    {
+      "name": "create-blank-project",
+      "source": "scripts/cst_runtime/cli.py",
+      "line": null,
+      "category": "session_manager",
+      "risk": "write",
+      "cli_status": "implemented_needs_validation",
+      "pipeline_mode": "not_pipeable_destructive",
+      "mcp_retention": "cli_native",
+      "validation_status": "implemented_validated",
+      "known_issue": "",
+      "replacement": "",
+      "notes": "Create a new blank CST project at the specified path."
+    },
+    {
       "name": "cst-session-close",
       "source": "scripts/cst_runtime/cli.py",
       "line": null,
@@ -1411,6 +1439,20 @@
       "known_issue": "",
       "replacement": "",
       "notes": "Reattach to the expected CST project only if it is the sole open project."
+    },
+    {
+      "name": "delete-probe",
+      "source": "scripts/cst_runtime/cli.py",
+      "line": null,
+      "category": "modeling",
+      "risk": "write",
+      "cli_status": "implemented_needs_validation",
+      "pipeline_mode": "not_pipeable_destructive",
+      "mcp_retention": "cli_native",
+      "validation_status": "static_inventory_only",
+      "known_issue": "",
+      "replacement": "",
+      "notes": "Delete a probe by its ID."
     },
     {
       "name": "infer-run-dir",
@@ -1483,6 +1525,20 @@
       "notes": "Inspect a CST farfield ASCII/TXT grid and return row/theta/phi counts."
     },
     {
+      "name": "list-materials",
+      "source": "scripts/cst_runtime/cli.py",
+      "line": null,
+      "category": "modeling",
+      "risk": "read",
+      "cli_status": "implemented_needs_validation",
+      "pipeline_mode": "pipe_source",
+      "mcp_retention": "cli_native",
+      "validation_status": "static_inventory_only",
+      "known_issue": "",
+      "replacement": "",
+      "notes": "List available CST material names from the Materials library."
+    },
+    {
       "name": "list-open-projects",
       "source": "scripts/cst_runtime/cli.py",
       "line": null,
@@ -1528,7 +1584,7 @@
       "name": "wait-simulation",
       "source": "scripts/cst_runtime/cli.py",
       "line": null,
-      "category": "modeler",
+      "category": "project_ops",
       "risk": "long-running",
       "cli_status": "implemented_needs_validation",
       "pipeline_mode": "not_pipeable_session",

@@ -7,7 +7,7 @@
 ## 稳定事实
 - 当前主蓝本是 `<repo>/ref/ref_model/ref_0/`
 - `ref_0` 是四脊喇叭天线蓝本，S 参数频段为 2-18 GHz，远场关注点为 10 GHz
-- 当前维护的执行 Skill 是 `skills/cst-runtime-cli-optimization/SKILL.md`
+- 当前维护的执行 Skill 是 `skills/cst-runtime-cli/SKILL.md`
 - 旧 `skills/cst-simulation-optimization/` 流程已过时并移入备份，不再作为生产入口或 agent 生效副本维护
 - 当前稳定生产链仍以 MCP + Skill 为基准；`cst_runtime/` 是正在验证的共享 runtime/CLI 能力层，不是第二条正式生产链
 - 当前重点能力目录是 `<repo>/cst_runtime/`；`prototype_optimizer/` 不再作为主线和默认迁移包依赖

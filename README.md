@@ -56,7 +56,7 @@ pip install --editable "C:\Program Files\CST Studio Suite 2026\AMD64\python_cst_
 
 低上下文 agent 使用本项目时，先读 Skill，再用 CLI 自学习工具和管道：
 
-1. 阅读 [`skills/cst-runtime-cli-optimization/SKILL.md`](skills/cst-runtime-cli-optimization/SKILL.md)。
+1. 阅读 [`skills/cst-runtime-cli/SKILL.md`](skills/cst-runtime-cli/SKILL.md)。
 2. 通过 Skill 内入口运行 CLI 发现命令；可在仓库根目录，也可在已初始化工作区。
 3. 对每个不熟悉的工具先执行 `describe-tool` 和 `args-template`。
 4. 对每条不熟悉的链路先执行 `describe-pipeline` 和 `pipeline-template`。
@@ -127,7 +127,7 @@ python <skill-root>\scripts\cst_runtime_cli.py pipeline-template --pipeline late
 - CLI agent 使用指南：[`docs/runtime/cst-runtime-agent-usage.md`](docs/runtime/cst-runtime-agent-usage.md)
 - Runtime 原生管道：[`docs/runtime/cst-runtime-native-pipeline.md`](docs/runtime/cst-runtime-native-pipeline.md)
 - CLI 架构决策：[`docs/architecture/cli-architecture-decision.md`](docs/architecture/cli-architecture-decision.md)
-- Runtime Skill：[`skills/cst-runtime-cli-optimization/SKILL.md`](skills/cst-runtime-cli-optimization/SKILL.md)
+- Runtime Skill：[`skills/cst-runtime-cli/SKILL.md`](skills/cst-runtime-cli/SKILL.md)
 
 ## 当前边界
 

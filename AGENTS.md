@@ -176,7 +176,7 @@
 - 关闭 project 的正确做法是：`save=True` 时先 `project.save()`，再调用无参 `project.close()`；禁止向 `project.close()` 传 `SaveChanges` 等 kwargs
 
 ### CLI/runtime 源码与工具管理
-- 当前正式执行实现位于 `skills/cst-runtime-cli-optimization/scripts/cst_runtime/` 与 `skills/cst-runtime-cli-optimization/scripts/cst_runtime_cli.py`
+- 当前正式执行实现位于 `skills/cst-runtime-cli/scripts/cst_runtime/` 与 `skills/cst-runtime-cli/scripts/cst_runtime_cli.py`
 - 新功能默认只进入 Skill 内 CLI/runtime；`mcp/*.py` 不再作为正式生产实现入口
 - 发现旧 MCP 工具失效后，不再把修复它作为默认方向；应优先在 CLI/runtime 中提供替代入口，并记录遗留原因与替代路径
 - 开发或修改 CLI/runtime 时，开发期可按文件路径加载模块、直接调用函数或运行 `cst_runtime_cli.py` 做快速定位，但这些只能作为调试辅助，不能作为交付验收依据
@@ -191,7 +191,7 @@
 - 不满足上述链路时，任务状态应标记为 `blocked` 并在日志中说明原因
 
 ### Skill 维护
-- 当前维护的执行 Skill 为 `skills/cst-runtime-cli-optimization/SKILL.md`
+- 当前维护的执行 Skill 为 `skills/cst-runtime-cli/SKILL.md`
 - `skills/cst-simulation-optimization/` 流程已过时并移入备份；不得作为当前生产流程入口或 agent 生效副本继续分发
 - 仓库内 `skills/` 是 Skill 唯一维护源；修改正式 Skill 时，必须先修改仓库内版本
 - 需要刷新各 agent 的本地生效副本时，使用 `tools/sync_agent_skills.ps1` 从仓库 `skills/` 分发；具体目标目录说明放入 `docs/`，不写入本规则文件

@@ -15,7 +15,9 @@ import warnings
 from pathlib import Path
 from typing import Any, Callable
 
-from cst_runtime import audit, farfield, modeling, modeler, process_cleanup, project_identity, results, run_workspace, session_manager, workspace
+from cst_runtime import audit, farfield, modeling, process_cleanup, project_identity, project_ops, results, run_workspace, session_manager, workspace
+from cst_runtime.cli_args_templates import ARGS_TEMPLATES
+from cst_runtime.cli_pipelines import PIPELINES
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -44,11 +46,10 @@ WORKSPACE_OPTIONAL_TOOLS = {
     "inspect-farfield-ascii",
     "plot-farfield-multi",
     "calculate-farfield-neighborhood-flatness",
+    "list-materials",
 }
 CST_INTERFACE_TOOLS = {
     "create-blank-project",
-    "open-project",
-    "close-project",
     "save-project",
     "list-parameters",
     "list-entities",
@@ -85,6 +86,41 @@ CST_INTERFACE_TOOLS = {
     "define-monitor",
     "rename-entity",
     "set-entity-color",
+    "define-units",
+    "set-farfield-monitor",
+    "set-efield-monitor",
+    "set-field-monitor",
+    "set-probe",
+    "delete-probe",
+    "delete-monitor",
+    "set-background-with-space",
+    "set-farfield-plot-cuts",
+    "show-bounding-box",
+    "activate-post-process",
+    "create-mesh-group",
+    "stop-simulation",
+    "set-solver-acceleration",
+    "set-fdsolver-extrude-open-bc",
+    "set-mesh-fpbavoid-nonreg-unite",
+    "set-mesh-minimum-step-number",
+    "define-polygon-3d",
+    "define-analytical-curve",
+    "define-extrude-curve",
+    "transform-shape",
+    "transform-curve",
+    "create-horn-segment",
+    "create-loft-sweep",
+    "create-hollow-sweep",
+    "add-to-history",
+    "pick-face",
+    "define-loft",
+    "export-e-field",
+    "export-surface-current",
+    "export-voltage",
+    "define-parameters",
+    "pause-simulation",
+    "resume-simulation",
+    "define-material-from-mtd",
 }
 CST_RESULTS_TOOLS = {
     "open-results-project",
@@ -254,9 +290,10 @@ def _usage_guide() -> dict[str, Any]:
             "run": ["prepare-run", "get-run-context"],
             "audit": ["record-stage", "update-status"],
             "project_identity": ["infer-run-dir", "wait-project-unlocked", "verify-project-identity", "list-open-projects"],
-            "session_manager": ["cst-session-inspect", "cst-session-open", "cst-session-reattach", "cst-session-close", "cst-session-quit"],
+            "session_manager": ["cst-session-inspect", "cst-session-open", "cst-session-reattach", "cst-session-close", "cst-session-quit", "create-blank-project", "save-project"],
             "process_cleanup": ["inspect-cst-environment", "cleanup-cst-processes"],
-            "modeler": ["open-project", "list-parameters", "list-entities", "change-parameter", "start-simulation-async", "is-simulation-running", "wait-simulation", "save-project", "close-project"],
+            "project_ops": ["list-parameters", "change-parameter", "define-parameters", "define-frequency-range", "change-frequency-range", "define-background", "define-boundary", "define-mesh", "define-solver", "define-port", "define-monitor", "change-solver-type", "start-simulation", "start-simulation-async", "is-simulation-running", "wait-simulation", "pause-simulation", "resume-simulation", "stop-simulation", "set-solver-acceleration", "set-fdsolver-extrude-open-bc", "set-mesh-fpbavoid-nonreg-unite", "set-mesh-minimum-step-number"],
+            "modeling": ["define-brick", "define-cylinder", "define-cone", "define-rectangle", "define-units", "define-polygon-3d", "define-analytical-curve", "define-extrude-curve", "define-loft", "transform-shape", "transform-curve", "create-horn-segment", "create-loft-sweep", "create-hollow-sweep", "boolean-add", "boolean-subtract", "boolean-intersect", "boolean-insert", "create-component", "delete-entity", "rename-entity", "set-entity-color", "change-material", "define-material-from-mtd", "list-materials", "list-entities", "set-farfield-monitor", "set-efield-monitor", "set-field-monitor", "set-probe", "delete-probe", "delete-monitor", "set-background-with-space", "set-farfield-plot-cuts", "show-bounding-box", "activate-post-process", "create-mesh-group", "pick-face", "add-to-history", "export-e-field", "export-surface-current", "export-voltage"],
             "results": ["open-results-project", "list-subprojects", "list-run-ids", "get-parameter-combination", "get-1d-result", "get-2d-result", "generate-s11-comparison", "generate-s11-farfield-dashboard", "plot-exported-file", "plot-project-result"],
             "farfield": ["export-farfield-fresh-session", "read-realized-gain-grid-fresh-session", "inspect-farfield-ascii", "plot-farfield-multi"],
         },
@@ -630,8 +667,6 @@ DIRECT_ARG_SPECS: dict[str, dict[str, str]] = {
         "title": "title",
         "force": "force",
     },
-    "open-project": {"project_path": "project_path"},
-    "close-project": {"project_path": "project_path", "save": "save"},
     "save-project": {"project_path": "project_path"},
     "list-parameters": {"project_path": "project_path"},
     "list-entities": {"project_path": "project_path", "component": "component"},
@@ -768,6 +803,7 @@ DIRECT_ARG_SPECS: dict[str, dict[str, str]] = {
     "boolean-insert": {"project_path": "project_path", "shape1": "shape1", "shape2": "shape2"},
     "delete-entity": {"project_path": "project_path", "component": "component", "name": "name"},
     "create-component": {"project_path": "project_path", "component_name": "component_name"},
+    "list-materials": {},
     "change-material": {"project_path": "project_path", "shape_name": "shape_name", "material": "material"},
     "define-frequency-range": {"project_path": "project_path", "start_freq": "start_freq", "end_freq": "end_freq"},
     "change-frequency-range": {"project_path": "project_path", "min_frequency": "min_frequency", "max_frequency": "max_frequency"},
@@ -790,6 +826,41 @@ DIRECT_ARG_SPECS: dict[str, dict[str, str]] = {
     "define-monitor": {"project_path": "project_path", "start_freq": "start_freq", "end_freq": "end_freq", "step": "step"},
     "rename-entity": {"project_path": "project_path", "old_name": "old_name", "new_name": "new_name"},
     "set-entity-color": {"project_path": "project_path", "shape_name": "shape_name"},
+    "define-units": {"project_path": "project_path"},
+    "set-farfield-monitor": {"project_path": "project_path", "start_freq": "start_freq", "end_freq": "end_freq", "step": "step"},
+    "set-efield-monitor": {"project_path": "project_path", "start_freq": "start_freq", "end_freq": "end_freq"},
+    "set-field-monitor": {"project_path": "project_path", "field_type": "field_type", "start_frequency": "start_frequency", "end_frequency": "end_frequency"},
+    "set-probe": {"project_path": "project_path", "field_type": "field_type", "x_pos": "x_pos", "y_pos": "y_pos", "z_pos": "z_pos"},
+    "delete-probe": {"project_path": "project_path", "probe_id": "probe_id"},
+    "delete-monitor": {"project_path": "project_path", "monitor_name": "monitor_name"},
+    "set-background-with-space": {"project_path": "project_path"},
+    "set-farfield-plot-cuts": {"project_path": "project_path"},
+    "show-bounding-box": {"project_path": "project_path"},
+    "activate-post-process": {"project_path": "project_path", "operation": "operation"},
+    "create-mesh-group": {"project_path": "project_path", "group_name": "group_name"},
+    "stop-simulation": {"project_path": "project_path"},
+    "pause-simulation": {"project_path": "project_path"},
+    "resume-simulation": {"project_path": "project_path"},
+    "set-solver-acceleration": {"project_path": "project_path"},
+    "set-fdsolver-extrude-open-bc": {"project_path": "project_path"},
+    "set-mesh-fpbavoid-nonreg-unite": {"project_path": "project_path"},
+    "set-mesh-minimum-step-number": {"project_path": "project_path"},
+    "define-polygon-3d": {"project_path": "project_path", "name": "name", "curve": "curve"},
+    "define-analytical-curve": {"project_path": "project_path", "name": "name", "curve": "curve", "law_x": "law_x", "law_y": "law_y", "law_z": "law_z"},
+    "define-extrude-curve": {"project_path": "project_path", "name": "name", "component": "component", "material": "material", "curve": "curve", "thickness": "thickness"},
+    "transform-shape": {"project_path": "project_path", "shape_name": "shape_name", "transform_type": "transform_type"},
+    "transform-curve": {"project_path": "project_path", "curve_name": "curve_name"},
+    "create-horn-segment": {"project_path": "project_path", "segment_id": "segment_id", "bottom_radius": "bottom_radius", "top_radius": "top_radius"},
+    "create-loft-sweep": {"project_path": "project_path", "name": "name", "component": "component", "material": "material"},
+    "create-hollow-sweep": {"project_path": "project_path", "name": "name", "component": "component", "material": "material", "wall_thickness": "wall_thickness"},
+    "add-to-history": {"project_path": "project_path", "command": "command"},
+    "pick-face": {"project_path": "project_path", "component": "component", "name": "name", "face_id": "face_id"},
+    "define-loft": {"project_path": "project_path", "name": "name", "component": "component", "material": "material"},
+    "export-e-field": {"project_path": "project_path", "frequency": "frequency", "file_path": "file_path"},
+    "export-surface-current": {"project_path": "project_path", "frequency": "frequency", "file_path": "file_path"},
+    "export-voltage": {"project_path": "project_path", "voltage_index": "voltage_index", "file_path": "file_path"},
+    "define-parameters": {"project_path": "project_path"},
+    "define-material-from-mtd": {"project_path": "project_path", "material_name": "material_name"},
 }
 
 
@@ -931,32 +1002,45 @@ def tool_cst_session_quit(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
-def tool_create_blank_project(args: dict[str, Any]) -> dict[str, Any]:
-    return modeler.create_blank_project(_project_path_from_args(args))
+def tool_list_materials(args: dict[str, Any]) -> dict[str, Any]:
+    materials_path = Path(__file__).resolve().parents[2] / "references" / "materials_name_list.txt"
+    if not materials_path.is_file():
+        return {
+            "status": "error",
+            "error_type": "materials_list_not_found",
+            "expected_path": str(materials_path),
+        }
+    names = [line.strip() for line in materials_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return {
+        "status": "success",
+        "count": len(names),
+        "material_names": names,
+        "source": str(materials_path),
+        "usage": "Pass the name to change-material --material '<name>', or use define-material-from-mtd --material-name '<name>'.",
+    }
 
 
-def tool_open_project(args: dict[str, Any]) -> dict[str, Any]:
-    return session_manager.open_project(_project_path_from_args(args))
-
-
-def tool_close_project(args: dict[str, Any]) -> dict[str, Any]:
-    return session_manager.close_project(
+def tool_define_material_from_mtd(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.define_material_from_mtd(
         project_path=_project_path_from_args(args),
-        save=bool(args.get("save", False)),
-        wait_unlock=False,
+        material_name=str(args.get("material_name", "")),
     )
 
 
+def tool_create_blank_project(args: dict[str, Any]) -> dict[str, Any]:
+    return session_manager.create_blank_project(_project_path_from_args(args))
+
+
 def tool_save_project(args: dict[str, Any]) -> dict[str, Any]:
-    return modeler.save_project(_project_path_from_args(args))
+    return project_ops.save_project(_project_path_from_args(args))
 
 
 def tool_list_parameters(args: dict[str, Any]) -> dict[str, Any]:
-    return modeler.list_parameters(_project_path_from_args(args))
+    return project_ops.list_parameters(_project_path_from_args(args))
 
 
 def tool_list_entities(args: dict[str, Any]) -> dict[str, Any]:
-    return modeler.list_entities(
+    return project_ops.list_entities(
         project_path=_project_path_from_args(args),
         component=str(args.get("component", "")),
     )
@@ -965,19 +1049,19 @@ def tool_list_entities(args: dict[str, Any]) -> dict[str, Any]:
 def tool_change_parameter(args: dict[str, Any]) -> dict[str, Any]:
     project_path = _project_path_from_args(args)
     tool_args = {key: value for key, value in args.items() if key not in {"project_path", "fullpath", "working_project"}}
-    return modeler.change_parameter(project_path=project_path, **tool_args)
+    return project_ops.change_parameter(project_path=project_path, **tool_args)
 
 
 def tool_start_simulation(args: dict[str, Any]) -> dict[str, Any]:
-    return modeler.start_simulation(_project_path_from_args(args))
+    return project_ops.start_simulation(_project_path_from_args(args))
 
 
 def tool_start_simulation_async(args: dict[str, Any]) -> dict[str, Any]:
-    return modeler.start_simulation_async(_project_path_from_args(args))
+    return project_ops.start_simulation_async(_project_path_from_args(args))
 
 
 def tool_is_simulation_running(args: dict[str, Any]) -> dict[str, Any]:
-    return modeler.is_simulation_running(_project_path_from_args(args))
+    return project_ops.is_simulation_running(_project_path_from_args(args))
 
 
 def tool_wait_simulation(args: dict[str, Any]) -> dict[str, Any]:
@@ -989,7 +1073,7 @@ def tool_wait_simulation(args: dict[str, Any]) -> dict[str, Any]:
     last_result: dict[str, Any] | None = None
     while True:
         polls += 1
-        last_result = modeler.is_simulation_running(project_path)
+        last_result = project_ops.is_simulation_running(project_path)
         if last_result.get("status") == "error":
             return {**last_result, "polls": polls, "waited_seconds": round(time.monotonic() - started, 3)}
         if not bool(last_result.get("running")):
@@ -1102,6 +1186,142 @@ def tool_rename_entity(args: dict[str, Any]) -> dict[str, Any]:
 
 def tool_set_entity_color(args: dict[str, Any]) -> dict[str, Any]:
     return modeling.set_entity_color(**args)
+
+
+def tool_define_units(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.define_units(**args)
+
+
+def tool_set_farfield_monitor(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.set_farfield_monitor(**args)
+
+
+def tool_set_efield_monitor(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.set_efield_monitor(**args)
+
+
+def tool_set_field_monitor(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.set_field_monitor(**args)
+
+
+def tool_set_probe(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.set_probe(**args)
+
+
+def tool_delete_probe(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.delete_probe_by_id(**args)
+
+
+def tool_delete_monitor(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.delete_monitor(**args)
+
+
+def tool_set_background_with_space(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.set_background_with_space(**args)
+
+
+def tool_set_farfield_plot_cuts(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.set_farfield_plot_cuts(**args)
+
+
+def tool_show_bounding_box(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.show_bounding_box(**args)
+
+
+def tool_activate_post_process(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.activate_post_process_operation(**args)
+
+
+def tool_create_mesh_group(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.create_mesh_group(**args)
+
+
+def tool_stop_simulation(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.stop_simulation(_project_path_from_args(args))
+
+
+def tool_pause_simulation(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.pause_simulation(_project_path_from_args(args))
+
+
+def tool_resume_simulation(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.resume_simulation(_project_path_from_args(args))
+
+
+def tool_set_solver_acceleration(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.set_solver_acceleration(**args)
+
+
+def tool_set_fdsolver_extrude_open_bc(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.set_fdsolver_extrude_open_bc(**args)
+
+
+def tool_set_mesh_fpbavoid_nonreg_unite(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.set_mesh_fpbavoid_nonreg_unite(**args)
+
+
+def tool_set_mesh_minimum_step_number(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.set_mesh_minimum_step_number(**args)
+
+
+def tool_define_polygon_3d(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.define_polygon_3d(**args)
+
+
+def tool_define_analytical_curve(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.define_analytical_curve(**args)
+
+
+def tool_define_extrude_curve(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.define_extrude_curve(**args)
+
+
+def tool_transform_shape(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.transform_shape(**args)
+
+
+def tool_transform_curve(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.transform_curve(**args)
+
+
+def tool_create_horn_segment(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.create_horn_segment(**args)
+
+
+def tool_create_loft_sweep(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.create_loft_sweep(**args)
+
+
+def tool_create_hollow_sweep(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.create_hollow_sweep(**args)
+
+
+def tool_add_to_history(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.add_to_history(**args)
+
+
+def tool_pick_face(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.pick_face(**args)
+
+
+def tool_define_loft(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.define_loft(**args)
+
+
+def tool_export_e_field(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.export_e_field(**args)
+
+
+def tool_export_surface_current(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.export_surface_current(**args)
+
+
+def tool_export_voltage(args: dict[str, Any]) -> dict[str, Any]:
+    return modeling.export_voltage(**args)
+
+
+def tool_define_parameters(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.define_parameters(**args)
 
 
 def tool_infer_run_dir(args: dict[str, Any]) -> dict[str, Any]:
@@ -1365,640 +1585,6 @@ def tool_plot_farfield_multi(args: dict[str, Any]) -> dict[str, Any]:
 ToolFunc = Callable[[dict[str, Any]], dict[str, Any]]
 
 
-ARGS_TEMPLATES: dict[str, dict[str, Any]] = {
-    "init-workspace": {
-        "workspace": "C:\\path\\to\\empty_workspace",
-    },
-    "init-task": {
-        "workspace": "C:\\path\\to\\empty_workspace",
-        "task_id": "task_001_demo",
-        "source_project": "C:\\path\\to\\model.cst",
-        "goal": "demo",
-        "title": "",
-        "force": False,
-    },
-    "prepare-run": {
-        "task_path": "C:\\path\\to\\tasks\\task_xxx",
-    },
-    "get-run-context": {
-        "task_path": "C:\\path\\to\\tasks\\task_xxx",
-        "run_id": "",
-    },
-    "record-stage": {
-        "task_path": "C:\\path\\to\\tasks\\task_xxx",
-        "run_id": "run_001",
-        "stage": "cli_runtime_iteration",
-        "status": "completed",
-        "message": "",
-        "details_json": "{}",
-    },
-    "update-status": {
-        "task_path": "C:\\path\\to\\tasks\\task_xxx",
-        "run_id": "run_001",
-        "status": "validated",
-        "stage": "cli_runtime_iteration",
-        "best_result_json": "{}",
-        "output_files_json": "{}",
-        "error_json": "",
-        "extra_json": "{}",
-    },
-    "cleanup-cst-processes": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "dry_run": False,
-        "settle_seconds": 0.5,
-    },
-    "inspect-cst-environment": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "cst-session-inspect": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "cst-session-open": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "cst-session-reattach": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "cst-session-close": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "save": False,
-        "wait_unlock": True,
-        "timeout_seconds": 30,
-        "poll_interval_seconds": 0.5,
-    },
-    "cst-session-quit": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "dry_run": False,
-        "settle_seconds": 0.5,
-    },
-    "open-project": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "close-project": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "save": False,
-    },
-    "save-project": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "list-parameters": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "list-entities": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "component": "",
-    },
-    "change-parameter": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "name": "R",
-        "value": 0.102,
-    },
-    "start-simulation": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "start-simulation-async": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "is-simulation-running": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "wait-simulation": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "timeout_seconds": 3600,
-        "poll_interval_seconds": 10,
-    },
-    "infer-run-dir": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "wait-project-unlocked": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "timeout_seconds": 30,
-        "poll_interval_seconds": 0.5,
-    },
-    "list-open-projects": {},
-    "verify-project-identity": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "open-results-project": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "allow_interactive": False,
-        "subproject_treepath": "",
-    },
-    "list-subprojects": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "allow_interactive": False,
-    },
-    "get-version-info": {},
-    "list-result-items": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "module_type": "3d",
-        "filter_type": "0D/1D",
-        "allow_interactive": False,
-        "subproject_treepath": "",
-    },
-    "list-run-ids": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "treepath": "1D Results\\S-Parameters\\S1,1",
-        "module_type": "3d",
-        "allow_interactive": False,
-        "skip_nonparametric": False,
-        "max_mesh_passes_only": False,
-    },
-    "get-parameter-combination": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "run_id": 1,
-        "module_type": "3d",
-        "allow_interactive": False,
-    },
-    "get-1d-result": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "treepath": "1D Results\\S-Parameters\\S1,1",
-        "module_type": "3d",
-        "run_id": 1,
-        "load_impedances": True,
-        "export_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\s11_run1.json",
-        "allow_interactive": False,
-    },
-    "get-2d-result": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "treepath": "2D/3D Results\\example",
-        "module_type": "3d",
-        "export_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\result_2d.json",
-        "allow_interactive": False,
-        "subproject_treepath": "",
-        "include_data": False,
-    },
-    "plot-exported-file": {
-        "file_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\s11_run1.json",
-        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\result_preview.html",
-        "page_title": "CST Result Preview",
-    },
-    "plot-project-result": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "treepath": "1D Results\\S-Parameters\\S1,1",
-        "module_type": "3d",
-        "run_id": 1,
-        "load_impedances": True,
-        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\project_result_preview.html",
-        "page_title": "Project Result Preview",
-        "allow_interactive": True,
-        "subproject_treepath": "",
-        "result_kind": "auto",
-        "intermediate_json": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\project_result_preview.json",
-    },
-    "generate-s11-comparison": {
-        "file_paths": [
-            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\s11_run0.json",
-            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\s11_run1.json",
-        ],
-        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\s11_comparison.html",
-        "page_title": "S11 Comparison",
-    },
-    "generate-s11-farfield-dashboard": {
-        "s11_file_paths": [
-            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\s11_run1.json"
-        ],
-        "farfield_file_paths": [
-            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_13ghz_port1_realized_gain.txt"
-        ],
-        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\s11_farfield_dashboard.html",
-        "page_title": "S11 + Farfield Dashboard",
-        "farfield_run_id": 1,
-    },
-    "inspect-farfield-ascii": {
-        "file_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_13ghz_port1.txt",
-    },
-    "export-farfield-fresh-session": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "farfield_name": "farfield (f=13) [1]",
-        "output_file": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_13ghz_port1_realized_gain.txt",
-        "plot_mode": "Realized Gain",
-        "prime_with_cut": False,
-        "cut_axis": "Phi",
-        "cut_angle": "0",
-        "theta_step_deg": 1.0,
-        "phi_step_deg": 2.0,
-        "theta_min_deg": 0.0,
-        "theta_max_deg": 15.0,
-        "phi_min_deg": 0.0,
-        "phi_max_deg": 360.0,
-        "max_attempts": 6,
-        "keep_prime_cut_file": False,
-    },
-    "export-existing-farfield-cut-fresh-session": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "tree_path": "Farfields\\Farfield Cuts\\Excitation [1]\\Phi=0\\farfield (f=13)",
-        "output_file": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_cut_phi0_port1.txt",
-    },
-    "read-realized-gain-grid-fresh-session": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "farfield_name": "farfield (f=13) [1]",
-        "run_id": "",
-        "theta_step_deg": 1.0,
-        "phi_step_deg": 2.0,
-        "theta_min_deg": 0.0,
-        "theta_max_deg": 15.0,
-        "phi_min_deg": 0.0,
-        "phi_max_deg": 360.0,
-        "selection_tree_path": "1D Results\\S-Parameters",
-        "output_json": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\realized_gain_grid.json",
-    },
-    "calculate-farfield-neighborhood-flatness": {
-        "file_paths": [
-            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_cut_phi0_port1.json",
-            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_cut_phi90_port1.json",
-        ],
-        "theta_max_deg": 15.0,
-        "output_json": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_flatness.json",
-    },
-    "plot-farfield-multi": {
-        "file_paths": [
-            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_13ghz_port1_realized_gain.txt"
-        ],
-        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_preview.html",
-        "page_title": "Farfield Preview",
-    },
-    "define-brick": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "name": "my_brick",
-        "component": "Component1",
-        "material": "PEC",
-        "x_min": -10,
-        "x_max": 10,
-        "y_min": -10,
-        "y_max": 10,
-        "z_min": 0,
-        "z_max": 20,
-    },
-    "define-cylinder": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "name": "my_cylinder",
-        "component": "Component1",
-        "material": "PEC",
-        "outer_radius": 5,
-        "inner_radius": 0,
-        "axis": "z",
-        "z_min": 0,
-        "z_max": 20,
-        "x_center": 0,
-        "y_center": 0,
-    },
-    "define-cone": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "name": "my_cone",
-        "component": "Component1",
-        "material": "PEC",
-        "bottom_radius": 5,
-        "top_radius": 15,
-        "axis": "z",
-        "z_min": 0,
-        "z_max": 30,
-        "x_center": 0,
-        "y_center": 0,
-    },
-    "define-rectangle": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "name": "my_rect",
-        "curve": "curve1",
-        "x_min": -10,
-        "x_max": 10,
-        "y_min": -5,
-        "y_max": 5,
-    },
-    "boolean-subtract": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "target": "Component1:outer",
-        "tool": "Component1:inner",
-    },
-    "boolean-add": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "shape1": "Component1:part1",
-        "shape2": "Component1:part2",
-    },
-    "boolean-intersect": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "shape1": "Component1:part1",
-        "shape2": "Component1:part2",
-    },
-    "boolean-insert": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "shape1": "Component1:outer",
-        "shape2": "Component1:insert",
-    },
-    "delete-entity": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "component": "Component1",
-        "name": "temp_shape",
-    },
-    "create-component": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "component_name": "MyComponent",
-    },
-    "change-material": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "shape_name": "Component1:my_brick",
-        "material": "Copper (pure)",
-    },
-    "define-frequency-range": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "start_freq": 2.0,
-        "end_freq": 18.0,
-    },
-    "change-frequency-range": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "min_frequency": "2",
-        "max_frequency": "18",
-    },
-    "change-solver-type": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "solver_type": "HF Time Domain",
-    },
-    "define-background": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "define-boundary": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-    "define-mesh": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "steps_per_wave_near": 5,
-        "steps_per_wave_far": 5,
-        "steps_per_box_near": 5,
-        "steps_per_box_far": 1,
-    },
-    "define-solver": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "stimulation_port": "All",
-        "steady_state_limit": -40,
-        "norming_impedance": 50,
-    },
-    "define-port": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "port_number": "1",
-        "x_min": -10,
-        "x_max": 10,
-        "y_min": -10,
-        "y_max": 10,
-        "z_min": 0,
-        "z_max": 5,
-        "orientation": "zmin",
-    },
-    "define-monitor": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "start_freq": 2.0,
-        "end_freq": 18.0,
-        "step": 1,
-    },
-    "rename-entity": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "old_name": "Component1:old_name",
-        "new_name": "Component1:new_name",
-    },
-    "set-entity-color": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-        "shape_name": "Component1:my_brick",
-        "r": 255,
-        "g": 0,
-        "b": 0,
-    },
-    "create-blank-project": {
-        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
-    },
-}
-
-
-PIPELINES: dict[str, dict[str, Any]] = {
-    "self-learn-cli": {
-        "category": "meta",
-        "risk": "read",
-        "description": "No-CST-start discovery path for a low-context agent learning the CLI.",
-        "when_to_use": "First contact in a fresh shell, migrated workspace, or external coding agent.",
-        "required_context": ["skill_root", "workspace"],
-        "commands": [
-            "uv run python -m cst_runtime doctor",
-            "uv run python -m cst_runtime usage-guide",
-            "uv run python -m cst_runtime list-tools",
-            "uv run python -m cst_runtime list-pipelines",
-            "uv run python -m cst_runtime describe-pipeline --pipeline latest-s11-preview",
-            "uv run python -m cst_runtime describe-tool --tool get-1d-result",
-            "uv run python -m cst_runtime args-template --tool get-1d-result --output <run-or-task>\\stages\\get_1d_result_args.json",
-        ],
-        "steps": [
-            {"tool": "doctor", "purpose": "Check entrypoint and CST Python import readiness."},
-            {"tool": "usage-guide", "purpose": "Read the CLI calling convention and JSON error contract."},
-            {"tool": "list-tools", "purpose": "Discover available single-tool commands."},
-            {"tool": "list-pipelines", "purpose": "Discover known multi-tool chains."},
-            {"tool": "describe-pipeline", "purpose": "Read one pipeline recipe before composing commands."},
-            {"tool": "describe-tool", "purpose": "Inspect an unfamiliar tool before calling it."},
-            {"tool": "args-template", "purpose": "Generate UTF-8 JSON args files near the task/run."},
-        ],
-        "stop_rules": [
-            "If doctor returns readiness=blocked, stop and report the missing dependency.",
-            "If any command returns status=error, inspect error_type/message before continuing.",
-        ],
-    },
-    "args-file-tool-call": {
-        "category": "meta",
-        "risk": "read",
-        "description": "Generate an args file, edit it, then call a tool without inline JSON.",
-        "when_to_use": "Windows paths or complex parameters make inline --args-json fragile.",
-        "required_context": ["tool_name", "task_or_run_stages_dir"],
-        "commands": [
-            "uv run python -m cst_runtime describe-tool --tool <tool>",
-            "uv run python -m cst_runtime args-template --tool <tool> --output <stages>\\<tool>_args.json",
-            "uv run python -m cst_runtime <tool> --args-file <stages>\\<tool>_args.json",
-        ],
-        "steps": [
-            {"tool": "describe-tool", "purpose": "Read required fields, runbook, risk, and output style."},
-            {"tool": "args-template", "purpose": "Create a concrete JSON args skeleton."},
-            {"tool": "<tool>", "purpose": "Run the target tool with --args-file."},
-        ],
-        "stop_rules": [
-            "Do not hand-write complex inline JSON in PowerShell.",
-            "Only continue when the target tool returns status=success.",
-        ],
-    },
-    "project-unlock-check": {
-        "category": "project-identity",
-        "risk": "read",
-        "description": "Infer the run directory from working.cst and verify the project is unlocked.",
-        "when_to_use": "Before copying, reopening, fresh-session export, or cleanup decisions.",
-        "required_context": ["working_project"],
-        "commands": [
-            "@{ project_path = \"<run>\\projects\\working.cst\" } | ConvertTo-Json -Depth 8 | uv run python -m cst_runtime infer-run-dir | uv run python -m cst_runtime wait-project-unlocked",
-        ],
-        "steps": [
-            {"tool": "infer-run-dir", "purpose": "Verify that project_path belongs to a standard run."},
-            {"tool": "wait-project-unlocked", "purpose": "Check that the companion CST directory has no .lok lock files."},
-        ],
-        "recovery": [
-            "If wait-project-unlocked reports a lock, close the matching CST project before retrying.",
-            "If cleanup is needed, use cleanup-cst-processes and record Access is denied residuals.",
-        ],
-        "stop_rules": [
-            "Do not copy or reopen a locked project.",
-            "Do not claim Access is denied processes were killed.",
-        ],
-    },
-    "cst-session-management-gate": {
-        "category": "session_manager",
-        "risk": "process-control",
-        "description": "Full CST lifecycle gate for process management validation before copying, reopening, or full migration tests.",
-        "when_to_use": "Before any workflow that depends on reliable CST open, close, reattach, lock release, or quit cleanup behavior.",
-        "required_context": ["working_project"],
-        "commands": [
-            "uv run python -m cst_runtime cst-session-inspect --project-path <run>\\projects\\working.cst",
-            "uv run python -m cst_runtime cst-session-open --project-path <run>\\projects\\working.cst",
-            "uv run python -m cst_runtime cst-session-reattach --project-path <run>\\projects\\working.cst",
-            "uv run python -m cst_runtime cst-session-close --project-path <run>\\projects\\working.cst --save false --wait-unlock true",
-            "uv run python -m cst_runtime cst-session-quit --project-path <run>\\projects\\working.cst --dry-run true",
-            "uv run python -m cst_runtime cst-session-quit --project-path <run>\\projects\\working.cst --dry-run false",
-            "uv run python -m cst_runtime cst-session-inspect --project-path <run>\\projects\\working.cst",
-        ],
-        "steps": [
-            {"tool": "cst-session-inspect", "purpose": "Record initial allowlisted processes, lock files, open projects, and attach readiness."},
-            {"tool": "cst-session-open", "purpose": "Open the explicit working .cst through the central manager."},
-            {"tool": "cst-session-reattach", "purpose": "Verify the expected project is the only attach target."},
-            {"tool": "cst-session-close", "purpose": "Close save=false and verify lock release."},
-            {"tool": "cst-session-quit", "purpose": "Dry-run, then real allowlist-only process cleanup when the project is closed."},
-            {"tool": "cst-session-inspect", "purpose": "Confirm final lock/process/readiness state."},
-        ],
-        "stop_rules": [
-            "Do not run the non-dry-run quit step until close returned status=success and lock files are clear.",
-            "If Access is denied remains after locks clear, record it as nonblocking_access_denied_residual with PID/name; do not claim it was killed.",
-            "If multiple CST projects are open, stop before write or close actions unless the expected project is isolated.",
-        ],
-    },
-    "latest-s11-preview": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Read latest S11 run_id, export JSON, then render an HTML preview.",
-        "when_to_use": "After a simulation has finished and the modeler project has been closed.",
-        "required_context": ["working_project", "S11 treepath"],
-        "commands": [
-            "@{ project_path = \"<run>\\projects\\working.cst\"; treepath = \"1D Results\\S-Parameters\\S1,1\"; module_type = \"3d\"; max_mesh_passes_only = $false } | ConvertTo-Json -Depth 8 | uv run python -m cst_runtime list-run-ids | uv run python -m cst_runtime get-1d-result | uv run python -m cst_runtime plot-exported-file",
-        ],
-        "steps": [
-            {"tool": "list-run-ids", "purpose": "Read available result run IDs for the S11 treepath."},
-            {"tool": "get-1d-result", "purpose": "Default to the largest run_id from run_ids and export S11 JSON."},
-            {"tool": "plot-exported-file", "purpose": "Use export_path from get-1d-result to create an HTML preview."},
-        ],
-        "stop_rules": [
-            "Do not use export_s_parameter in an optimization loop.",
-            "If list-run-ids does not return the expected new run_id, refresh/close/reopen results before reading.",
-        ],
-    },
-    "project-result-preview": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Export a project result through cst.results and render an HTML preview with explicit project_path.",
-        "when_to_use": "When replacing current-context MCP plot_project_result with a CLI call that names the .cst file.",
-        "required_context": ["working_project", "treepath", "exports_dir"],
-        "commands": [
-            "uv run python -m cst_runtime args-template --tool plot-project-result --output <stages>\\plot_project_result_args.json",
-            "uv run python -m cst_runtime plot-project-result --args-file <stages>\\plot_project_result_args.json",
-        ],
-        "steps": [
-            {"tool": "plot-project-result", "purpose": "Export 1D/2D result JSON and render HTML preview."},
-        ],
-        "stop_rules": [
-            "project_path must point to the run working .cst file.",
-            "This tool reads results and writes preview artifacts; it does not replace fresh-session result consistency checks.",
-        ],
-    },
-    "async-simulation-refresh-results": {
-        "category": "modeler-results",
-        "risk": "long-running",
-        "description": "Start async simulation, wait for completion, close modeler, then refresh results before reading latest run_id.",
-        "when_to_use": "When a low-context agent needs the async solver path without hand-written polling loops.",
-        "required_context": ["working_project", "S11 treepath"],
-        "commands": [
-            "uv run python -m cst_runtime start-simulation-async --project-path <run>\\projects\\working.cst",
-            "uv run python -m cst_runtime wait-simulation --project-path <run>\\projects\\working.cst --timeout-seconds 3600 --poll-interval-seconds 10",
-            "uv run python -m cst_runtime close-project --project-path <run>\\projects\\working.cst --save false",
-            "uv run python -m cst_runtime list-run-ids --project-path <run>\\projects\\working.cst --treepath \"1D Results\\S-Parameters\\S1,1\" --module-type 3d --allow-interactive true --max-mesh-passes-only false",
-            "uv run python -m cst_runtime get-1d-result --args-file <stages>\\get_1d_result_args.json",
-        ],
-        "steps": [
-            {"tool": "start-simulation-async", "purpose": "Start the solver without blocking the process."},
-            {"tool": "wait-simulation", "purpose": "Poll is-simulation-running until running=false or timeout."},
-            {"tool": "close-project", "purpose": "Release the modeler project with save=false before results refresh."},
-            {"tool": "list-run-ids", "purpose": "Open/refresh results and discover the latest run_id."},
-            {"tool": "get-1d-result", "purpose": "Read the latest run_id and export JSON."},
-        ],
-        "stop_rules": [
-            "Do not read results before wait-simulation reports running=false.",
-            "Do not save after reading results.",
-            "If the latest run_id is missing, mark needs_validation instead of reading stale data.",
-        ],
-    },
-    "s11-json-comparison": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Turn one or more exported S11 JSON files into an HTML comparison page.",
-        "when_to_use": "After get-1d-result has produced JSON files in the run exports directory.",
-        "required_context": ["S11 JSON export_path or file_paths", "output_html optional"],
-        "commands": [
-            "<get-1d-result JSON output> | uv run python -m cst_runtime generate-s11-comparison",
-            "<json-producing-command> | uv run python -m cst_runtime generate-s11-comparison --args-stdin --args-file <stages>\\s11_comparison_args.json",
-        ],
-        "steps": [
-            {"tool": "get-1d-result", "purpose": "Produce JSON inputs; CSV is not allowed."},
-            {"tool": "generate-s11-comparison", "purpose": "Render JSON inputs to HTML."},
-        ],
-        "stop_rules": [
-            "Only feed .json inputs produced by get-1d-result.",
-            "If multiple files are needed, use --args-file with file_paths and --args-stdin only for explicit merge.",
-        ],
-    },
-    "s11-farfield-dashboard": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Generate a combined S11 curve and farfield heatmap dashboard from exported files.",
-        "when_to_use": "After S11 JSON and farfield TXT/JSON files are already exported into the run exports directory.",
-        "required_context": ["s11_json_files", "farfield_files", "exports_dir"],
-        "commands": [
-            "uv run python -m cst_runtime args-template --tool generate-s11-farfield-dashboard --output <stages>\\s11_farfield_dashboard_args.json",
-            "uv run python -m cst_runtime generate-s11-farfield-dashboard --args-file <stages>\\s11_farfield_dashboard_args.json",
-        ],
-        "steps": [
-            {"tool": "get-1d-result", "purpose": "Produce S11 JSON inputs."},
-            {"tool": "export-farfield-fresh-session", "purpose": "Produce Realized Gain/Gain/Directivity farfield TXT when needed."},
-            {"tool": "generate-s11-farfield-dashboard", "purpose": "Render combined HTML dashboard from exported files."},
-        ],
-        "stop_rules": [
-            "Do not feed CSV into the dashboard.",
-            "Do not treat Abs(E) farfield files as dBi gain evidence.",
-            "This dashboard generation is file-based and does not replace fresh-session CST validation.",
-        ],
-    },
-    "farfield-realized-gain-preview": {
-        "category": "farfield",
-        "risk": "long-running",
-        "description": "Fresh-session Realized Gain TXT export, grid inspection, and HTML preview.",
-        "when_to_use": "At the end of a results workflow when true gain/dBi farfield evidence is required.",
-        "required_context": ["working_project", "farfield_name", "exports_dir", "analysis_dir"],
-        "commands": [
-            "uv run python -m cst_runtime export-farfield-fresh-session --args-file <stages>\\export_farfield_args.json",
-            "uv run python -m cst_runtime inspect-farfield-ascii --args-file <stages>\\inspect_farfield_args.json",
-            "uv run python -m cst_runtime plot-farfield-multi --args-file <stages>\\plot_farfield_args.json",
-            "uv run python -m cst_runtime read-realized-gain-grid-fresh-session --args-file <stages>\\read_gain_grid_args.json",
-        ],
-        "steps": [
-            {"tool": "export-farfield-fresh-session", "purpose": "Export Realized Gain/Gain/Directivity TXT through a fresh CST session."},
-            {"tool": "inspect-farfield-ascii", "purpose": "Verify row_count and theta/phi counts before trusting the file."},
-            {"tool": "plot-farfield-multi", "purpose": "Render farfield TXT/JSON to HTML."},
-            {"tool": "read-realized-gain-grid-fresh-session", "purpose": "Read true Realized Gain dBi grid through FarfieldCalculator."},
-        ],
-        "stop_rules": [
-            "Never use Abs(E) as dBi gain evidence.",
-            "Farfield export/read is a terminal results step; close with save=false and do not save after reading.",
-            "Validate output_file/output_json existence and grid counts, not only status=success.",
-        ],
-    },
-}
-
-
 TOOLS: dict[str, dict[str, Any]] = {
     "init-workspace": {
         "category": "workspace",
@@ -2079,67 +1665,55 @@ TOOLS: dict[str, dict[str, Any]] = {
         "function": tool_cst_session_quit,
     },
     "create-blank-project": {
-        "category": "modeler",
+        "category": "session_manager",
         "risk": "write",
         "description": "Create a new blank CST project at the specified path.",
         "function": tool_create_blank_project,
     },
-    "open-project": {
-        "category": "modeler",
-        "risk": "session",
-        "description": "Compatibility alias for cst-session-open.",
-        "function": tool_open_project,
-    },
-    "close-project": {
-        "category": "modeler",
-        "risk": "session",
-        "description": "Compatibility alias for cst-session-close with wait_unlock=false.",
-        "function": tool_close_project,
-    },
     "save-project": {
-        "category": "modeler",
+        "category": "session_manager",
         "risk": "filesystem-write",
         "description": "Save the verified CST working project.",
         "function": tool_save_project,
     },
     "list-parameters": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "read",
         "description": "List parameters from the verified CST working project.",
         "function": tool_list_parameters,
     },
     "list-entities": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "read",
         "description": "List geometry entities from the verified CST working project.",
         "function": tool_list_entities,
     },
     "change-parameter": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Change one CST parameter in the verified working project.",
         "function": tool_change_parameter,
     },
     "start-simulation": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "long-running",
         "description": "Run the CST solver synchronously for the verified working project.",
         "function": tool_start_simulation,
     },
     "start-simulation-async": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "long-running",
         "description": "Start the CST solver asynchronously for the verified working project.",
         "function": tool_start_simulation_async,
     },
     "is-simulation-running": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "read",
         "description": "Check whether the CST solver is currently running for the verified working project.",
         "function": tool_is_simulation_running,
     },
     "wait-simulation": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "long-running",
         "description": "Poll is-simulation-running until the solver finishes or timeout expires.",
         "function": tool_wait_simulation,
@@ -2277,136 +1851,352 @@ TOOLS: dict[str, dict[str, Any]] = {
         "function": tool_plot_farfield_multi,
     },
     "define-brick": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Create a rectangular brick in the CST project.",
         "function": tool_define_brick,
     },
     "define-cylinder": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Create a cylinder in the CST project.",
         "function": tool_define_cylinder,
     },
     "define-cone": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Create a cone in the CST project.",
         "function": tool_define_cone,
     },
     "define-rectangle": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Create a 2D rectangle on a curve in the CST project.",
         "function": tool_define_rectangle,
     },
     "boolean-subtract": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Subtract one solid from another (boolean difference).",
         "function": tool_boolean_subtract,
     },
     "boolean-add": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Unite two solids (boolean union).",
         "function": tool_boolean_add,
     },
     "boolean-intersect": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Intersect two solids (boolean intersection).",
         "function": tool_boolean_intersect,
     },
     "boolean-insert": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Insert one solid into another (boolean insert).",
         "function": tool_boolean_insert,
     },
     "delete-entity": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Delete a geometry entity from the CST project.",
         "function": tool_delete_entity,
     },
     "create-component": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Create a new component in the CST project.",
         "function": tool_create_component,
     },
     "change-material": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
-        "description": "Change the material of a geometry entity.",
+        "description": "Change the material of a geometry entity. Use list-materials to see available names.",
         "function": tool_change_material,
     },
+    "list-materials": {
+        "category": "modeling",
+        "risk": "read",
+        "description": "List available CST material names from the Materials library.",
+        "function": tool_list_materials,
+    },
+    "define-material-from-mtd": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Define a CST material from .mtd file by material name. Material must exist in references/Materials/. Use list-materials to see available names.",
+        "function": tool_define_material_from_mtd,
+    },
     "define-frequency-range": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Set the simulation frequency range.",
         "function": tool_define_frequency_range,
     },
     "change-frequency-range": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Change the simulation frequency range.",
         "function": tool_change_frequency_range,
     },
     "change-solver-type": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Change the CST solver type.",
         "function": tool_change_solver_type,
     },
     "define-background": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Set the background type to Normal.",
         "function": tool_define_background,
     },
     "define-boundary": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Set expanded open boundary conditions.",
         "function": tool_define_boundary,
     },
     "define-mesh": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Configure the hexahedral mesh parameters.",
         "function": tool_define_mesh,
     },
     "define-solver": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Configure the time-domain solver settings.",
         "function": tool_define_solver,
     },
     "define-port": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Define a waveguide port.",
         "function": tool_define_port,
     },
     "define-monitor": {
-        "category": "modeler",
+        "category": "project_ops",
         "risk": "write",
         "description": "Define a farfield monitor over a frequency range.",
         "function": tool_define_monitor,
     },
     "rename-entity": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Rename a geometry entity.",
         "function": tool_rename_entity,
     },
     "set-entity-color": {
-        "category": "modeler",
+        "category": "modeling",
         "risk": "write",
         "description": "Set the display color of a geometry entity.",
         "function": tool_set_entity_color,
+    },
+    "define-units": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set the CST project unit system.",
+        "function": tool_define_units,
+    },
+    "set-farfield-monitor": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set a farfield monitor over a frequency range.",
+        "function": tool_set_farfield_monitor,
+    },
+    "set-efield-monitor": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set an E-field monitor over a frequency range.",
+        "function": tool_set_efield_monitor,
+    },
+    "set-field-monitor": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set a field monitor (e.g. H-field) over a frequency range.",
+        "function": tool_set_field_monitor,
+    },
+    "set-probe": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set a field probe at a specified position.",
+        "function": tool_set_probe,
+    },
+    "delete-probe": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Delete a probe by its ID.",
+        "function": tool_delete_probe,
+    },
+    "delete-monitor": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Delete a monitor by name.",
+        "function": tool_delete_monitor,
+    },
+    "set-background-with-space": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set background space distances.",
+        "function": tool_set_background_with_space,
+    },
+    "set-farfield-plot-cuts": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set farfield plot cut angles.",
+        "function": tool_set_farfield_plot_cuts,
+    },
+    "show-bounding-box": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Toggle bounding box display.",
+        "function": tool_show_bounding_box,
+    },
+    "activate-post-process": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Activate or deactivate a post-processing operation.",
+        "function": tool_activate_post_process,
+    },
+    "create-mesh-group": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a mesh group and add items.",
+        "function": tool_create_mesh_group,
+    },
+    "stop-simulation": {
+        "category": "project_ops",
+        "risk": "session",
+        "description": "Stop the currently running CST solver.",
+        "function": tool_stop_simulation,
+    },
+    "pause-simulation": {
+        "category": "project_ops",
+        "risk": "session",
+        "description": "Pause the currently running CST solver.",
+        "function": tool_pause_simulation,
+    },
+    "resume-simulation": {
+        "category": "project_ops",
+        "risk": "session",
+        "description": "Resume a paused CST solver.",
+        "function": tool_resume_simulation,
+    },
+    "set-solver-acceleration": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Configure solver parallelization and hardware acceleration.",
+        "function": tool_set_solver_acceleration,
+    },
+    "set-fdsolver-extrude-open-bc": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Enable or disable FD solver extruded open boundary.",
+        "function": tool_set_fdsolver_extrude_open_bc,
+    },
+    "set-mesh-fpbavoid-nonreg-unite": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Enable or disable mesh FPBA non-regular unite avoidance.",
+        "function": tool_set_mesh_fpbavoid_nonreg_unite,
+    },
+    "set-mesh-minimum-step-number": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Set the minimum mesh step number.",
+        "function": tool_set_mesh_minimum_step_number,
+    },
+    "define-polygon-3d": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Define a 3D polygon curve from a list of points.",
+        "function": tool_define_polygon_3d,
+    },
+    "define-analytical-curve": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Define an analytical curve using parametric equations.",
+        "function": tool_define_analytical_curve,
+    },
+    "define-extrude-curve": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Extrude a curve profile into a solid.",
+        "function": tool_define_extrude_curve,
+    },
+    "transform-shape": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Mirror or rotate a geometry shape.",
+        "function": tool_transform_shape,
+    },
+    "transform-curve": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Mirror a curve.",
+        "function": tool_transform_curve,
+    },
+    "create-horn-segment": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a horn segment (outer cone - inner cone).",
+        "function": tool_create_horn_segment,
+    },
+    "create-loft-sweep": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a loft sweep between two 2D profiles in one step.",
+        "function": tool_create_loft_sweep,
+    },
+    "create-hollow-sweep": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a hollow loft sweep with outer and inner walls.",
+        "function": tool_create_hollow_sweep,
+    },
+    "add-to-history": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Execute a raw VBA command via add_to_history for operations not covered by other tools.",
+        "function": tool_add_to_history,
+    },
+    "pick-face": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Select a face by ID for loft operations (zero-thickness entities only).",
+        "function": tool_pick_face,
+    },
+    "define-loft": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Execute a loft between pre-picked faces.",
+        "function": tool_define_loft,
+    },
+    "export-e-field": {
+        "category": "modeling",
+        "risk": "filesystem-write",
+        "description": "Export E-field data at a given frequency to ASCII.",
+        "function": tool_export_e_field,
+    },
+    "export-surface-current": {
+        "category": "modeling",
+        "risk": "filesystem-write",
+        "description": "Export surface current data at a given frequency to ASCII.",
+        "function": tool_export_surface_current,
+    },
+    "export-voltage": {
+        "category": "modeling",
+        "risk": "filesystem-write",
+        "description": "Export voltage monitor data to ASCII.",
+        "function": tool_export_voltage,
+    },
+    "define-parameters": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Batch-define multiple CST parameters using StoreParameters.",
+        "function": tool_define_parameters,
     },
 }
 

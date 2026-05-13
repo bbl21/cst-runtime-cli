@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SKILL_ROOT = REPO_ROOT / "skills" / "cst-runtime-cli-optimization"
+SKILL_ROOT = REPO_ROOT / "skills" / "cst-runtime-cli"
 CLI = SKILL_ROOT / "scripts" / "cst_runtime_cli.py"
 PYTHON = sys.executable
 
@@ -244,60 +244,14 @@ class RuntimeCliContractTests(unittest.TestCase):
             self.assertTrue(output_html.exists())
             self.assertIn("Test Dashboard", output_html.read_text(encoding="utf-8"))
 
-    def test_inventory_has_required_phase1_fields(self) -> None:
-        generator = run_cli("list-tools")
-        self.assertEqual(generator.returncode, 0)
-        inventory_path = (
-            REPO_ROOT
-            / "skills"
-            / "cst-runtime-cli-optimization"
-            / "references"
-            / "mcp_cli_tool_inventory.json"
-        )
-        self.assertTrue(inventory_path.exists(), "Run generate_mcp_cli_inventory.py before this check.")
-        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
-        required = {
-            "name",
-            "source",
-            "category",
-            "risk",
-            "cli_status",
-            "pipeline_mode",
-            "mcp_retention",
-            "validation_status",
-            "known_issue",
-            "replacement",
-            "notes",
-        }
-        self.assertTrue(inventory["records"])
-        for record in inventory["records"]:
-            self.assertTrue(required.issubset(record), record)
-
-    def test_inventory_classifies_implicit_session_tools_conservatively(self) -> None:
-        inventory_path = (
-            REPO_ROOT
-            / "skills"
-            / "cst-runtime-cli-optimization"
-            / "references"
-            / "mcp_cli_tool_inventory.json"
-        )
-        inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
-        records = {record["name"]: record for record in inventory["records"]}
-
-        init_record = records["init_cst_project"]
-        self.assertEqual(init_record["risk"], "write")
-        self.assertEqual(init_record["pipeline_mode"], "not_pipeable_destructive")
-        self.assertEqual(init_record["mcp_retention"], "mcp_preferred")
-        self.assertIn("not a read-only pipe source", init_record["notes"])
-
-        for name in ("export_e_field_data", "export_surface_current_data", "export_voltage_data"):
-            with self.subTest(name=name):
-                record = records[name]
-                self.assertEqual(record["cli_status"], "not_migrated_needs_design")
-                self.assertEqual(record["risk"], "session")
-                self.assertEqual(record["pipeline_mode"], "not_pipeable_session")
-                self.assertEqual(record["mcp_retention"], "mcp_preferred")
-                self.assertIn("implicit active project", record["notes"])
+    def test_new_tools_are_registered(self) -> None:
+        for tool in ("pause-simulation", "resume-simulation", "define-material-from-mtd"):
+            with self.subTest(tool=tool):
+                result = run_cli("describe-tool", "--tool", tool)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["status"], "success")
+                self.assertIn(payload["tool"]["name"], (tool,))
 
 
 if __name__ == "__main__":
