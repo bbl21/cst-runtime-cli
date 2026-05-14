@@ -1,0 +1,46 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "13.80"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.18"
+     .TanDFreq "10.0"
+     .TanDGiven "True"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1400"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.65"
+     .Colour "0.501961", "0.501961", "0"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 13.8
+Mu              = 1
+Electric tand   = 0.18 (Const. fit)
+Rho             = 1400 [kg/m^3]
+Thermal cond.   = 0.65 [W/K/m]
+
+[Description]
+Loamy soil with 13.77% water
+EM(HF) properties measured @ 10GHz

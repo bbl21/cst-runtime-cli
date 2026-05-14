@@ -115,14 +115,14 @@ python <skill-root>\scripts\cst_runtime_cli.py pipeline-template --pipeline late
 
 ## 展示案例
 
-- 近轴方向图平坦度优化：[`docs/validations/showcase-flatness-optimization.md`](docs/validations/showcase-flatness-optimization.md)
+- 近轴方向图平坦度优化：[`advanced/validations/showcase-flatness-optimization.md`](advanced/validations/showcase-flatness-optimization.md)
 
 该案例展示了系统如何从 baseline 出发，通过目标函数重定义、单参数探针、负例排除和局部细化，把多频点近轴 flatness 的 worst-case 从 `18.423 dB` 优化到 `14.107 dB`。案例只保留脱敏后的指标和决策链，不包含 CST 原始工程或大结果文件。
 
 ## 关键文档
 
 - 项目目标与阶段计划：[`docs/project-goals-and-plan.md`](docs/project-goals-and-plan.md)
-- 当前优先清单：[`docs/current-priority-checklist.md`](docs/current-priority-checklist.md)
+- 当前优先清单：[`advanced/planning/current-priority-checklist.md`](advanced/planning/current-priority-checklist.md)
 - 文档导航：[`docs/topic-index.md`](docs/topic-index.md)
 - CLI agent 使用指南：[`docs/runtime/cst-runtime-agent-usage.md`](docs/runtime/cst-runtime-agent-usage.md)
 - Runtime 原生管道：[`docs/runtime/cst-runtime-native-pipeline.md`](docs/runtime/cst-runtime-native-pipeline.md)

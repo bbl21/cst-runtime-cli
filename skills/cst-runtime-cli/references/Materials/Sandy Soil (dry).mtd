@@ -1,0 +1,48 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "2.53"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0036"
+     .TanDFreq "10.0"
+     .TanDGiven "True"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1550"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.2"
+     .SpecificHeat "800", "J/K/kg"
+     .Colour "0.501961", "0.501961", "0.25098"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 2.53
+Mu              = 1
+Electric tand   = 0.0036 (Const. fit)
+Rho             = 1550 [kg/m^3]
+Thermal cond.   = 0.2 [W/K/m]
+Specific heat   = 800 [J/K/kg]
+Diffusivity     = 1.6129e-007 [m^2/s]
+
+[Description]
+EM(HF) properties measured @ 10GHz

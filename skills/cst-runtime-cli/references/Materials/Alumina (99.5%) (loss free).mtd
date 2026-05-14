@@ -1,0 +1,54 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "MHz", "mm"
+     .Epsilon "9.9"
+     .Mu "1.0"
+     .Kappa "0.0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0.0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstKappa"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "3900.0"
+     .ThermalType "Normal"
+     .ThermalConductivity "30"
+     .SpecificHeat "880", "J/K/kg"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "370"
+     .PoissonsRatio "0.22"
+     .ThermalExpansionRate "7.9"
+     .Colour "0.75", "0.95", "0.85"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 9.9
+Mu              = 1
+Rho             = 3900 [kg/m^3]
+Thermal cond.   = 30 [W/K/m]
+Specific heat   = 880 [J/K/kg]
+Diffusivity     = 8.74126e-006 [m^2/s]
+Young's modulus = 370 [kN/mm^2]
+Poisson's ratio = 0.22
+Thermal expan.  = 7.9 [1e-6/K]
+
+[Description]
+EM(HF) properties measured @ 1MHz

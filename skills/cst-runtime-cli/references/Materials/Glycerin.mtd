@@ -1,0 +1,47 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "50"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1260"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.294"
+     .SpecificHeat "2400", "J/K/kg"
+     .Colour "0", "0", "1"
+     .Wireframe "False"
+     .Transparency "51"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 50
+Mu              = 1
+Rho             = 1260 [kg/m^3]
+Thermal cond.   = 0.294 [W/K/m]
+Specific heat   = 2400 [J/K/kg]
+Diffusivity     = 9.72222e-008 [m^2/s]
+
+[Description]
+Typical Epsilon belongs to 47.0 - 68.0 range

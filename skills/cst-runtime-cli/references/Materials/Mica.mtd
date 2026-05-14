@@ -1,0 +1,48 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "MHz", "mm"
+     .Epsilon "6"
+     .Mu "1"
+     .Kappa "1e-14"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "2800"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.75"
+     .SpecificHeat "500", "J/K/kg"
+     .Colour "0.501961", "0", "0.501961"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 6
+Mu              = 1
+Electric cond.  = 1e-014 [S/m]
+Rho             = 2800 [kg/m^3]
+Thermal cond.   = 0.75 [W/K/m]
+Specific heat   = 500 [J/K/kg]
+Diffusivity     = 5.35714e-007 [m^2/s]
+
+[Description]
+EM(HF) properties measured @ 1MHz

@@ -1,0 +1,49 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "4"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1500"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.2"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "13"
+     .PoissonsRatio "0.45"
+     .Colour "0.501961", "0.501961", "0"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 4
+Mu              = 1
+Rho             = 1500 [kg/m^3]
+Thermal cond.   = 0.2 [W/K/m]
+Young's modulus = 13 [kN/mm^2]
+Poisson's ratio = 0.45
+
+[Description]
+

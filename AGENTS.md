@@ -7,6 +7,15 @@
 - **CST 版本**: CST Studio Suite 2026
 - **MCP 版本**: >=1.25.0
 
+
+## 项目定位
+
+CST_MCP 定位为 **可安装的 CST 交互底层基础设施**。本项目的核心原则：
+
+- **通过实际测试确保基础设施可靠运作。** 所有 CLI 工具必须经过实机 CST 验证才能视为可用。
+- **证据可追溯。** 每个操作都应输出可验证的证据（参数表变化、实体变化、文件产出），方便用户交叉验证。
+- **读回即证明。** 能用 list-parameters / list-entities 等 API 读回证据的操作，优先用读回证明；VBA-only 操作（define-mesh、define-port 等）接受 status=success + audit 日志。
+
 ## 沟通偏好
 - 中文交流，直接高效
 - 一次只做一件事，禁止四面出击
@@ -83,9 +92,9 @@
 
 ### 知识查阅规则（2026-04-17）
 - 知识分层不只规定“存在哪里”，也必须规定“先去哪里查”；任务开始时必须先判断当前问题属于：规则约束、阶段目标、执行流程、稳定事实、专题经验中的哪一类，再决定查阅入口
-- 默认查阅顺序固定为：`AGENTS.md` -> `docs/project-goals-and-plan.md` -> `docs/current-priority-checklist.md` -> 对应 `SKILL.md` -> `MEMORY.md` -> `docs/topic-index.md` -> 相关 `docs/` 专题文档；禁止一上来全仓盲搜
+- 默认查阅顺序固定为：`AGENTS.md` -> `docs/project-goals-and-plan.md` -> `advanced/planning/current-priority-checklist.md` -> 对应 `SKILL.md` -> `MEMORY.md` -> `docs/topic-index.md` -> 相关 `docs/` 专题文档；禁止一上来全仓盲搜
 - 若任务涉及红线、约束、目录规范、关闭/保存/导出/session 等原则问题，必须先查 `AGENTS.md`
-- 若任务涉及当前该不该做、是否偏离主线、是否属于插队、验收标准是什么，必须先查 `docs/project-goals-and-plan.md` 与 `docs/current-priority-checklist.md`
+- 若任务涉及当前该不该做、是否偏离主线、是否属于插队、验收标准是什么，必须先查 `docs/project-goals-and-plan.md` 与 `advanced/planning/current-priority-checklist.md`
 - 若任务涉及执行步骤、MCP 调用顺序、失败恢复、任务闭环，必须先查对应 `SKILL.md`
 - 若任务涉及默认蓝本、稳定路径、长期共识、已确认决策，必须查 `MEMORY.md`
 - 若任务涉及背景说明、历史方案、经验比较、专题设计细节，才进入 `docs/` 做定向查阅；若 docs 入口不明确，先看 `docs/topic-index.md`；`docs/` 默认不是规则源，也不能覆盖 `AGENTS.md`
@@ -93,7 +102,7 @@
 
 ### 知识命中与冲突处理
 - 命中标准不是“看到相关词”就算，而是必须找到对当前任务直接适用的规则、事实、流程或计划约束；找不到直接约束时，必须继续下钻或补调查
-- 发生冲突时，优先级固定为：`AGENTS.md` > `docs/project-goals-and-plan.md` / `docs/current-priority-checklist.md` > `SKILL.md` > `MEMORY.md` > 其他 `docs/`
+- 发生冲突时，优先级固定为：`AGENTS.md` > `docs/project-goals-and-plan.md` / `advanced/planning/current-priority-checklist.md` > `SKILL.md` > `MEMORY.md` > 其他 `docs/`
 - `MEMORY.md` 只提供已确认事实和长期共识；若其与源码、当前目录现实或用户最新明确要求冲突，必须先核实，再决定是更新 memory 还是按最新事实执行
 - `docs/` 中的经验、历史记录和方案说明只能作为解释与参考，不能直接提升为强制规则；需要升级时，仍按 `docs/` -> `MEMORY.md` / `AGENTS.md` 的路径走
 - 若按既定入口未查到答案，必须明确标记“当前知识库未命中”，然后选择：继续读源码/实物事实、补查对应专题文档、或直接向用户澄清；禁止把猜测伪装成项目知识

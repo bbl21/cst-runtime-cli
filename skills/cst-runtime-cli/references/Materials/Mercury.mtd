@@ -1,0 +1,70 @@
+[Definition]
+     .FrqType "all"
+     .Type "Lossy metal"
+     .SetMaterialUnit "GHz", "mm"
+     .Mu "0.99997"
+     .Kappa "1.04e6"
+     .Rho "13550"
+     .ThermalType "Normal"
+     .ThermalConductivity "8.3"
+     .SpecificHeat "140", "J/K/kg"
+     .MetabolicRate "0"
+     .BloodFlow "0"
+     .VoxelConvection "0"
+     .MechanicsType "Unused"
+     .FrqType "static"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "1"
+     .Mu "0.99997"
+     .Kappa "1.04e6"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "Nth Order"
+     .DispersiveFittingSchemeMu "Nth Order"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Colour "0", "0.501961", "1"
+     .Wireframe "False"
+     .Reflection "False"
+     .Allowoutline "True"
+     .Transparentoutline "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: static
+Normal
+
+[Type]
+FrqType: all
+Lossy metal
+
+[Attributes]
+FrqType: static
+Type            = Normal
+Epsilon         = 1
+Mu              = 0.99997
+Electric cond.  = 1.04e+006 [S/m]
+
+[Attributes]
+FrqType: all
+Type            = Lossy metal
+Mu              = 0.99997
+Electric cond.  = 1.04e+006 [S/m]
+Rho             = 13550 [kg/m^3]
+Thermal cond.   = 8.3 [W/K/m]
+Specific heat   = 140 [J/K/kg]
+Diffusivity     = 4.37533e-006 [m^2/s]
+
+[Description]
+

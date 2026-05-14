@@ -1,0 +1,62 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "1"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "Nth Order"
+     .MaximalOrderNthModelFitEps "2"
+     .ErrorLimitNthModelFitEps "0.02"
+     .UseOnlyDataInSimFreqRangeNthModelEps "False"
+     .DispersiveFittingSchemeMu "Nth Order"
+     .AddGeneralDispersionValueEps "0,2", "2,5", "0,36"
+     .AddGeneralDispersionValueEps "0,58", "2,1", "0,33"
+     .AddGeneralDispersionValueEps "1,36", "1,9", "0,31"
+     .AddGeneralDispersionValueEps "1,94", "1,9", "0,31"
+     .AddGeneralDispersionValueEps "2,52", "1,8", "0,28"
+     .AddGeneralDispersionValueEps "3,1", "1,7", "0,27"
+     .AddGeneralDispersionValueEps "3,68", "1,7", "0,25"
+     .AddGeneralDispersionValueEps "4,26", "1,65", "0,245"
+     .AddGeneralDispersionValueEps "4,84", "1,6", "0,25"
+     .UseGeneralDispersionEps "True"
+     .UseGeneralDispersionMu "False"
+     .Rho "500"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.2"
+     .SpecificHeat "2000", "J/K/kg"
+     .Colour "0", "1", "1"
+     .Wireframe "False"
+     .Reflection "False"
+     .Allowoutline "True"
+     .Transparentoutline "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Dispersive eps  = Nth order model, N=2 (fit)
+Mu              = 1
+Rho             = 500 [kg/m^3]
+Thermal cond.   = 0.2 [W/K/m]
+Specific heat   = 2000 [J/K/kg]
+Diffusivity     = 2e-007 [m^2/s]
+
+[Description]
+

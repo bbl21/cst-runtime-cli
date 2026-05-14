@@ -1,0 +1,217 @@
+[Definition]
+     .FrqType "static"
+     .Type "Normal"
+     .MaterialUnit "Frequency", "Hz"
+     .MaterialUnit "Geometry", "mm"
+     .MaterialUnit "Time", "s"
+     .Epsilon "1"
+     .Mu "1000"
+     .Sigma "1.04e+007"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstSigma"
+     .EnableUserConstTanDModelOrderEps "False"
+     .ConstTanDModelOrderEps "1"
+     .SetElParametricConductivity "False"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .SigmaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstSigma"
+     .EnableUserConstTanDModelOrderMu "False"
+     .ConstTanDModelOrderMu "1"
+     .SetMagParametricConductivity "False"
+     .DispModelEps  "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "Nth Order"
+     .MaximalOrderNthModelFitEps "10"
+     .ErrorLimitNthModelFitEps "0.1"
+     .DispersiveFittingSchemeMu "Nth Order"
+     .MaximalOrderNthModelFitMu "10"
+     .ErrorLimitNthModelFitMu "0.1"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .NonlinearMeasurementError "1e-3"
+     .ResetHBList
+     .SetNonlinearCurveType "Soft-Magnetic-BH"
+     .AddNonlinearCurveValue " 0.000000e+000", " 0.000000e+000"
+     .AddNonlinearCurveValue " 1.592000e+001", " 4.500000e-002"
+     .AddNonlinearCurveValue " 3.183000e+001", " 4.900000e-001"
+     .AddNonlinearCurveValue " 4.775000e+001", " 7.800000e-001"
+     .AddNonlinearCurveValue " 6.366000e+001", " 9.900000e-001"
+     .AddNonlinearCurveValue " 7.958000e+001", " 1.130000e+000"
+     .AddNonlinearCurveValue " 1.592000e+002", " 1.420000e+000"
+     .AddNonlinearCurveValue " 3.183000e+002", " 1.570000e+000"
+     .AddNonlinearCurveValue " 4.775000e+002", " 1.621000e+000"
+     .AddNonlinearCurveValue " 6.366000e+002", " 1.641000e+000"
+     .AddNonlinearCurveValue " 7.958000e+002", " 1.656000e+000"
+     .AddNonlinearCurveValue " 1.592000e+003", " 1.697000e+000"
+     .AddNonlinearCurveValue " 3.183000e+003", " 1.764000e+000"
+     .AddNonlinearCurveValue " 4.775000e+003", " 1.801000e+000"
+     .AddNonlinearCurveValue " 6.366000e+003", " 1.838000e+000"
+     .AddNonlinearCurveValue " 7.958000e+003", " 1.870000e+000"
+     .AddNonlinearCurveValue " 1.592000e+004", " 2.000000e+000"
+     .AddNonlinearCurveValue " 3.183000e+004", " 2.136000e+000"
+     .AddNonlinearCurveValue " 4.775000e+004", " 2.185000e+000"
+     .AddNonlinearCurveValue " 6.366000e+004", " 2.220000e+000"
+     .AddNonlinearCurveValue " 7.958000e+004", " 2.250000e+000"
+     .AddNonlinearCurveValue " 1.592000e+005", " 2.355000e+000"
+     .AddNonlinearCurveValue " 3.183000e+005", " 2.556000e+000"
+     .GenerateNonlinearCurve
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .FrqType "all"
+     .Type "Normal"
+     .MaterialUnit "Frequency", "Hz"
+     .MaterialUnit "Geometry", "mm"
+     .MaterialUnit "Time", "s"
+     .Epsilon "1"
+     .Mu "1000"
+     .Sigma "1.04e+007"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstSigma"
+     .EnableUserConstTanDModelOrderEps "False"
+     .ConstTanDModelOrderEps "1"
+     .SetElParametricConductivity "False"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .SigmaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstSigma"
+     .EnableUserConstTanDModelOrderMu "False"
+     .ConstTanDModelOrderMu "1"
+     .SetMagParametricConductivity "False"
+     .DispModelEps  "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "Nth Order"
+     .MaximalOrderNthModelFitEps "10"
+     .ErrorLimitNthModelFitEps "0.1"
+     .DispersiveFittingSchemeMu "Nth Order"
+     .MaximalOrderNthModelFitMu "10"
+     .ErrorLimitNthModelFitMu "0.1"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .NonlinearMeasurementError "1e-3"
+     .ResetHBList
+     .SetNonlinearCurveType "Soft-Magnetic-BH"
+     .AddNonlinearCurveValue " 0.000000e+000", " 0.000000e+000"
+     .AddNonlinearCurveValue " 1.592000e+001", " 4.500000e-002"
+     .AddNonlinearCurveValue " 3.183000e+001", " 4.900000e-001"
+     .AddNonlinearCurveValue " 4.775000e+001", " 7.800000e-001"
+     .AddNonlinearCurveValue " 6.366000e+001", " 9.900000e-001"
+     .AddNonlinearCurveValue " 7.958000e+001", " 1.130000e+000"
+     .AddNonlinearCurveValue " 1.592000e+002", " 1.420000e+000"
+     .AddNonlinearCurveValue " 3.183000e+002", " 1.570000e+000"
+     .AddNonlinearCurveValue " 4.775000e+002", " 1.621000e+000"
+     .AddNonlinearCurveValue " 6.366000e+002", " 1.641000e+000"
+     .AddNonlinearCurveValue " 7.958000e+002", " 1.656000e+000"
+     .AddNonlinearCurveValue " 1.592000e+003", " 1.697000e+000"
+     .AddNonlinearCurveValue " 3.183000e+003", " 1.764000e+000"
+     .AddNonlinearCurveValue " 4.775000e+003", " 1.801000e+000"
+     .AddNonlinearCurveValue " 6.366000e+003", " 1.838000e+000"
+     .AddNonlinearCurveValue " 7.958000e+003", " 1.870000e+000"
+     .AddNonlinearCurveValue " 1.592000e+004", " 2.000000e+000"
+     .AddNonlinearCurveValue " 3.183000e+004", " 2.136000e+000"
+     .AddNonlinearCurveValue " 4.775000e+004", " 2.185000e+000"
+     .AddNonlinearCurveValue " 6.366000e+004", " 2.220000e+000"
+     .AddNonlinearCurveValue " 7.958000e+004", " 2.250000e+000"
+     .AddNonlinearCurveValue " 1.592000e+005", " 2.355000e+000"
+     .AddNonlinearCurveValue " 3.183000e+005", " 2.556000e+000"
+     .GenerateNonlinearCurve
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .Rho "7870.0"
+     .ThermalType "Normal"
+     .ThermalConductivity "79.5"
+     .SpecificHeat "450", "J/K/kg"
+     .DynamicViscosity "0"
+     .Emissivity "0"
+     .MetabolicRate "0"
+     .BloodFlow "0"
+     .VoxelConvection "0"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "200"
+     .PoissonsRatio "0.291"
+     .ThermalExpansionRate "12"
+     .FrqType "hf"
+     .Type "Lossy metal"
+     .MaterialUnit "Frequency", "Hz"
+     .MaterialUnit "Geometry", "mm"
+     .MaterialUnit "Time", "s"
+     .Mu "1"
+     .Sigma "1.04e+007"
+     .LossyMetalSIRoughness "0.0"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .NonlinearMeasurementError "1e-1"
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .Colour "1", "0", "0"
+     .Wireframe "False"
+     .Reflection "False"
+     .Allowoutline "True"
+     .Transparentoutline "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: hf
+Lossy metal
+
+[Type]
+FrqType: static
+Normal
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: hf
+Type            = Lossy metal
+Mu              = 1
+Electric cond.  = 1.04e+007 [S/m]
+
+[Attributes]
+FrqType: static
+Type            = Normal
+Epsilon         = 1
+Mu              = 1000
+Nonlin. mu type = Isotropic
+Curve type      = Soft-Magnetic-BH
+Electric cond.  = 1.04e+007 [S/m]
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 1
+Mu              = 1000
+Nonlin. mu type = Isotropic
+Curve type      = Soft-Magnetic-BH
+Electric cond.  = 1.04e+007 [S/m]
+Rho             = 7870 [kg/m^3]
+Thermal cond.   = 79.5 [W/K/m]
+Specific heat   = 450 [J/K/kg]
+Diffusivity     = 2.24481e-005 [m^2/s]
+Young's modulus = 200 [kN/mm^2]
+Poisson's ratio = 0.291
+Thermal expan.  = 12 [1e-6/K]
+
+[Description]
+

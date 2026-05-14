@@ -1,0 +1,58 @@
+[Definition]
+     .Rho "19250"
+     .ThermalType "Normal"
+     .ThermalConductivity "173"
+     .SpecificHeat "134", "J/K/kg"
+     .DynamicViscosity "0"
+     .Emissivity "0"
+     .MetabolicRate "0.0"
+     .VoxelConvection "0.0"
+     .BloodFlow "0"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "411"
+     .PoissonsRatio "0.28"
+     .ThermalExpansionRate "4.5"
+     .FrqType "all"
+     .Type "Lossy metal"
+     .MaterialUnit "Frequency", "PHz"
+     .MaterialUnit "Geometry", "um"
+     .MaterialUnit "Time", "fs"
+     .MaterialUnit "Temperature", "Celsius"
+     .Mu "1"
+     .Sigma "1.89e7"
+     .LossyMetalSIRoughness "0"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .NonlinearMeasurementError "1e-1"
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .Colour "0.501961", "0", "0" 
+     .Wireframe "False" 
+     .Reflection "False" 
+     .Allowoutline "True" 
+     .Transparentoutline "False" 
+     .Transparency "0" 
+     .Create
+
+[Type]
+FrqType: all
+Lossy metal
+
+[Attributes]
+FrqType: all
+Type            = Lossy metal
+Mu              = 1
+Electric cond.  = 1.89e+07 [S/m]
+Rho             = 19250 [kg/m^3]
+Thermal cond.   = 173 [W/K/m]
+Specific heat   = 134 [J/K/kg]
+Diffusivity     = 6.70673e-5 [m^2/s]
+Young's modulus = 411 [kN/mm^2]
+Poisson's ratio = 0.28
+Thermal expan.  = 4.5 [1e-6/K]
+
+[Description]
+Chemical element symbol: W

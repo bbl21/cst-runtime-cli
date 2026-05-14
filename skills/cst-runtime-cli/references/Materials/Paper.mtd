@@ -1,0 +1,47 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "2.31"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "800"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.05"
+     .SpecificHeat "1400", "J/K/kg"
+     .Colour "1", "0", "0"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 2.31
+Mu              = 1
+Rho             = 800 [kg/m^3]
+Thermal cond.   = 0.05 [W/K/m]
+Specific heat   = 1400 [J/K/kg]
+Diffusivity     = 4.46429e-008 [m^2/s]
+
+[Description]
+

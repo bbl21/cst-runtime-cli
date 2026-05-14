@@ -1,0 +1,79 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .MaterialUnit "Frequency", "GHz"
+     .MaterialUnit "Geometry", "mm"
+     .MaterialUnit "Time", "s"
+     .Epsilon "78"
+     .Mu "0.999991"
+     .Sigma "1.59"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .EnableUserConstTanDModelOrderEps "False"
+     .ConstTanDModelOrderEps "1"
+     .SetElParametricConductivity "False"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .SigmaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .EnableUserConstTanDModelOrderMu "False"
+     .ConstTanDModelOrderMu "1"
+     .SetMagParametricConductivity "False"
+     .DispModelEps  "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "1st Order"
+     .DispersiveFittingSchemeMu "1st Order"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .NonlinearMeasurementError "1e-1"
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .Rho "998.6"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.5986"
+     .SpecificHeat "4184.2", "J/K/kg"
+     .DynamicViscosity "0.001005"
+	 .ThermalExpansionRateVolume "207"
+     .Emissivity "0"
+     .MetabolicRate "0"
+     .BloodFlow "0"
+     .VoxelConvection "0"
+     .MechanicsType "Unused"
+     .Colour "0", "0", "1" 
+     .Wireframe "False" 
+     .Reflection "False" 
+     .Allowoutline "True" 
+     .Transparentoutline "False" 
+     .Transparency "21" 
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 78
+Mu              = 0.999991
+Electric cond.  = 1.59 [S/m]
+Rho             = 998.6 [kg/m^3]
+Thermal cond.   = 0.5986 [W/K/m]
+Dyn. viscosity  = 0.001005 [Pa.s]
+Specific heat   = 4184.2 [J/K/kg]
+Diffusivity     = 1.43263e-007 [m^2/s]
+
+[Description]
+This material was created for use in CHT applications.
+EM properties need to be verified or added if the material is used in an EM simulation.
+
+[Folder]
+Fluid

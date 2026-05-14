@@ -1,0 +1,50 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "74"
+     .Mu "1.0"
+     .Kappa "3.53"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1025"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.6"
+     .SpecificHeat "4184.2", "J/K/kg"
+     .ThermalExpansionRateVolume "207"
+     .Colour "0", "0.501961", "0.752941"
+     .Wireframe "False"
+     .Transparency "48"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 74
+Mu              = 1
+Electric cond.  = 3.53 [S/m]
+Rho             = 1025 [kg/m^3]
+Thermal cond.   = 0.6 [W/K/m]
+Specific heat   = 4184.2 [J/K/kg]
+Diffusivity     = 1.39373e-007 [m^2/s]
+
+[Description]
+Water @ 25 degrees Celsius, salt 15ppt
+EM(HF) properties measured @ 2.45GHz
