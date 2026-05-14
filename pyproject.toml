@@ -1,7 +1,7 @@
 [project]
-name = "cst-mcp"
+name = "cst-runtime-cli"
 version = "0.1.0"
-description = "Add your description here"
+description = "CST Studio Suite interaction infrastructure layer - CLI tools for modeling, simulation, optimization, and results analysis"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
