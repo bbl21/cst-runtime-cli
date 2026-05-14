@@ -590,4 +590,23 @@ ARGS_TEMPLATES: dict[str, dict[str, Any]] = {
         "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
         "material_name": "Copper (pure)",
     },
+    "install-cst-libraries": {
+        "cst_path": "C:\\Program Files\\CST Studio Suite 2026\\AMD64\\python_cst_libraries",
+        "dry_run": True,
+    },
+    "health-check": {
+        "workspace": "",
+        "auto_fix": True,
+    },
+    "stage-evidence": {
+        "project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst",
+        "capture": ["parameters", "entities", "file_info"],
+        "stage_name": "snapshot_before_modeling",
+        "output_dir": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis",
+        "compare": [
+            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\snapshot_before.json",
+            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\snapshot_after.json"
+        ],
+        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\evidence_report.html",
+    },
 }

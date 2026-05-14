@@ -231,4 +231,29 @@ PIPELINES: dict[str, dict[str, Any]] = {
             "Validate output_file/output_json existence and grid counts, not only status=success.",
         ],
     },
+    "first-run": {
+        "category": "meta",
+        "risk": "read",
+        "description": "First-time environment setup: health-check with auto-fix, then discover CLI tools and pipelines.",
+        "when_to_use": "When using the CLI for the first time in a new environment, or after installing/upgrading CST.",
+        "required_context": [],
+        "commands": [
+            "python <skill-root>\\scripts\\cst_runtime_cli.py health-check",
+            "python <skill-root>\\scripts\\cst_runtime_cli.py doctor",
+            "python <skill-root>\\scripts\\cst_runtime_cli.py usage-guide",
+            "python <skill-root>\\scripts\\cst_runtime_cli.py list-tools",
+            "python <skill-root>\\scripts\\cst_runtime_cli.py list-pipelines",
+        ],
+        "steps": [
+            {"tool": "health-check", "purpose": "Diagnose environment, auto-fix what's possible, report remaining issues."},
+            {"tool": "doctor", "purpose": "Confirm readiness after auto-fix."},
+            {"tool": "usage-guide", "purpose": "Read the CLI calling convention and JSON error contract."},
+            {"tool": "list-tools", "purpose": "Discover available commands."},
+            {"tool": "list-pipelines", "purpose": "Discover known multi-tool chains."},
+        ],
+        "stop_rules": [
+            "If health-check returns overall=blocked, stop and follow user_instructions.",
+            "If doctor reports warnings after auto-fix, note them but may proceed with degraded functionality.",
+        ],
+    },
 }

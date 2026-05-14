@@ -79,14 +79,15 @@ def list_entities(project_path: str, component: str = "") -> dict[str, Any]:
         return status
     try:
         all_items = project.modeler.get_tree_items()
-        entity_paths = [item for item in all_items if str(item).startswith("Components/")]
+        sep = "\\"
+        entity_paths = [item for item in all_items if str(item).startswith("Components" + sep)]
         entities: list[dict[str, str]] = []
         for path in entity_paths:
-            parts = str(path).split("/")
+            parts = str(path).split(sep)
             if len(parts) < 3:
                 continue
             entity_component = parts[1]
-            name = "/".join(parts[2:])
+            name = sep.join(parts[2:])
             if not component or entity_component.lower() == component.lower():
                 entities.append({"component": entity_component, "name": name})
         return {

@@ -1,9 +1,9 @@
 # Pipeline Mode Guide
 
-This guide is the Phase 1 classification key for
-`mcp_cli_tool_inventory.json`. It follows
-`docs/runtime/mcp-cli-skill-migration-plan.md` and the reference CLI/MCP/Skill
-development rules.
+This guide records the pipeline-mode vocabulary that came out of the MCP to
+CLI migration. The old `mcp_cli_tool_inventory.json` ledger is retired; current
+tool metadata is discovered from the CLI itself with `list-tools` and
+`describe-tool`.
 
 ## Values
 
@@ -26,6 +26,7 @@ development rules.
 
 - Static classification is not validation.
 - CLI migration should not repair existing broken MCP behavior in the same task.
-- MCP retention is allowed and expected for GUI-visible, long-running,
-  permissioned, or protocol-native capabilities.
-- A CLI replacement does not mean MCP production retirement.
+- MCP retention fields belonged to the migration-period ledger and are no
+  longer part of current runtime governance.
+- A CLI replacement is now governed through the live CLI registry, Skill
+  guidance, pipeline recipes, and validation records.

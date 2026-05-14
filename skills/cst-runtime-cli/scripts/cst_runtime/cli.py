@@ -15,7 +15,7 @@ import warnings
 from pathlib import Path
 from typing import Any, Callable
 
-from cst_runtime import audit, farfield, modeling, process_cleanup, project_identity, project_ops, results, run_workspace, session_manager, workspace
+from cst_runtime import audit, cst_env, evidence, farfield, modeling, process_cleanup, project_identity, project_ops, results, run_workspace, session_manager, workspace
 from cst_runtime.cli_args_templates import ARGS_TEMPLATES
 from cst_runtime.cli_pipelines import PIPELINES
 
@@ -47,6 +47,9 @@ WORKSPACE_OPTIONAL_TOOLS = {
     "plot-farfield-multi",
     "calculate-farfield-neighborhood-flatness",
     "list-materials",
+    "install-cst-libraries",
+    "health-check",
+    "stage-evidence",
 }
 CST_INTERFACE_TOOLS = {
     "create-blank-project",
@@ -286,9 +289,9 @@ def _usage_guide() -> dict[str, Any]:
             "available": sorted(PIPELINES),
         },
         "tool_families": {
-            "workspace": ["init-workspace", "init-task"],
+            "workspace": ["init-workspace", "init-task", "install-cst-libraries", "health-check"],
             "run": ["prepare-run", "get-run-context"],
-            "audit": ["record-stage", "update-status"],
+            "audit": ["record-stage", "update-status", "stage-evidence"],
             "project_identity": ["infer-run-dir", "wait-project-unlocked", "verify-project-identity", "list-open-projects"],
             "session_manager": ["cst-session-inspect", "cst-session-open", "cst-session-reattach", "cst-session-close", "cst-session-quit", "create-blank-project", "save-project"],
             "process_cleanup": ["inspect-cst-environment", "cleanup-cst-processes"],
@@ -407,6 +410,147 @@ def _production_dependency_error(tool_name: str, missing_modules: list[str]) -> 
         ],
         "adapter": "cst_runtime_cli",
     }
+
+
+def _tool_requires_check_solid(tool_name: str) -> bool:
+    record = TOOLS.get(tool_name)
+    if record is None:
+        return False
+    return record.get("category") == "modeling" and record.get("risk") == "write"
+
+
+def _tool_pipeline_mode(record: dict[str, Any]) -> str:
+    risk = str(record.get("risk", ""))
+    category = str(record.get("category", ""))
+    if category == "modeling" and risk == "write":
+        return "not_pipeable_destructive"
+    if risk in {"session", "process-control", "long-running"}:
+        return "not_pipeable_session"
+    if risk == "filesystem-write":
+        return "pipe_sink"
+    if risk == "write":
+        return "not_pipeable_destructive"
+    if risk == "read":
+        return "pipe_source"
+    return "pipe_optional"
+
+
+def _tool_validation_level(record: dict[str, Any]) -> str:
+    risk = str(record.get("risk", ""))
+    category = str(record.get("category", ""))
+    if category == "modeling" and risk == "write":
+        return "check_solid_gate_plus_cst_smoke"
+    if risk in {"session", "process-control", "long-running"}:
+        return "workflow"
+    if risk == "filesystem-write":
+        return "mock_or_parse"
+    return "static_contract"
+
+
+def _tool_governance(tool_name: str, record: dict[str, Any]) -> dict[str, Any]:
+    requires_check_solid = _tool_requires_check_solid(tool_name)
+    return {
+        "pipeline_mode": _tool_pipeline_mode(record),
+        "validation_level": _tool_validation_level(record),
+        "requires_run_context": requires_check_solid or record.get("risk") in {"write", "session", "long-running"},
+        "requires_check_solid": requires_check_solid,
+        "writes_project": record.get("risk") == "write",
+        "terminal_step": tool_name in CST_FARFIELD_TOOLS,
+    }
+
+
+def _check_solid_gate_error(tool_name: str, tool_args: dict[str, Any]) -> dict[str, Any] | None:
+    if not _tool_requires_check_solid(tool_name):
+        return None
+
+    required_fields = ("model_intent_path", "check_solid_report_path")
+    missing = [field for field in required_fields if not str(tool_args.get(field) or "").strip()]
+    if missing:
+        return {
+            "status": "error",
+            "error_type": "check_solid_required",
+            "state": "blocked",
+            "tool": tool_name,
+            "message": "modeling write tools require approved model_intent and check_solid_report context",
+            "missing_fields": missing,
+            "required_fields": list(required_fields),
+            "next_steps": [
+                "Generate model_intent.json in the current task/run context.",
+                "Run the deterministic Check Solid gate and write check_solid_report.json.",
+                "Only invoke modeling write tools after the report status is pass.",
+            ],
+            "adapter": "cst_runtime_cli",
+        }
+
+    model_intent_path = Path(str(tool_args["model_intent_path"])).expanduser().resolve()
+    if not model_intent_path.exists() or not model_intent_path.is_file():
+        return {
+            "status": "error",
+            "error_type": "model_intent_missing",
+            "state": "blocked",
+            "tool": tool_name,
+            "message": "model_intent_path must point to an existing JSON intent file",
+            "model_intent_path": str(model_intent_path),
+            "adapter": "cst_runtime_cli",
+        }
+
+    try:
+        json.loads(model_intent_path.read_text(encoding="utf-8-sig"))
+    except Exception as exc:
+        return {
+            "status": "error",
+            "error_type": "invalid_model_intent",
+            "state": "blocked",
+            "tool": tool_name,
+            "message": str(exc),
+            "model_intent_path": str(model_intent_path),
+            "adapter": "cst_runtime_cli",
+        }
+
+    report_path = Path(str(tool_args["check_solid_report_path"])).expanduser().resolve()
+    if not report_path.exists() or not report_path.is_file():
+        return {
+            "status": "error",
+            "error_type": "check_solid_report_missing",
+            "state": "blocked",
+            "tool": tool_name,
+            "message": "check_solid_report_path must point to an existing JSON report",
+            "check_solid_report_path": str(report_path),
+            "adapter": "cst_runtime_cli",
+        }
+
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8-sig"))
+    except Exception as exc:
+        return {
+            "status": "error",
+            "error_type": "invalid_check_solid_report",
+            "state": "blocked",
+            "tool": tool_name,
+            "message": str(exc),
+            "check_solid_report_path": str(report_path),
+            "adapter": "cst_runtime_cli",
+        }
+
+    gate_status = str(
+        report.get("status")
+        or report.get("gate_status")
+        or report.get("decision")
+        or ""
+    ).lower()
+    if gate_status != "pass":
+        return {
+            "status": "error",
+            "error_type": "check_solid_not_passed",
+            "state": "blocked",
+            "tool": tool_name,
+            "message": "modeling write tools require check_solid_report status == 'pass'",
+            "check_solid_report_path": str(report_path),
+            "check_solid_status": gate_status or None,
+            "adapter": "cst_runtime_cli",
+        }
+
+    return None
 
 
 def _doctor(explicit_workspace: str = "") -> dict[str, Any]:
@@ -559,6 +703,11 @@ def _tool_runbook(tool_name: str) -> dict[str, Any]:
     if direct_fields:
         flags = " ".join(f"--{field.replace('_', '-')} <{field}>" for field in direct_fields)
         runbook["direct_flags"] = _cmd(f"{tool_name} {flags}")
+    if _tool_requires_check_solid(tool_name):
+        runbook["check_solid_gate"] = (
+            "Modeling write tools require model_intent_path and a check_solid_report_path whose JSON status is pass; "
+            "use args-template/--args-file rather than direct flags for production calls."
+        )
     return runbook
 
 
@@ -861,6 +1010,9 @@ DIRECT_ARG_SPECS: dict[str, dict[str, str]] = {
     "export-voltage": {"project_path": "project_path", "voltage_index": "voltage_index", "file_path": "file_path"},
     "define-parameters": {"project_path": "project_path"},
     "define-material-from-mtd": {"project_path": "project_path", "material_name": "material_name"},
+    "install-cst-libraries": {"cst_path": "cst_path", "dry_run": "dry_run"},
+    "health-check": {"workspace": "workspace", "auto_fix": "auto_fix"},
+    "stage-evidence": {"project_path": "project_path", "capture": "capture", "compare": "compare", "output_dir": "output_dir", "output_html": "output_html", "stage_name": "stage_name"},
 }
 
 
@@ -1002,6 +1154,58 @@ def tool_cst_session_quit(args: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def tool_install_cst_libraries(args: dict[str, Any]) -> dict[str, Any]:
+    return cst_env.install_cst_libraries(
+        cst_path=str(args.get("cst_path", "")),
+        dry_run=bool(args.get("dry_run", False)),
+    )
+
+
+def tool_health_check(args: dict[str, Any]) -> dict[str, Any]:
+    return cst_env.health_check(
+        workspace=str(args.get("workspace", "")),
+        auto_fix=bool(args.get("auto_fix", True)),
+    )
+
+
+def _parse_list_arg(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(v) for v in value]
+    if not isinstance(value, str) or not value.strip():
+        return []
+    s = value.strip()
+    if s.startswith("[") and s.endswith("]"):
+        try:
+            parsed = json.loads(s)
+            if isinstance(parsed, list):
+                return [str(v) for v in parsed]
+        except Exception:
+            pass
+    return [v.strip().strip('"').strip("'") for v in s.strip("[]").split(",") if v.strip()]
+
+
+def tool_stage_evidence(args: dict[str, Any]) -> dict[str, Any]:
+    capture = _parse_list_arg(args.get("capture"))
+    compare = _parse_list_arg(args.get("compare"))
+    if capture:
+        return evidence.capture_snapshot(
+            project_path=str(args.get("project_path", "")),
+            capture_types=capture if isinstance(capture, list) else [],
+            output_dir=str(args.get("output_dir", "")),
+            stage_name=str(args.get("stage_name", "")),
+        )
+    elif compare:
+        if not isinstance(compare, list) or len(compare) < 2:
+            return {"status": "error", "error_type": "invalid_compare_args", "message": "compare requires [before_file, after_file]"}
+        return evidence.compare_snapshots(
+            before_file=str(compare[0]),
+            after_file=str(compare[1]),
+            output_html=str(args.get("output_html", "")),
+        )
+    else:
+        return {"status": "error", "error_type": "missing_action", "message": "Provide --capture or --compare"}
+
+
 def tool_list_materials(args: dict[str, Any]) -> dict[str, Any]:
     materials_path = Path(__file__).resolve().parents[2] / "references" / "materials_name_list.txt"
     if not materials_path.is_file():
@@ -1018,6 +1222,14 @@ def tool_list_materials(args: dict[str, Any]) -> dict[str, Any]:
         "source": str(materials_path),
         "usage": "Pass the name to change-material --material '<name>', or use define-material-from-mtd --material-name '<name>'.",
     }
+
+
+def tool_define_parameters(args: dict[str, Any]) -> dict[str, Any]:
+    return project_ops.define_parameters(
+        project_path=_project_path_from_args(args),
+        names=args.get("names", []),
+        values=args.get("values", []),
+    )
 
 
 def tool_define_material_from_mtd(args: dict[str, Any]) -> dict[str, Any]:
@@ -1586,41 +1798,71 @@ ToolFunc = Callable[[dict[str, Any]], dict[str, Any]]
 
 
 TOOLS: dict[str, dict[str, Any]] = {
-    "init-workspace": {
-        "category": "workspace",
-        "risk": "filesystem-write",
-        "description": "Initialize a minimal CST runtime workspace in an empty or existing directory.",
-        "function": tool_init_workspace,
+    "activate-post-process": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Activate or deactivate a post-processing operation.",
+        "function": tool_activate_post_process,
     },
-    "init-task": {
-        "category": "workspace",
-        "risk": "filesystem-write",
-        "description": "Create a task.json and runs directory inside a runtime workspace.",
-        "function": tool_init_task,
+    "add-to-history": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Execute a raw VBA command via add_to_history for operations not covered by other tools.",
+        "function": tool_add_to_history,
     },
-    "prepare-run": {
-        "category": "run",
-        "risk": "filesystem-write",
-        "description": "Create a standard run workspace through cst_runtime.",
-        "function": tool_prepare_run,
+    "boolean-add": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Unite two solids (boolean union).",
+        "function": tool_boolean_add,
     },
-    "get-run-context": {
-        "category": "run",
-        "risk": "read",
-        "description": "Read standard run context through cst_runtime.",
-        "function": tool_get_run_context,
+    "boolean-insert": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Insert one solid into another (boolean insert).",
+        "function": tool_boolean_insert,
     },
-    "record-stage": {
-        "category": "audit",
-        "risk": "filesystem-write",
-        "description": "Write a stage record and production-chain log entry.",
-        "function": tool_record_stage,
+    "boolean-intersect": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Intersect two solids (boolean intersection).",
+        "function": tool_boolean_intersect,
     },
-    "update-status": {
-        "category": "audit",
+    "boolean-subtract": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Subtract one solid from another (boolean difference).",
+        "function": tool_boolean_subtract,
+    },
+    "calculate-farfield-neighborhood-flatness": {
+        "category": "farfield",
         "risk": "filesystem-write",
-        "description": "Update the formal run status.json file.",
-        "function": tool_update_status,
+        "description": "Calculate near-boresight farfield cut flatness from exported cut JSON payloads.",
+        "function": tool_calculate_farfield_neighborhood_flatness,
+    },
+    "change-frequency-range": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Change the simulation frequency range.",
+        "function": tool_change_frequency_range,
+    },
+    "change-material": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Change the material of a geometry entity. Use list-materials to see available names.",
+        "function": tool_change_material,
+    },
+    "change-parameter": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Change one CST parameter in the verified working project.",
+        "function": tool_change_parameter,
+    },
+    "change-solver-type": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Change the CST solver type.",
+        "function": tool_change_solver_type,
     },
     "cleanup-cst-processes": {
         "category": "process_cleanup",
@@ -1628,11 +1870,47 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Force-kill only allowlisted CST processes and report Access is denied residuals with lock-file evidence.",
         "function": tool_cleanup_cst_processes,
     },
-    "inspect-cst-environment": {
-        "category": "process_cleanup",
-        "risk": "read",
-        "description": "Inspect allowlisted CST processes, project locks, open projects, and attach readiness.",
-        "function": tool_inspect_cst_environment,
+    "create-blank-project": {
+        "category": "session_manager",
+        "risk": "write",
+        "description": "Create a new blank CST project at the specified path.",
+        "function": tool_create_blank_project,
+    },
+    "create-component": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a new component in the CST project.",
+        "function": tool_create_component,
+    },
+    "create-hollow-sweep": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a hollow loft sweep with outer and inner walls.",
+        "function": tool_create_hollow_sweep,
+    },
+    "create-horn-segment": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a horn segment (outer cone - inner cone).",
+        "function": tool_create_horn_segment,
+    },
+    "create-loft-sweep": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a loft sweep between two 2D profiles in one step.",
+        "function": tool_create_loft_sweep,
+    },
+    "create-mesh-group": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a mesh group and add items.",
+        "function": tool_create_mesh_group,
+    },
+    "cst-session-close": {
+        "category": "session_manager",
+        "risk": "session",
+        "description": "Close the expected CST project, optionally wait for locks to clear, then inspect the environment.",
+        "function": tool_cst_session_close,
     },
     "cst-session-inspect": {
         "category": "session_manager",
@@ -1646,305 +1924,23 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Open a CST project through the central session manager and inspect the environment afterward.",
         "function": tool_cst_session_open,
     },
-    "cst-session-reattach": {
-        "category": "session_manager",
-        "risk": "read",
-        "description": "Reattach to the expected CST project only if it is the sole open project.",
-        "function": tool_cst_session_reattach,
-    },
-    "cst-session-close": {
-        "category": "session_manager",
-        "risk": "session",
-        "description": "Close the expected CST project, optionally wait for locks to clear, then inspect the environment.",
-        "function": tool_cst_session_close,
-    },
     "cst-session-quit": {
         "category": "session_manager",
         "risk": "process-control",
         "description": "Quit CST through the central session manager using only the process allowlist and lock evidence.",
         "function": tool_cst_session_quit,
     },
-    "create-blank-project": {
+    "cst-session-reattach": {
         "category": "session_manager",
-        "risk": "write",
-        "description": "Create a new blank CST project at the specified path.",
-        "function": tool_create_blank_project,
-    },
-    "save-project": {
-        "category": "session_manager",
-        "risk": "filesystem-write",
-        "description": "Save the verified CST working project.",
-        "function": tool_save_project,
-    },
-    "list-parameters": {
-        "category": "project_ops",
         "risk": "read",
-        "description": "List parameters from the verified CST working project.",
-        "function": tool_list_parameters,
+        "description": "Reattach to the expected CST project only if it is the sole open project.",
+        "function": tool_cst_session_reattach,
     },
-    "list-entities": {
-        "category": "modeling",
-        "risk": "read",
-        "description": "List geometry entities from the verified CST working project.",
-        "function": tool_list_entities,
-    },
-    "change-parameter": {
-        "category": "project_ops",
-        "risk": "write",
-        "description": "Change one CST parameter in the verified working project.",
-        "function": tool_change_parameter,
-    },
-    "start-simulation": {
-        "category": "project_ops",
-        "risk": "long-running",
-        "description": "Run the CST solver synchronously for the verified working project.",
-        "function": tool_start_simulation,
-    },
-    "start-simulation-async": {
-        "category": "project_ops",
-        "risk": "long-running",
-        "description": "Start the CST solver asynchronously for the verified working project.",
-        "function": tool_start_simulation_async,
-    },
-    "is-simulation-running": {
-        "category": "project_ops",
-        "risk": "read",
-        "description": "Check whether the CST solver is currently running for the verified working project.",
-        "function": tool_is_simulation_running,
-    },
-    "wait-simulation": {
-        "category": "project_ops",
-        "risk": "long-running",
-        "description": "Poll is-simulation-running until the solver finishes or timeout expires.",
-        "function": tool_wait_simulation,
-    },
-    "infer-run-dir": {
-        "category": "project-identity",
-        "risk": "read",
-        "description": "Infer run_dir from a projects/working.cst project path.",
-        "function": tool_infer_run_dir,
-    },
-    "wait-project-unlocked": {
-        "category": "project-identity",
-        "risk": "read",
-        "description": "Wait for a project companion directory to have no .lok files.",
-        "function": tool_wait_project_unlocked,
-    },
-    "list-open-projects": {
-        "category": "project-identity",
-        "risk": "read",
-        "description": "List CST projects visible through DesignEnvironment.connect_to_any().",
-        "function": tool_list_open_projects,
-    },
-    "verify-project-identity": {
-        "category": "project-identity",
-        "risk": "read",
-        "description": "Verify the expected project is the sole open CST project before writes.",
-        "function": tool_verify_project_identity,
-    },
-    "open-results-project": {
-        "category": "results",
-        "risk": "read",
-        "description": "Validate that cst.results can open a project path.",
-        "function": tool_open_results_project,
-    },
-    "list-subprojects": {
-        "category": "results",
-        "risk": "read",
-        "description": "List subprojects from a CST results project by explicit project_path.",
-        "function": tool_list_subprojects,
-    },
-    "get-version-info": {
-        "category": "results",
-        "risk": "read",
-        "description": "Read cst.results version information.",
-        "function": tool_get_version_info,
-    },
-    "list-result-items": {
-        "category": "results",
-        "risk": "read",
-        "description": "List result tree items from a project path.",
-        "function": tool_list_result_items,
-    },
-    "list-run-ids": {
-        "category": "results",
-        "risk": "read",
-        "description": "List CST result run IDs from a project path.",
-        "function": tool_list_run_ids,
-    },
-    "get-parameter-combination": {
-        "category": "results",
-        "risk": "read",
-        "description": "Read the parameter combination for a result run ID.",
-        "function": tool_get_parameter_combination,
-    },
-    "get-1d-result": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Export a 0D/1D result item to JSON from a project path.",
-        "function": tool_get_1d_result,
-    },
-    "get-2d-result": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Export a 2D result item to JSON from a project path.",
-        "function": tool_get_2d_result,
-    },
-    "plot-exported-file": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Render an exported JSON result or CST farfield ASCII/TXT file to an HTML preview.",
-        "function": tool_plot_exported_file,
-    },
-    "plot-project-result": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Export a project result with explicit project_path and render it to an HTML preview.",
-        "function": tool_plot_project_result,
-    },
-    "generate-s11-comparison": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Generate an HTML S11 comparison from exported JSON files.",
-        "function": tool_generate_s11_comparison,
-    },
-    "generate-s11-farfield-dashboard": {
-        "category": "results",
-        "risk": "filesystem-write",
-        "description": "Generate a combined S11 and farfield HTML dashboard from exported JSON/TXT files.",
-        "function": tool_generate_s11_farfield_dashboard,
-    },
-    "inspect-farfield-ascii": {
-        "category": "farfield",
-        "risk": "read",
-        "description": "Inspect a CST farfield ASCII/TXT grid and return row/theta/phi counts.",
-        "function": tool_inspect_farfield_ascii,
-    },
-    "export-farfield-fresh-session": {
-        "category": "farfield",
-        "risk": "long-running",
-        "description": "Export a FarfieldCalculator scalar grid to ASCII/TXT in a fresh CST GUI session.",
-        "function": tool_export_farfield_fresh_session,
-    },
-    "export-existing-farfield-cut-fresh-session": {
-        "category": "farfield",
-        "risk": "long-running",
-        "description": "Export an existing CST Farfield Cut tree item to ASCII/TXT in a fresh CST GUI session.",
-        "function": tool_export_existing_farfield_cut_fresh_session,
-    },
-    "read-realized-gain-grid-fresh-session": {
-        "category": "farfield",
-        "risk": "long-running",
-        "description": "Read a Realized Gain dBi grid through FarfieldCalculator in a fresh CST GUI session.",
-        "function": tool_read_realized_gain_grid_fresh_session,
-    },
-    "calculate-farfield-neighborhood-flatness": {
-        "category": "farfield",
-        "risk": "filesystem-write",
-        "description": "Calculate near-boresight farfield cut flatness from exported cut JSON payloads.",
-        "function": tool_calculate_farfield_neighborhood_flatness,
-    },
-    "plot-farfield-multi": {
-        "category": "farfield",
-        "risk": "filesystem-write",
-        "description": "Render one or more farfield ASCII/TXT or 2D JSON grids to an HTML preview.",
-        "function": tool_plot_farfield_multi,
-    },
-    "define-brick": {
+    "define-analytical-curve": {
         "category": "modeling",
         "risk": "write",
-        "description": "Create a rectangular brick in the CST project.",
-        "function": tool_define_brick,
-    },
-    "define-cylinder": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Create a cylinder in the CST project.",
-        "function": tool_define_cylinder,
-    },
-    "define-cone": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Create a cone in the CST project.",
-        "function": tool_define_cone,
-    },
-    "define-rectangle": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Create a 2D rectangle on a curve in the CST project.",
-        "function": tool_define_rectangle,
-    },
-    "boolean-subtract": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Subtract one solid from another (boolean difference).",
-        "function": tool_boolean_subtract,
-    },
-    "boolean-add": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Unite two solids (boolean union).",
-        "function": tool_boolean_add,
-    },
-    "boolean-intersect": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Intersect two solids (boolean intersection).",
-        "function": tool_boolean_intersect,
-    },
-    "boolean-insert": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Insert one solid into another (boolean insert).",
-        "function": tool_boolean_insert,
-    },
-    "delete-entity": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Delete a geometry entity from the CST project.",
-        "function": tool_delete_entity,
-    },
-    "create-component": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Create a new component in the CST project.",
-        "function": tool_create_component,
-    },
-    "change-material": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Change the material of a geometry entity. Use list-materials to see available names.",
-        "function": tool_change_material,
-    },
-    "list-materials": {
-        "category": "modeling",
-        "risk": "read",
-        "description": "List available CST material names from the Materials library.",
-        "function": tool_list_materials,
-    },
-    "define-material-from-mtd": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Define a CST material from .mtd file by material name. Material must exist in references/Materials/. Use list-materials to see available names.",
-        "function": tool_define_material_from_mtd,
-    },
-    "define-frequency-range": {
-        "category": "project_ops",
-        "risk": "write",
-        "description": "Set the simulation frequency range.",
-        "function": tool_define_frequency_range,
-    },
-    "change-frequency-range": {
-        "category": "project_ops",
-        "risk": "write",
-        "description": "Change the simulation frequency range.",
-        "function": tool_change_frequency_range,
-    },
-    "change-solver-type": {
-        "category": "project_ops",
-        "risk": "write",
-        "description": "Change the CST solver type.",
-        "function": tool_change_solver_type,
+        "description": "Define an analytical curve using parametric equations.",
+        "function": tool_define_analytical_curve,
     },
     "define-background": {
         "category": "project_ops",
@@ -1958,23 +1954,53 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Set expanded open boundary conditions.",
         "function": tool_define_boundary,
     },
+    "define-brick": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a rectangular brick in the CST project.",
+        "function": tool_define_brick,
+    },
+    "define-cone": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a cone in the CST project.",
+        "function": tool_define_cone,
+    },
+    "define-cylinder": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a cylinder in the CST project.",
+        "function": tool_define_cylinder,
+    },
+    "define-extrude-curve": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Extrude a curve profile into a solid.",
+        "function": tool_define_extrude_curve,
+    },
+    "define-frequency-range": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Set the simulation frequency range.",
+        "function": tool_define_frequency_range,
+    },
+    "define-loft": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Execute a loft between pre-picked faces.",
+        "function": tool_define_loft,
+    },
+    "define-material-from-mtd": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Define a CST material from .mtd file by material name. Material must exist in references/Materials/. Use list-materials to see available names.",
+        "function": tool_define_material_from_mtd,
+    },
     "define-mesh": {
         "category": "project_ops",
         "risk": "write",
         "description": "Configure the hexahedral mesh parameters.",
         "function": tool_define_mesh,
-    },
-    "define-solver": {
-        "category": "project_ops",
-        "risk": "write",
-        "description": "Configure the time-domain solver settings.",
-        "function": tool_define_solver,
-    },
-    "define-port": {
-        "category": "project_ops",
-        "risk": "write",
-        "description": "Define a waveguide port.",
-        "function": tool_define_port,
     },
     "define-monitor": {
         "category": "project_ops",
@@ -1982,17 +2008,35 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Define a farfield monitor over a frequency range.",
         "function": tool_define_monitor,
     },
-    "rename-entity": {
-        "category": "modeling",
+    "define-parameters": {
+        "category": "project_ops",
         "risk": "write",
-        "description": "Rename a geometry entity.",
-        "function": tool_rename_entity,
+        "description": "Batch-define multiple CST parameters using StoreParameters.",
+        "function": tool_define_parameters,
     },
-    "set-entity-color": {
+    "define-polygon-3d": {
         "category": "modeling",
         "risk": "write",
-        "description": "Set the display color of a geometry entity.",
-        "function": tool_set_entity_color,
+        "description": "Define a 3D polygon curve from a list of points.",
+        "function": tool_define_polygon_3d,
+    },
+    "define-port": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Define a waveguide port.",
+        "function": tool_define_port,
+    },
+    "define-rectangle": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Create a 2D rectangle on a curve in the CST project.",
+        "function": tool_define_rectangle,
+    },
+    "define-solver": {
+        "category": "project_ops",
+        "risk": "write",
+        "description": "Configure the time-domain solver settings.",
+        "function": tool_define_solver,
     },
     "define-units": {
         "category": "modeling",
@@ -2000,35 +2044,11 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Set the CST project unit system.",
         "function": tool_define_units,
     },
-    "set-farfield-monitor": {
+    "delete-entity": {
         "category": "modeling",
         "risk": "write",
-        "description": "Set a farfield monitor over a frequency range.",
-        "function": tool_set_farfield_monitor,
-    },
-    "set-efield-monitor": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Set an E-field monitor over a frequency range.",
-        "function": tool_set_efield_monitor,
-    },
-    "set-field-monitor": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Set a field monitor (e.g. H-field) over a frequency range.",
-        "function": tool_set_field_monitor,
-    },
-    "set-probe": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Set a field probe at a specified position.",
-        "function": tool_set_probe,
-    },
-    "delete-probe": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Delete a probe by its ID.",
-        "function": tool_delete_probe,
+        "description": "Delete a geometry entity from the CST project.",
+        "function": tool_delete_entity,
     },
     "delete-monitor": {
         "category": "modeling",
@@ -2036,41 +2056,179 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Delete a monitor by name.",
         "function": tool_delete_monitor,
     },
-    "set-background-with-space": {
+    "delete-probe": {
         "category": "modeling",
         "risk": "write",
-        "description": "Set background space distances.",
-        "function": tool_set_background_with_space,
+        "description": "Delete a probe by its ID.",
+        "function": tool_delete_probe,
     },
-    "set-farfield-plot-cuts": {
+    "export-e-field": {
         "category": "modeling",
-        "risk": "write",
-        "description": "Set farfield plot cut angles.",
-        "function": tool_set_farfield_plot_cuts,
+        "risk": "filesystem-write",
+        "description": "Export E-field data at a given frequency to ASCII.",
+        "function": tool_export_e_field,
     },
-    "show-bounding-box": {
+    "export-existing-farfield-cut-fresh-session": {
+        "category": "farfield",
+        "risk": "long-running",
+        "description": "Export an existing CST Farfield Cut tree item to ASCII/TXT in a fresh CST GUI session.",
+        "function": tool_export_existing_farfield_cut_fresh_session,
+    },
+    "export-farfield-fresh-session": {
+        "category": "farfield",
+        "risk": "long-running",
+        "description": "Export a FarfieldCalculator scalar grid to ASCII/TXT in a fresh CST GUI session.",
+        "function": tool_export_farfield_fresh_session,
+    },
+    "export-surface-current": {
         "category": "modeling",
-        "risk": "write",
-        "description": "Toggle bounding box display.",
-        "function": tool_show_bounding_box,
+        "risk": "filesystem-write",
+        "description": "Export surface current data at a given frequency to ASCII.",
+        "function": tool_export_surface_current,
     },
-    "activate-post-process": {
+    "export-voltage": {
         "category": "modeling",
-        "risk": "write",
-        "description": "Activate or deactivate a post-processing operation.",
-        "function": tool_activate_post_process,
+        "risk": "filesystem-write",
+        "description": "Export voltage monitor data to ASCII.",
+        "function": tool_export_voltage,
     },
-    "create-mesh-group": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Create a mesh group and add items.",
-        "function": tool_create_mesh_group,
+    "generate-s11-comparison": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Generate an HTML S11 comparison from exported JSON files.",
+        "function": tool_generate_s11_comparison,
     },
-    "stop-simulation": {
+    "generate-s11-farfield-dashboard": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Generate a combined S11 and farfield HTML dashboard from exported JSON/TXT files.",
+        "function": tool_generate_s11_farfield_dashboard,
+    },
+    "get-1d-result": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Export a 0D/1D result item to JSON from a project path.",
+        "function": tool_get_1d_result,
+    },
+    "get-2d-result": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Export a 2D result item to JSON from a project path.",
+        "function": tool_get_2d_result,
+    },
+    "get-parameter-combination": {
+        "category": "results",
+        "risk": "read",
+        "description": "Read the parameter combination for a result run ID.",
+        "function": tool_get_parameter_combination,
+    },
+    "get-run-context": {
+        "category": "run",
+        "risk": "read",
+        "description": "Read standard run context through cst_runtime.",
+        "function": tool_get_run_context,
+    },
+    "get-version-info": {
+        "category": "results",
+        "risk": "read",
+        "description": "Read cst.results version information.",
+        "function": tool_get_version_info,
+    },
+    "health-check": {
+        "category": "workspace",
+        "risk": "read",
+        "description": "Run comprehensive environment diagnostics: Python, uv, workspace, CST libraries, imports. Auto-fixes what it can, reports remaining issues with user instructions.",
+        "function": tool_health_check,
+    },
+    "infer-run-dir": {
+        "category": "project-identity",
+        "risk": "read",
+        "description": "Infer run_dir from a projects/working.cst project path.",
+        "function": tool_infer_run_dir,
+    },
+    "init-task": {
+        "category": "workspace",
+        "risk": "filesystem-write",
+        "description": "Create a task.json and runs directory inside a runtime workspace.",
+        "function": tool_init_task,
+    },
+    "init-workspace": {
+        "category": "workspace",
+        "risk": "filesystem-write",
+        "description": "Initialize a minimal CST runtime workspace in an empty or existing directory.",
+        "function": tool_init_workspace,
+    },
+    "inspect-cst-environment": {
+        "category": "process_cleanup",
+        "risk": "read",
+        "description": "Inspect allowlisted CST processes, project locks, open projects, and attach readiness.",
+        "function": tool_inspect_cst_environment,
+    },
+    "inspect-farfield-ascii": {
+        "category": "farfield",
+        "risk": "read",
+        "description": "Inspect a CST farfield ASCII/TXT grid and return row/theta/phi counts.",
+        "function": tool_inspect_farfield_ascii,
+    },
+    "install-cst-libraries": {
+        "category": "workspace",
+        "risk": "filesystem-write",
+        "description": "Install or verify CST Python libraries (cst, cst.results, cst.interface) using the uv-managed environment.",
+        "function": tool_install_cst_libraries,
+    },
+    "is-simulation-running": {
         "category": "project_ops",
-        "risk": "session",
-        "description": "Stop the currently running CST solver.",
-        "function": tool_stop_simulation,
+        "risk": "read",
+        "description": "Check whether the CST solver is currently running for the verified working project.",
+        "function": tool_is_simulation_running,
+    },
+    "list-entities": {
+        "category": "modeling",
+        "risk": "read",
+        "description": "List geometry entities from the verified CST working project.",
+        "function": tool_list_entities,
+    },
+    "list-materials": {
+        "category": "modeling",
+        "risk": "read",
+        "description": "List available CST material names from the Materials library.",
+        "function": tool_list_materials,
+    },
+    "list-open-projects": {
+        "category": "project-identity",
+        "risk": "read",
+        "description": "List CST projects visible through DesignEnvironment.connect_to_any().",
+        "function": tool_list_open_projects,
+    },
+    "list-parameters": {
+        "category": "project_ops",
+        "risk": "read",
+        "description": "List parameters from the verified CST working project.",
+        "function": tool_list_parameters,
+    },
+    "list-result-items": {
+        "category": "results",
+        "risk": "read",
+        "description": "List result tree items from a project path.",
+        "function": tool_list_result_items,
+    },
+    "list-run-ids": {
+        "category": "results",
+        "risk": "read",
+        "description": "List CST result run IDs from a project path.",
+        "function": tool_list_run_ids,
+    },
+    "list-subprojects": {
+        "category": "results",
+        "risk": "read",
+        "description": "List subprojects from a CST results project by explicit project_path.",
+        "function": tool_list_subprojects,
+    },
+    "open-results-project": {
+        "category": "results",
+        "risk": "read",
+        "description": "Validate that cst.results can open a project path.",
+        "function": tool_open_results_project,
     },
     "pause-simulation": {
         "category": "project_ops",
@@ -2078,17 +2236,101 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Pause the currently running CST solver.",
         "function": tool_pause_simulation,
     },
+    "pick-face": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Select a face by ID for loft operations (zero-thickness entities only).",
+        "function": tool_pick_face,
+    },
+    "plot-exported-file": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Render an exported JSON result or CST farfield ASCII/TXT file to an HTML preview.",
+        "function": tool_plot_exported_file,
+    },
+    "plot-farfield-multi": {
+        "category": "farfield",
+        "risk": "filesystem-write",
+        "description": "Render one or more farfield ASCII/TXT or 2D JSON grids to an HTML preview.",
+        "function": tool_plot_farfield_multi,
+    },
+    "plot-project-result": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Export a project result with explicit project_path and render it to an HTML preview.",
+        "function": tool_plot_project_result,
+    },
+    "prepare-run": {
+        "category": "run",
+        "risk": "filesystem-write",
+        "description": "Create a standard run workspace through cst_runtime.",
+        "function": tool_prepare_run,
+    },
+    "read-realized-gain-grid-fresh-session": {
+        "category": "farfield",
+        "risk": "long-running",
+        "description": "Read a Realized Gain dBi grid through FarfieldCalculator in a fresh CST GUI session.",
+        "function": tool_read_realized_gain_grid_fresh_session,
+    },
+    "record-stage": {
+        "category": "audit",
+        "risk": "filesystem-write",
+        "description": "Write a stage record and production-chain log entry.",
+        "function": tool_record_stage,
+    },
+    "rename-entity": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Rename a geometry entity.",
+        "function": tool_rename_entity,
+    },
     "resume-simulation": {
         "category": "project_ops",
-        "risk": "session",
+        "risk": "write",
         "description": "Resume a paused CST solver.",
         "function": tool_resume_simulation,
     },
-    "set-solver-acceleration": {
-        "category": "project_ops",
+    "save-project": {
+        "category": "session_manager",
+        "risk": "filesystem-write",
+        "description": "Save the verified CST working project.",
+        "function": tool_save_project,
+    },
+    "set-background-with-space": {
+        "category": "modeling",
         "risk": "write",
-        "description": "Configure solver parallelization and hardware acceleration.",
-        "function": tool_set_solver_acceleration,
+        "description": "Set background space distances.",
+        "function": tool_set_background_with_space,
+    },
+    "set-efield-monitor": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set an E-field monitor over a frequency range.",
+        "function": tool_set_efield_monitor,
+    },
+    "set-entity-color": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set the display color of a geometry entity.",
+        "function": tool_set_entity_color,
+    },
+    "set-farfield-monitor": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set a farfield monitor over a frequency range.",
+        "function": tool_set_farfield_monitor,
+    },
+    "set-farfield-plot-cuts": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set farfield plot cut angles.",
+        "function": tool_set_farfield_plot_cuts,
+    },
+    "set-field-monitor": {
+        "category": "modeling",
+        "risk": "write",
+        "description": "Set a field monitor (e.g. H-field) over a frequency range.",
+        "function": tool_set_field_monitor,
     },
     "set-fdsolver-extrude-open-bc": {
         "category": "project_ops",
@@ -2108,29 +2350,41 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Set the minimum mesh step number.",
         "function": tool_set_mesh_minimum_step_number,
     },
-    "define-polygon-3d": {
+    "set-probe": {
         "category": "modeling",
         "risk": "write",
-        "description": "Define a 3D polygon curve from a list of points.",
-        "function": tool_define_polygon_3d,
+        "description": "Set a field probe at a specified position.",
+        "function": tool_set_probe,
     },
-    "define-analytical-curve": {
-        "category": "modeling",
+    "set-solver-acceleration": {
+        "category": "project_ops",
         "risk": "write",
-        "description": "Define an analytical curve using parametric equations.",
-        "function": tool_define_analytical_curve,
+        "description": "Configure solver parallelization and hardware acceleration.",
+        "function": tool_set_solver_acceleration,
     },
-    "define-extrude-curve": {
+    "show-bounding-box": {
         "category": "modeling",
         "risk": "write",
-        "description": "Extrude a curve profile into a solid.",
-        "function": tool_define_extrude_curve,
+        "description": "Toggle bounding box display.",
+        "function": tool_show_bounding_box,
     },
-    "transform-shape": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Mirror or rotate a geometry shape.",
-        "function": tool_transform_shape,
+    "start-simulation": {
+        "category": "project_ops",
+        "risk": "long-running",
+        "description": "Run the CST solver synchronously for the verified working project.",
+        "function": tool_start_simulation,
+    },
+    "start-simulation-async": {
+        "category": "project_ops",
+        "risk": "long-running",
+        "description": "Start the CST solver asynchronously for the verified working project.",
+        "function": tool_start_simulation_async,
+    },
+    "stop-simulation": {
+        "category": "project_ops",
+        "risk": "session",
+        "description": "Stop the currently running CST solver.",
+        "function": tool_stop_simulation,
     },
     "transform-curve": {
         "category": "modeling",
@@ -2138,65 +2392,41 @@ TOOLS: dict[str, dict[str, Any]] = {
         "description": "Mirror a curve.",
         "function": tool_transform_curve,
     },
-    "create-horn-segment": {
+    "transform-shape": {
         "category": "modeling",
         "risk": "write",
-        "description": "Create a horn segment (outer cone - inner cone).",
-        "function": tool_create_horn_segment,
+        "description": "Mirror or rotate a geometry shape.",
+        "function": tool_transform_shape,
     },
-    "create-loft-sweep": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Create a loft sweep between two 2D profiles in one step.",
-        "function": tool_create_loft_sweep,
-    },
-    "create-hollow-sweep": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Create a hollow loft sweep with outer and inner walls.",
-        "function": tool_create_hollow_sweep,
-    },
-    "add-to-history": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Execute a raw VBA command via add_to_history for operations not covered by other tools.",
-        "function": tool_add_to_history,
-    },
-    "pick-face": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Select a face by ID for loft operations (zero-thickness entities only).",
-        "function": tool_pick_face,
-    },
-    "define-loft": {
-        "category": "modeling",
-        "risk": "write",
-        "description": "Execute a loft between pre-picked faces.",
-        "function": tool_define_loft,
-    },
-    "export-e-field": {
-        "category": "modeling",
+    "update-status": {
+        "category": "audit",
         "risk": "filesystem-write",
-        "description": "Export E-field data at a given frequency to ASCII.",
-        "function": tool_export_e_field,
+        "description": "Update the formal run status.json file.",
+        "function": tool_update_status,
     },
-    "export-surface-current": {
-        "category": "modeling",
-        "risk": "filesystem-write",
-        "description": "Export surface current data at a given frequency to ASCII.",
-        "function": tool_export_surface_current,
+    "verify-project-identity": {
+        "category": "project-identity",
+        "risk": "read",
+        "description": "Verify the expected project is the sole open CST project before writes.",
+        "function": tool_verify_project_identity,
     },
-    "export-voltage": {
-        "category": "modeling",
-        "risk": "filesystem-write",
-        "description": "Export voltage monitor data to ASCII.",
-        "function": tool_export_voltage,
+    "wait-project-unlocked": {
+        "category": "project-identity",
+        "risk": "read",
+        "description": "Wait for a project companion directory to have no .lok files.",
+        "function": tool_wait_project_unlocked,
     },
-    "define-parameters": {
+    "wait-simulation": {
         "category": "project_ops",
-        "risk": "write",
-        "description": "Batch-define multiple CST parameters using StoreParameters.",
-        "function": tool_define_parameters,
+        "risk": "long-running",
+        "description": "Poll is-simulation-running until the solver finishes or timeout expires.",
+        "function": tool_wait_simulation,
+    },
+    "stage-evidence": {
+        "category": "audit",
+        "risk": "read",
+        "description": "Capture CST project state snapshots and generate before/after comparison reports. Use --capture to snapshot, --compare to diff two snapshots into HTML.",
+        "function": tool_stage_evidence,
     },
 }
 
@@ -2207,6 +2437,7 @@ def _public_tool_record(name: str, record: dict[str, Any]) -> dict[str, Any]:
         "category": record["category"],
         "risk": record["risk"],
         "description": record["description"],
+        **_tool_governance(name, record),
     }
 
 
@@ -2242,7 +2473,11 @@ def _tool_args_template(tool_name: str) -> dict[str, Any] | None:
     template = ARGS_TEMPLATES.get(tool_name)
     if template is None:
         return None
-    return json.loads(json.dumps(template, ensure_ascii=False))
+    result = json.loads(json.dumps(template, ensure_ascii=False))
+    if _tool_requires_check_solid(tool_name):
+        result.setdefault("model_intent_path", "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\stages\\model_intent.json")
+        result.setdefault("check_solid_report_path", "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\stages\\check_solid_report.json")
+    return result
 
 
 def _invoke_tool(tool_name: str, tool_args: dict[str, Any]) -> dict[str, Any]:
@@ -2532,11 +2767,18 @@ def main() -> int:
             return _json_response(_workspace_required_error(workspace_info))
 
     if tool_name in TOOLS:
+        gate_error = _check_solid_gate_error(tool_name, tool_args)
+        if gate_error:
+            return _json_response(_with_audit(tool_name, tool_args, gate_error))
+
+    if tool_name in TOOLS:
         missing_modules = _missing_imports_for_tool(tool_name)
         if missing_modules:
             return _json_response(_production_dependency_error(tool_name, missing_modules))
 
-    return _json_response(_invoke_tool(tool_name, tool_args))
+    gov_fields = {"model_intent_path", "check_solid_report_path"}
+    clean_args = {k: v for k, v in tool_args.items() if k not in gov_fields}
+    return _json_response(_invoke_tool(tool_name, clean_args))
 
 
 if __name__ == "__main__":

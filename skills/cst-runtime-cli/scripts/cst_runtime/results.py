@@ -730,8 +730,11 @@ def plot_farfield_multi(
     main {{ padding: 24px; }}
     h1 {{ margin: 0 0 18px; font-size: 22px; }}
     .panel {{ margin: 0 0 28px; border-bottom: 1px solid #d1d5db; padding-bottom: 22px; }}
-    .plot {{ height: 62vh; min-height: 460px; }}
-    .meta {{ font-size: 13px; color: #4b5563; margin-bottom: 8px; }}
+    .plot3d {{ height: 68vh; min-height: 500px; }}
+    .meta {{ font-size: 13px; color: #4b5563; margin-bottom: 6px; }}
+    .toolbar {{ margin-bottom: 12px; display: flex; gap: 12px; align-items: center; }}
+    label {{ font-size: 13px; }}
+    select {{ padding: 4px 8px; }}
   </style>
 </head>
 <body>
@@ -746,14 +749,47 @@ panels.forEach((panel, idx) => {{
   const wrapper = document.createElement('section');
   wrapper.className = 'panel';
   const meta = panel.metadata || {{}};
-  wrapper.innerHTML = `<h2>${{panel.title}}</h2><div class="meta">${{panel.file_path}} | ${{meta.source_quantity || panel.zlabel}} | theta=${{meta.theta_count || panel.y.length}}, phi=${{meta.phi_count || panel.x.length}}</div><div id="plot-${{idx}}" class="plot"></div>`;
+  wrapper.innerHTML = `
+    <h2>${{panel.title}}</h2>
+    <div class="meta">${{panel.file_path}} | ${{meta.source_quantity || panel.zlabel}} | theta=${{meta.theta_count || panel.y.length}}, phi=${{meta.phi_count || panel.x.length}}</div>
+    <div class="toolbar"><label>View: <select id="view-${{idx}}"><option value="3d">3D Polar</option><option value="2d">2D Heatmap</option></select></label></div>
+    <div id="plot-${{idx}}" class="plot3d"></div>`;
   root.appendChild(wrapper);
-  Plotly.newPlot(`plot-${{idx}}`, [{{x: panel.x, y: panel.y, z: panel.z, type: 'heatmap', colorscale: 'Viridis', colorbar: {{title: panel.zlabel}}}}], {{
-    title: panel.title,
-    xaxis: {{title: panel.xlabel}},
-    yaxis: {{title: panel.ylabel}},
-    margin: {{t: 60, r: 28, b: 56, l: 72}}
-  }}, {{responsive: true, displaylogo: false}});
+  const D2R = Math.PI / 180;
+  const theta = panel.y, phi = panel.x, gain = panel.z;
+  function to3D() {{
+    const nt = theta.length, np = phi.length;
+    const x = [], y = [], z = [];
+    for (let i = 0; i < nt; i++) {{
+      const th = theta[i] * D2R;
+      const rowX = [], rowY = [], rowZ = [];
+      for (let j = 0; j < np; j++) {{
+        const ph = phi[j] * D2R, r = Math.pow(10, gain[i][j] / 20);
+        rowX.push(r * Math.sin(th) * Math.cos(ph));
+        rowY.push(r * Math.sin(th) * Math.sin(ph));
+        rowZ.push(r * Math.cos(th));
+      }}
+      x.push(rowX); y.push(rowY); z.push(rowZ);
+    }}
+    return [{{
+      type: 'surface', x, y, z,
+      colorscale: 'Viridis', colorbar: {{title: panel.zlabel}},
+      contours: {{z: {{show: true, usecolormap: true, highlightcolor: '#fff', project: {{z: true}}}}}}
+    }}];
+  }}
+  function to2D() {{
+    return [{{type: 'heatmap', x: phi, y: theta, z: gain, colorscale: 'Viridis', colorbar: {{title: panel.zlabel}}}}];
+  }}
+  function draw(view) {{
+    const data = view === '3d' ? to3D() : to2D();
+    const layout = view === '3d'
+      ? {{scene: {{xaxis: {{title: 'X'}}, yaxis: {{title: 'Y'}}, zaxis: {{title: 'Z'}},
+             camera: {{eye: {{x: 1.8, y: 1.8, z: 0.8}}}}}}, margin: {{t: 12, r: 12, b: 12, l: 12}}}}
+      : {{xaxis: {{title: 'Phi (deg)'}}, yaxis: {{title: 'Theta (deg)'}}, margin: {{t: 40, r: 28, b: 56, l: 72}}}};
+    Plotly.react(`plot-${{idx}}`, data, layout, {{responsive: true, displaylogo: false}});
+  }}
+  draw('3d');
+  document.getElementById(`view-${{idx}}`).addEventListener('change', e => draw(e.target.value));
 }});
 </script>
 </body>
@@ -1059,12 +1095,21 @@ farfields.forEach(item => {{
 }});
 function drawFarfield(runId) {{
   const item = farfields.find(entry => Number(entry.run_id) === Number(runId)) || farfields[0];
-  Plotly.newPlot('farfieldPlot', [{{x: item.x, y: item.y, z: item.z, type: 'heatmap', colorscale: 'Viridis', colorbar: {{title: item.zlabel}}}}], {{
-    title: item.title,
-    xaxis: {{title: item.xlabel}},
-    yaxis: {{title: item.ylabel}},
-    margin: {{t: 56, r: 28, b: 56, l: 72}}
-  }}, {{responsive: true, displaylogo: false}});
+      const D2R = Math.PI / 180, th = item.y, ph = item.x, g = item.z;
+      const nt = th.length, np = ph.length;
+      const sx = [], sy = [], sz = [];
+      for (let i = 0; i < nt; i++) {{ const t = th[i] * D2R; const rx = [], ry = [], rz = [];
+        for (let j = 0; j < np; j++) {{ const p = ph[j] * D2R, r = Math.pow(10, g[i][j] / 20);
+          rx.push(r * Math.sin(t) * Math.cos(p)); ry.push(r * Math.sin(t) * Math.sin(p)); rz.push(r * Math.cos(t)); }}
+        sx.push(rx); sy.push(ry); sz.push(rz); }}
+      Plotly.newPlot('farfieldPlot', [{{
+        type: 'surface', x: sx, y: sy, z: sz, colorscale: 'Viridis', colorbar: {{title: item.zlabel}},
+        contours: {{z: {{show: true, usecolormap: true, highlightcolor: '#fff', project: {{z: true}}}}}}
+      }}], {{
+        scene: {{xaxis: {{title: 'X'}}, yaxis: {{title: 'Y'}}, zaxis: {{title: 'Z'}},
+                camera: {{eye: {{x: 1.8, y: 1.8, z: 0.8}}}}}},
+        margin: {{t: 12, r: 12, b: 12, l: 12}}
+      }}, {{responsive: true, displaylogo: false}});
 }}
 select.addEventListener('change', event => drawFarfield(event.target.value));
 drawFarfield(selectedRunId);
