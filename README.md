@@ -1,36 +1,37 @@
-﻿# cst-runtime-cli
+[English](README.en.md) | **中文**
 
-CST Studio Suite CLI infrastructure layer. Provides modeling, simulation,
-results reading, and farfield tools through a single CLI entry point.
+# cst-runtime-cli
+
+CST Studio Suite CLI 基础设施层。通过统一 CLI 入口提供建模、仿真、结果读取和远场工具。
 
 ```powershell
 python <skill-root>\scripts\cst_runtime_cli.py health-check --auto-fix true
 python <skill-root>\scripts\cst_runtime_cli.py list-tools
 ```
 
-## Quick start
+## 快速开始
 
-Requires **Python 3.13+**, **uv**, and **CST Studio Suite 2026**.
+需要 **Python 3.13+**、**uv** 和 **CST Studio Suite 2026**。
 
 ```powershell
-# Auto-detect and configure CST Python libraries
+# 自动检测并配置 CST Python 库
 python <skill-root>\scripts\cst_runtime_cli.py health-check --auto-fix true
 
-# Discover available tools
+# 发现可用工具
 python <skill-root>\scripts\cst_runtime_cli.py list-tools
 python <skill-root>\scripts\cst_runtime_cli.py list-pipelines
 python <skill-root>\scripts\cst_runtime_cli.py describe-tool --tool change-parameter
 ```
 
-See [`skills/cst-runtime-cli/SKILL.md`](skills/cst-runtime-cli/SKILL.md) for full documentation.
+完整文档见 [`skills/cst-runtime-cli/SKILL.md`](skills/cst-runtime-cli/SKILL.md)。
 
-## What's included
+## 包含内容
 
-- **105 CLI tools**: session management, modeling, simulation, results, farfield
-- **Self-check**: `health-check` diagnoses environment, `install-cst-libraries` configures CST
-- **Evidence capture**: `stage-evidence` captures before/after snapshots for verification
-- **39 contract tests**: validate JSON output format without starting CST
+- **105 个 CLI 工具**：session 管理、建模、仿真、结果、远场
+- **自检**：`health-check` 诊断环境，`install-cst-libraries` 配置 CST
+- **证据捕获**：`stage-evidence` 捕获操作前后快照用于验证
+- **39 个合约测试**：不启动 CST 即可验证 JSON 输出格式
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT License. 详见 [LICENSE](LICENSE)。
