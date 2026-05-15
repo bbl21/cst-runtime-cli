@@ -2,6 +2,7 @@
 name = "cst-runtime-cli"
 version = "0.1.0"
 description = "CST Studio Suite interaction infrastructure layer - CLI tools for modeling, simulation, optimization, and results analysis"
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [

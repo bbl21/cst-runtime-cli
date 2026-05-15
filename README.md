@@ -33,5 +33,4 @@ See [`skills/cst-runtime-cli/SKILL.md`](skills/cst-runtime-cli/SKILL.md) for ful
 
 ## License
 
-This repository contains the `cst-runtime-cli` skill package only.
-Internal development docs, project planning, and tools are excluded from this public repo.
+MIT License. See [LICENSE](LICENSE) for details.
