@@ -1,0 +1,49 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "13"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.29"
+     .TanDFreq "10.0"
+     .TanDGiven "True"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1800"
+     .ThermalType "Normal"
+     .ThermalConductivity "1.0"
+     .SpecificHeat "1500", "J/K/kg"
+     .Colour "0.501961", "0.501961", "0"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 13
+Mu              = 1
+Electric tand   = 0.29 (Const. fit)
+Rho             = 1800 [kg/m^3]
+Thermal cond.   = 1 [W/K/m]
+Specific heat   = 1500 [J/K/kg]
+Diffusivity     = 3.7037e-007 [m^2/s]
+
+[Description]
+Sandy soil with 18.8% water
+EM(HF) properties measured @ 10GHz

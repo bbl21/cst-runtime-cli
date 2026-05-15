@@ -15,9 +15,6 @@ wheels/
 !cst_runtime/
 !cst_runtime/*.py
 *.mat
-$run/
-backup/
-output/
 *.log
 *.db
 *.sqlite
@@ -44,14 +41,8 @@ tasks/
 tmp/
 plot_previews/
 *_args.json
-calculate_s11.py
-startup_prototype_optimizer.ps1
 opencode.json
 .codex/*.bak
-
-# Local historical/non-business documentation
-docs/archive/
-docs/handoffs/
 
 # IDE/tool caches
 .trae/
@@ -68,9 +59,18 @@ docs/handoffs/
 # Docs (manually curated commits only)
 docs/
 
-# Prototype optimizer data (large workspace files)
-prototype_optimizer/data/
+# Legacy items moved to D:\cst_mcp_dump\
+backup/
+prototype_optimizer/
+mcp/
+output/
+$run/
 archive/tools-legacy-*/
 
-# Materials library (reference data, not code)
-Materials/
+# Dev process files (not part of the skill distribution)
+archive/
+tools/
+AGENTS.md
+MEMORY.md
+cst_process_allowlist.json
+opencode.json

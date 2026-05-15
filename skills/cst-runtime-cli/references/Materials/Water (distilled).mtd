@@ -1,0 +1,50 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "78.4"
+     .Mu "1.0"
+     .Kappa "5.55e-006"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "998"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.6"
+     .SpecificHeat "4184.2", "J/K/kg"
+     .ThermalExpansionRateVolume "207"
+     .Colour "0.501961", "0.501961", "1"
+     .Wireframe "False"
+     .Transparency "22"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 78.4
+Mu              = 1
+Electric cond.  = 5.55e-006 [S/m]
+Rho             = 998 [kg/m^3]
+Thermal cond.   = 0.6 [W/K/m]
+Specific heat   = 4184.2 [J/K/kg]
+Diffusivity     = 1.43143e-007 [m^2/s]
+
+[Description]
+Ultra-pure water @ 25 degrees Celsius
+EM(HF) properties measured @ 2.45GHz

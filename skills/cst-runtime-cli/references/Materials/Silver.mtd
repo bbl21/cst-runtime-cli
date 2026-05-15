@@ -1,0 +1,86 @@
+[Definition]
+     .FrqType "static"
+     .Type "Normal"
+     .SetMaterialUnit "Hz", "mm"
+     .Epsilon "1"
+     .Mu "1.0"
+     .Kappa "6.3012e007"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .FrqType "all"
+     .Type "Lossy metal"
+     .MaterialUnit "Frequency", "GHz"
+     .MaterialUnit "Geometry", "mm"
+     .MaterialUnit "Time", "s"
+     .MaterialUnit "Temperature", "Kelvin"
+     .Mu "1.0"
+     .Sigma "6.3012e007"
+     .Rho "10500.0"
+     .ThermalType "Normal"
+     .ThermalConductivity "429"
+     .SpecificHeat "230", "J/K/kg"
+     .MetabolicRate "0"
+     .BloodFlow "0"
+     .VoxelConvection "0"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "76"
+     .PoissonsRatio "0.37"
+     .ThermalExpansionRate "20"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .Colour "1", "1", "0"
+     .Wireframe "False"
+     .Reflection "False"
+     .Allowoutline "True"
+     .Transparentoutline "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: static
+Normal
+
+[Type]
+FrqType: all
+Lossy metal
+
+[Attributes]
+FrqType: static
+Type            = Normal
+Epsilon         = 1
+Mu              = 1
+Electric cond.  = 6.3012e+007 [S/m]
+
+[Attributes]
+FrqType: all
+Type            = Lossy metal
+Mu              = 1
+Electric cond.  = 6.3012e+007 [S/m]
+Rho             = 10500 [kg/m^3]
+Thermal cond.   = 429 [W/K/m]
+Specific heat   = 230 [J/K/kg]
+Diffusivity     = 0.00017764 [m^2/s]
+Young's modulus = 76 [kN/mm^2]
+Poisson's ratio = 0.37
+Thermal expan.  = 20 [1e-6/K]
+
+[Description]
+Chemical symbol: Ag

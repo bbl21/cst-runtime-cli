@@ -164,7 +164,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cst-mcp"
+name = "cst-runtime-cli"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
@@ -174,13 +174,13 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cst-studio-suite-link", editable = "../../../../Program Files/CST Studio Suite 2026/AMD64/python_cst_libraries" },
+    { name = "cst-studio-suite-link", editable = "C:/Program Files/CST Studio Suite 2026/AMD64/python_cst_libraries" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.25.0" },
 ]
 
 [[package]]
 name = "cst-studio-suite-link"
-source = { editable = "../../../../Program Files/CST Studio Suite 2026/AMD64/python_cst_libraries" }
+source = { editable = "C:/Program Files/CST Studio Suite 2026/AMD64/python_cst_libraries" }
 
 [[package]]
 name = "h11"

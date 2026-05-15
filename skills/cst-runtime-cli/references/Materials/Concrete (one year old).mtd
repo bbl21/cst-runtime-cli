@@ -1,0 +1,63 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "1"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .AddGeneralDispersionValueEps "0,58", "5,6", "0,25"
+     .AddGeneralDispersionValueEps "1,36", "5,5", "0,2"
+     .AddGeneralDispersionValueEps "1,94", "5,5", "0,14"
+     .AddGeneralDispersionValueEps "2,52", "5,5", "0,12"
+     .AddGeneralDispersionValueEps "3,1", "5,5", "0,11"
+     .AddGeneralDispersionValueEps "3,68", "5,55", "0,09"
+     .UseGeneralDispersionEps "True"
+     .UseGeneralDispersionMu "False"
+     .Rho "2400"
+     .ThermalType "Normal"
+     .ThermalConductivity "1.7"
+     .SpecificHeat "800", "J/K/kg"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "30"
+     .PoissonsRatio "0.2"
+     .ThermalExpansionRate "13"
+     .Colour "0", "1", "1"
+     .Wireframe "False"
+     .Reflection "False"
+     .Allowoutline "True"
+     .Transparentoutline "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Dispersive eps  = 1st order model (fit)
+Mu              = 1
+Rho             = 2400 [kg/m^3]
+Thermal cond.   = 1.7 [W/K/m]
+Specific heat   = 800 [J/K/kg]
+Diffusivity     = 8.85417e-007 [m^2/s]
+Young's modulus = 30 [kN/mm^2]
+Poisson's ratio = 0.2
+Thermal expan.  = 13 [1e-6/K]
+
+[Description]
+

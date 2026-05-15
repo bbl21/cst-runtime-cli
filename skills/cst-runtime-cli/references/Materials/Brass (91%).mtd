@@ -1,0 +1,70 @@
+[Definition]
+     .FrqType "static"
+     .Type "Normal"
+     .SetMaterialUnit "Hz", "mm"
+     .Epsilon "1"
+     .Mu "1.0"
+     .Kappa "2.74e+007"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .FrqType "all"
+     .Type "Lossy metal"
+     .SetMaterialUnit "GHz", "mm"
+     .Mu "1.0"
+     .Kappa "2.74e+007"
+     .Rho "8500.0"
+     .ThermalType "Normal"
+     .ThermalConductivity "109"
+     .SpecificHeat "380", "J/K/kg"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "102"
+     .PoissonsRatio "0.343"
+     .ThermalExpansionRate "20"
+     .Colour "1", "1", "0"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: static
+Normal
+
+[Type]
+FrqType: all
+Lossy metal
+
+[Attributes]
+FrqType: static
+Type            = Normal
+Epsilon         = 1
+Mu              = 1
+Electric cond.  = 2.74e+007 [S/m]
+
+[Attributes]
+FrqType: all
+Type            = Lossy metal
+Mu              = 1
+Electric cond.  = 2.74e+007 [S/m]
+Rho             = 8500 [kg/m^3]
+Thermal cond.   = 109 [W/K/m]
+Specific heat   = 380 [J/K/kg]
+Diffusivity     = 3.37461e-005 [m^2/s]
+Young's modulus = 102 [kN/mm^2]
+Poisson's ratio = 0.343
+Thermal expan.  = 20 [1e-6/K]
+
+[Description]
+Values referred to 91% - 9% brass

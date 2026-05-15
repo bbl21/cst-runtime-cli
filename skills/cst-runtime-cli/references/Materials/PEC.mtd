@@ -1,0 +1,24 @@
+[Definition]
+     .FrqType "all"
+     .Type "PEC"
+     .SetMaterialUnit "Hz", "mm"
+     .Epsilon "1"
+     .Mu "1"
+     .Rho "0"
+     .ThermalType "PTC"
+     .SetActiveMaterial "all"
+     .Colour "0.8", "0.8", "0.8"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+PEC
+
+[Attributes]
+FrqType: all
+Type            = PEC
+
+[Description]
+Perfect electric conductor

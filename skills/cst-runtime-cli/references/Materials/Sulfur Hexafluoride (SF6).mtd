@@ -1,0 +1,44 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "1.002026"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1330"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.012"
+     .Colour "0.752941", "0.752941", "0.752941"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 1.00203
+Mu              = 1
+Rho             = 1330 [kg/m^3]
+Thermal cond.   = 0.012 [W/K/m]
+
+[Description]
+Chemical symbol: SF6

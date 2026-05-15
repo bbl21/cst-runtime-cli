@@ -1,0 +1,70 @@
+[Definition]
+     .FrqType "static"
+     .Type "Normal"
+     .SetMaterialUnit "Hz", "mm"
+     .Epsilon "1"
+     .Mu "1.0"
+     .Kappa "7.6336e+006"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .FrqType "all"
+     .Type "Lossy metal"
+     .SetMaterialUnit "GHz", "mm"
+     .Mu "1.0"
+     .Kappa "7.6336e+006"
+     .Rho "16650.0"
+     .ThermalType "Normal"
+     .ThermalConductivity "57.5"
+     .SpecificHeat "140", "J/K/kg"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "186"
+     .PoissonsRatio "0.35"
+     .ThermalExpansionRate "6.6"
+     .Colour "1", "1", "0"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: static
+Normal
+
+[Type]
+FrqType: all
+Lossy metal
+
+[Attributes]
+FrqType: static
+Type            = Normal
+Epsilon         = 1
+Mu              = 1
+Electric cond.  = 7.6336e+006 [S/m]
+
+[Attributes]
+FrqType: all
+Type            = Lossy metal
+Mu              = 1
+Electric cond.  = 7.6336e+006 [S/m]
+Rho             = 16650 [kg/m^3]
+Thermal cond.   = 57.5 [W/K/m]
+Specific heat   = 140 [J/K/kg]
+Diffusivity     = 2.46675e-005 [m^2/s]
+Young's modulus = 186 [kN/mm^2]
+Poisson's ratio = 0.35
+Thermal expan.  = 6.6 [1e-6/K]
+
+[Description]
+Chemical symbol: Ta

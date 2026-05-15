@@ -1,0 +1,56 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "12"
+     .Mu "1"
+     .Kappa "1.0e005"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "2250"
+     .ThermalType "Normal"
+     .ThermalConductivity "24"
+     .SpecificHeat "710", "J/K/kg"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "4.8"
+     .PoissonsRatio "0.2"
+     .ThermalExpansionRate "7.9"
+     .Colour "0", "0.25098", "0.25098"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 12
+Mu              = 1
+Electric cond.  = 100000 [S/m]
+Rho             = 2250 [kg/m^3]
+Thermal cond.   = 24 [W/K/m]
+Specific heat   = 710 [J/K/kg]
+Diffusivity     = 1.50235e-005 [m^2/s]
+Young's modulus = 4.8 [kN/mm^2]
+Poisson's ratio = 0.2
+Thermal expan.  = 7.9 [1e-6/K]
+
+[Description]
+Simplified model, as
+graphite is anisotropic.

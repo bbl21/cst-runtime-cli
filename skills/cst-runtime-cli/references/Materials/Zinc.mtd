@@ -1,0 +1,54 @@
+[Definition]
+     .FrqType "all"
+     .Type "Lossy metal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "1"
+     .Mu "1"
+     .Kappa "1.69e+007"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "7100"
+     .ThermalType "Normal"
+     .ThermalConductivity "116"
+     .SpecificHeat "390", "J/K/kg"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "96.5"
+     .PoissonsRatio "0.32"
+     .ThermalExpansionRate "31"
+     .Colour "0.25098", "0.501961", "0.501961"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Lossy metal
+
+[Attributes]
+FrqType: all
+Type            = Lossy metal
+Mu              = 1
+Electric cond.  = 1.69e+007 [S/m]
+Rho             = 7100 [kg/m^3]
+Thermal cond.   = 116 [W/K/m]
+Specific heat   = 390 [J/K/kg]
+Diffusivity     = 4.18924e-005 [m^2/s]
+Young's modulus = 96.5 [kN/mm^2]
+Poisson's ratio = 0.32
+Thermal expan.  = 31 [1e-6/K]
+
+[Description]
+Chemical symbol: Zn

@@ -1,0 +1,83 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .MaterialUnit "Frequency", "Hz"
+     .MaterialUnit "Geometry", "m"
+     .MaterialUnit "Time", "s"
+     .MaterialUnit "Temperature", "Kelvin"
+     .Epsilon "1.00059"
+     .Mu "1.0"
+     .Sigma "0.0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstSigma"
+     .EnableUserConstTanDModelOrderEps "False"
+     .ConstTanDModelOrderEps "1"
+     .SetElParametricConductivity "False"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .SigmaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstSigma"
+     .EnableUserConstTanDModelOrderMu "False"
+     .ConstTanDModelOrderMu "1"
+     .SetMagParametricConductivity "False"
+     .DispModelEps  "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "Nth Order"
+     .MaximalOrderNthModelFitEps "10"
+     .ErrorLimitNthModelFitEps "0.1"
+     .DispersiveFittingSchemeMu "Nth Order"
+     .MaximalOrderNthModelFitMu "10"
+     .ErrorLimitNthModelFitMu "0.1"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .NonlinearMeasurementError "1e-1"
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .Rho "1.204"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.026"
+     .SpecificHeat "1005", "J/K/kg"
+     .DynamicViscosity "1.84e-5"
+     .Emissivity "0.0"
+     .MetabolicRate "0"
+     .BloodFlow "0"
+     .VoxelConvection "0"
+     .MechanicsType "Unused"
+     .Colour "0.682353", "0.717647", "1" 
+     .Wireframe "False" 
+     .Reflection "False" 
+     .Allowoutline "True" 
+     .Transparentoutline "False" 
+     .Transparency "0" 
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 1.00059
+Mu              = 1
+Rho             = 1.204 [kg/m^3]
+Thermal cond.   = 0.026 [W/K/m]
+Dyn. viscosity  = 1.84e-005 [Pa.s]
+Specific heat   = 1005 [J/K/kg]
+Diffusivity     = 2.14872e-005 [m^2/s]
+
+[Description]
+This material was created for use in CHT applications.
+EM properties need to be verified or added if the material is used in an EM simulation.
+
+
+[Folder]
+Fluid

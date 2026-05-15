@@ -1,1 +1,0 @@
-Get-Process | Where-Object {($_.ProcessName -like '*CST*') -or ($_.ProcessName -like '*3DS*')} | Select-Object Id, ProcessName | Format-Table -AutoSize

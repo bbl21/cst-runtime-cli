@@ -1,0 +1,54 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "3"
+     .Mu "1"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "930"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.16"
+     .SpecificHeat "2000", "J/K/kg"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "0.05"
+     .PoissonsRatio "0.49"
+     .ThermalExpansionRate "77"
+     .Colour "0.501961", "0.501961", "0.501961"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 3
+Mu              = 1
+Rho             = 930 [kg/m^3]
+Thermal cond.   = 0.16 [W/K/m]
+Specific heat   = 2000 [J/K/kg]
+Diffusivity     = 8.60215e-008 [m^2/s]
+Young's modulus = 0.05 [kN/mm^2]
+Poisson's ratio = 0.49
+Thermal expan.  = 77 [1e-6/K]
+
+[Description]
+

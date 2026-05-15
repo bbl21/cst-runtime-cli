@@ -1,13 +1,15 @@
-﻿# CST_MCP
+﻿# cst-runtime-cli
 
-CST_MCP 是一套面向 **LLM 主导、人工监督** 的 CST 参数化优化执行系统。项目当前重点不是全自动 3D 建模，而是把已有参数化 CST 工程的优化流程做成可迁移、可审计、低上下文可执行的正式底座。
+**可安装的 CST 交互底层基础设施。**
+
+通过统一的 CLI 接口封装 CST Studio Suite 的 Python API 和 VBA 接口，为反馈式可靠建模、电磁仿真优化提供经过实测验证的构建块。
 
 当前系统已经覆盖任务创建、工程副本管理、参数读写、仿真启动、仿真等待、结果刷新、S11/远场导出、HTML 可视化、状态审计和知识沉淀。
 
 ## 当前成果
 
 - **统一生产链路**：标准任务与 run 结构已固定，参考工程只读，所有实验在独立工作副本中执行。
-- **MCP + CLI 双层协同**：MCP 保留为稳定生产链与兼容 adapter，`cst_runtime` CLI 作为低上下文、可迁移的 agent 调用界面。
+- **CLI-only 正式生产链**：所有操作通过 `python <skill-root>\scripts\cst_runtime_cli.py` 统一入口执行。
 - **低上下文自学习**：agent 可通过 `doctor -> usage-guide -> list-tools -> list-pipelines -> describe-pipeline -> describe-tool -> args-template` 自学习工具和管道。
 - **结果能力成型**：已支持 results run_id 读取、1D/S11 JSON 导出、S11 HTML 对比、远场 Realized Gain/Gain/Directivity 导出与预览。
 - **管道操作可发现**：`list-pipelines`、`describe-pipeline`、`pipeline-template` 提供常用链路配方，不把流程封成不可审计黑盒。
@@ -40,23 +42,17 @@ tasks/task_xxx_slug/
 
 项目依赖 `uv`、Python 3.13+、CST Studio Suite 2026。
 
-首次使用前，必须先把 CST Studio Suite 自带的 Python 本地库安装到当前环境，否则无法导入 `cst.interface` / `cst.results`：
+首次使用前运行自动环境自检：
 
 ```powershell
-pip install --editable "<CST_STUDIO_SUITE_FOLDER_BIN64>/python_cst_libraries"
+python <skill-root>\scripts\cst_runtime_cli.py health-check --auto-fix true
 ```
 
-例如默认安装位置通常类似：
-
-```powershell
-pip install --editable "C:\Program Files\CST Studio Suite 2026\AMD64\python_cst_libraries"
-```
-
-安装后用 `doctor` 检查 CST Python 库是否可导入。
+这会自动扫描 CST 安装路径、配置 `pyproject.toml`、验证 `cst.interface` / `cst.results` 可导入。
 
 低上下文 agent 使用本项目时，先读 Skill，再用 CLI 自学习工具和管道：
 
-1. 阅读 [`skills/cst-runtime-cli-optimization/SKILL.md`](skills/cst-runtime-cli-optimization/SKILL.md)。
+1. 阅读 [`skills/cst-runtime-cli/SKILL.md`](skills/cst-runtime-cli/SKILL.md)。
 2. 通过 Skill 内入口运行 CLI 发现命令；可在仓库根目录，也可在已初始化工作区。
 3. 对每个不熟悉的工具先执行 `describe-tool` 和 `args-template`。
 4. 对每条不熟悉的链路先执行 `describe-pipeline` 和 `pipeline-template`。
@@ -115,26 +111,26 @@ python <skill-root>\scripts\cst_runtime_cli.py pipeline-template --pipeline late
 
 ## 展示案例
 
-- 近轴方向图平坦度优化：[`docs/validations/showcase-flatness-optimization.md`](docs/validations/showcase-flatness-optimization.md)
+- 近轴方向图平坦度优化：[`validations/showcase-flatness-optimization.md`](validations/showcase-flatness-optimization.md)
 
 该案例展示了系统如何从 baseline 出发，通过目标函数重定义、单参数探针、负例排除和局部细化，把多频点近轴 flatness 的 worst-case 从 `18.423 dB` 优化到 `14.107 dB`。案例只保留脱敏后的指标和决策链，不包含 CST 原始工程或大结果文件。
 
 ## 关键文档
 
 - 项目目标与阶段计划：[`docs/project-goals-and-plan.md`](docs/project-goals-and-plan.md)
-- 当前优先清单：[`docs/current-priority-checklist.md`](docs/current-priority-checklist.md)
+- 当前优先清单：[`planning/current-priority-checklist.md`](planning/current-priority-checklist.md)
 - 文档导航：[`docs/topic-index.md`](docs/topic-index.md)
 - CLI agent 使用指南：[`docs/runtime/cst-runtime-agent-usage.md`](docs/runtime/cst-runtime-agent-usage.md)
 - Runtime 原生管道：[`docs/runtime/cst-runtime-native-pipeline.md`](docs/runtime/cst-runtime-native-pipeline.md)
 - CLI 架构决策：[`docs/architecture/cli-architecture-decision.md`](docs/architecture/cli-architecture-decision.md)
-- Runtime Skill：[`skills/cst-runtime-cli-optimization/SKILL.md`](skills/cst-runtime-cli-optimization/SKILL.md)
+- Runtime Skill：[`skills/cst-runtime-cli/SKILL.md`](skills/cst-runtime-cli/SKILL.md)
 
 ## 当前边界
 
 当前 P0 底座已验证，但系统仍按阶段推进：
 
 - 不把 CLI 当成第二条生产链；它是 `cst_runtime` 能力层的主要低上下文调用界面。
-- MCP 仍保留为稳定生产链和兼容 adapter。
+- MCP 已完全退役，不再作为正式生产链或新功能承载层。
 - 不把自然语言直接生成 3D 模型作为当前阶段目标。
 - 进入 P1 优化指导原型前，应继续保持底座稳定、可审计、可迁移。
 

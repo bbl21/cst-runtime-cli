@@ -1,0 +1,56 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "GHz", "mm"
+     .Epsilon "12.94"
+     .Mu "1.0"
+     .Kappa "0.0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .KappaM "0.0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstKappa"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "5320.0"
+     .ThermalType "Normal"
+     .ThermalConductivity "54"
+     .SpecificHeat "330", "J/K/kg"
+     .SetActiveMaterial "all"
+     .MechanicsType "Isotropic"
+     .YoungsModulus "85"
+     .PoissonsRatio "0.31"
+     .ThermalExpansionRate "5.8"
+     .Colour "0.75", "0.95", "0.85"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 12.94
+Mu              = 1
+Rho             = 5320 [kg/m^3]
+Thermal cond.   = 54 [W/K/m]
+Specific heat   = 330 [J/K/kg]
+Diffusivity     = 3.07587e-005 [m^2/s]
+Young's modulus = 85 [kN/mm^2]
+Poisson's ratio = 0.31
+Thermal expan.  = 5.8 [1e-6/K]
+
+[Description]
+Chemical symbol: GaAs
+EM(HF) properties measured @ 10GHz

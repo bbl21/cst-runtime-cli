@@ -1,0 +1,48 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .SetMaterialUnit "Hz", "mm"
+     .Epsilon "1.00059"
+     .Mu "1.0"
+     .Kappa "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstKappa"
+     .KappaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstKappa"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "General 1st"
+     .DispersiveFittingSchemeMu "General 1st"
+     .UseGeneralDispersionEps "False"
+     .UseGeneralDispersionMu "False"
+     .Rho "1.204"
+     .ThermalType "Normal"
+     .ThermalConductivity "0.026"
+     .SpecificHeat "1005", "J/K/kg"
+     .SetActiveMaterial "all"
+     .Colour "0.682353", "0.717647", "1"
+     .Wireframe "False"
+     .Transparency "0"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Epsilon         = 1.00059
+Mu              = 1
+Rho             = 1.204 [kg/m^3]
+Thermal cond.   = 0.026 [W/K/m]
+Specific heat   = 1005 [J/K/kg]
+Diffusivity     = 2.14872e-005 [m^2/s]
+
+[Description]
+Air @ 20 degrees Celsius and sea level.

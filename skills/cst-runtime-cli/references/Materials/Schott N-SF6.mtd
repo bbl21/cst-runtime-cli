@@ -1,0 +1,86 @@
+[Definition]
+     .FrqType "all"
+     .Type "Normal"
+     .MaterialUnit "Frequency", "GHz"
+     .MaterialUnit "Geometry", "mm"
+     .MaterialUnit "Time", "ns"
+     .MaterialUnit "Temperature", "Kelvin"
+     .Epsilon "1"
+     .Mu "1"
+     .Sigma "0"
+     .TanD "0.0"
+     .TanDFreq "0.0"
+     .TanDGiven "False"
+     .TanDModel "ConstTanD"
+     .EnableUserConstTanDModelOrderEps "False"
+     .ConstTanDModelOrderEps "1"
+     .SetElParametricConductivity "False"
+     .ReferenceCoordSystem "Global"
+     .CoordSystemType "Cartesian"
+     .SigmaM "0"
+     .TanDM "0.0"
+     .TanDMFreq "0.0"
+     .TanDMGiven "False"
+     .TanDMModel "ConstTanD"
+     .EnableUserConstTanDModelOrderMu "False"
+     .ConstTanDModelOrderMu "1"
+     .SetMagParametricConductivity "False"
+     .DispModelEps "None"
+     .DispModelMu "None"
+     .DispersiveFittingSchemeEps "Nth Order"
+     .MaximalOrderNthModelFitEps "10"
+     .ErrorLimitNthModelFitEps "0.00025"
+     .UseOnlyDataInSimFreqRangeNthModelEps "False"
+     .DispersiveFittingSchemeMu "Nth Order"
+     .MaximalOrderNthModelFitMu "10"
+     .ErrorLimitNthModelFitMu "0.1"
+     .UseOnlyDataInSimFreqRangeNthModelMu "False"
+     .DispersiveFittingFormatEps "Real_Tand"
+     .AddDispersionFittingValueEps "1.097",	"13.3",		"1.9E-3",	"1.0"
+     .AddDispersionFittingValueEps "1.859",	"13.3",		"2.1E-3",	"1.0"
+     .AddDispersionFittingValueEps "4.844",	"13.3",		"2.9E-3",	"1.0"     
+     .AddDispersionFittingValueEps "1.000",	"13.3",		"0.0018",	"1.0"
+     .AddDispersionFittingValueEps "1.500",	"13.3",		"0.0020",	"1.0"
+     .AddDispersionFittingValueEps "2.000",	"13.3",		"0.0022",	"1.0"
+     .AddDispersionFittingValueEps "2.500",	"13.3",		"0.0023",	"1.0"
+     .AddDispersionFittingValueEps "3.000",	"13.3",		"0.0025",	"1.0"
+     .AddDispersionFittingValueEps "3.500",	"13.3",		"0.0026",	"1.0"
+     .AddDispersionFittingValueEps "4.000",	"13.3",		"0.0027",	"1.0"
+     .AddDispersionFittingValueEps "4.500",	"13.3",		"0.0028",	"1.0"
+     .AddDispersionFittingValueEps "5.000",	"13.3",		"0.0029",	"1.0"
+     .UseGeneralDispersionEps "True"
+     .UseGeneralDispersionMu "False"
+     .NLAnisotropy "False"
+     .NLAStackingFactor "1"
+     .NLADirectionX "1"
+     .NLADirectionY "0"
+     .NLADirectionZ "0"
+     .Rho "0"
+     .ThermalType "Normal"
+     .ThermalConductivity "0"
+     .SpecificHeat "0", "J/K/kg"
+     .MetabolicRate "0"
+     .BloodFlow "0"
+     .VoxelConvection "0"
+     .MechanicsType "Unused"
+     .Colour "0.501961", "1", "1"
+     .Wireframe "False"
+     .Reflection "True"
+     .Allowoutline "True"
+     .Transparentoutline "False"
+     .Transparency "35"
+     .Create
+
+[Type]
+FrqType: all
+Normal
+
+[Attributes]
+FrqType: all
+Type            = Normal
+Dispersive eps  = Nth order model, N=2 (fit)
+Mu              = 1
+
+[Description]
+EM(HF) properties measured @ 1.097, 1.859 and 4.844 GHz
+Interpolated values based on Schott analytic model for the other frequencies
