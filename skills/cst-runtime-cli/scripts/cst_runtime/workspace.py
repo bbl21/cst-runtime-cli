@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -169,6 +170,30 @@ def init_workspace(workspace: str = "") -> dict[str, Any]:
         return error_response("init_workspace_failed", str(exc), runtime_module="cst_runtime.workspace")
 
 
+def _project_companion(path: Path) -> Path | None:
+    if path.suffix.lower() == ".prj":
+        comp = path.parent
+    elif path.suffix.lower() == ".cst":
+        comp = path.with_suffix("")
+    else:
+        return None
+    return comp if comp.is_dir() else None
+
+
+def _copy_project(src: Path, dst: Path) -> None:
+    shutil.copy2(src, dst)
+    comp = _project_companion(src)
+    if comp:
+        shutil.copytree(comp, dst.with_suffix(""), dirs_exist_ok=True)
+
+
+def _move_project(src: Path, dst: Path) -> None:
+    shutil.move(str(src), str(dst))
+    comp = _project_companion(src)
+    if comp:
+        shutil.move(str(comp), str(dst.with_suffix("")))
+
+
 def safe_task_id(task_id: str) -> str:
     value = task_id.strip()
     if not value:
@@ -206,6 +231,23 @@ def init_task(
             )
         task_dir.mkdir(parents=True, exist_ok=True)
         runs_dir.mkdir(parents=True, exist_ok=True)
+
+        # Import source project into refs/ if outside refs/
+        refs_root = root / "refs"
+        sp_path = Path(source_project).expanduser().resolve()
+        sp_import_msg = ""
+        if sp_path.exists() and refs_root.resolve() not in sp_path.parents:
+            ref_target = refs_root / sp_path.name
+            ref_target.parent.mkdir(parents=True, exist_ok=True)
+            in_workspace_root = sp_path.parent == root.resolve()
+            if in_workspace_root:
+                _move_project(sp_path, ref_target)
+                sp_import_msg = f"已将源文件从工作区根目录移至 {ref_target.as_posix()}"
+            else:
+                _copy_project(sp_path, ref_target)
+                sp_import_msg = f"已从外部路径复制源文件至 {ref_target.as_posix()}"
+            source_project = ref_target.as_posix()
+
         payload = {
             "task_id": resolved_task_id,
             "title": title or goal or resolved_task_id,
@@ -225,6 +267,7 @@ def init_task(
             "runs_dir": runs_dir.as_posix(),
             "source_project": source_project,
             "source_project_exists": Path(source_project).expanduser().exists() if source_project else False,
+            "source_import_message": sp_import_msg or None,
             "runtime_module": "cst_runtime.workspace",
         }
     except Exception as exc:
