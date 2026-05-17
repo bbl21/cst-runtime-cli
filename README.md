@@ -39,19 +39,20 @@ CST Studio Suite 的 AI 自动化交互工具链。通过统一 CLI 入口提供
 
 解压后结构：
 ```
-skills\cst-runtime-cli\
-├── SKILL.md
-├── scripts/
-├── references/
-└── tests/
+skills\
+├── cst-runtime-cli\
+│   ├── SKILL.md
+│   ├── scripts/
+│   ├── references/
+│   └── tests/
+└── cst-runtime-optimization\
+    └── SKILL.md
 ```
 
 Windows 下也可用符号链接指向解压目录：
 ```powershell
 New-Item -ItemType Junction -Path "$env:USERPROFILE\.config\opencode\skills\cst-runtime-cli" -Target "解压路径\skills\cst-runtime-cli"
 ```
-
-> `cst-runtime-optimization` 尚未包含在 release 压缩包中，需通过方式 B 获取。
 
 ### 方式 B：Clone 完整仓库
 

@@ -39,19 +39,20 @@ Download the latest archive from [Releases](https://github.com/anomalyco/cst-run
 
 Extracted structure:
 ```
-skills\cst-runtime-cli\
-├── SKILL.md
-├── scripts/
-├── references/
-└── tests/
+skills\
+├── cst-runtime-cli\
+│   ├── SKILL.md
+│   ├── scripts/
+│   ├── references/
+│   └── tests/
+└── cst-runtime-optimization\
+    └── SKILL.md
 ```
 
 On Windows you may also use a junction to link the extracted directory:
 ```powershell
 New-Item -ItemType Junction -Path "$env:USERPROFILE\.config\opencode\skills\cst-runtime-cli" -Target "extracted\skills\cst-runtime-cli"
 ```
-
-`cst-runtime-optimization` is not yet included in the release archive; use Option B to obtain it.
 
 ### Option B: Clone Full Repository
 
