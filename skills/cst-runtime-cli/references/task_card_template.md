@@ -21,6 +21,7 @@ agent 在收到任务卡后的标准回应：
 |------|---------|---------|------|
 | `task_id` | 必填 | `task_011_ref0_s11_optimization` | 目录名，小写加下划线 |
 | `source_project` | 必填 | `ref/ref_model/ref_0/ref_0.cst` | 蓝本 CST 工程，只读 |
+| `project_description` | 可选 | `"由波导馈电的四脊对数曲线喇叭天线"` | 项目背景描述，帮助 agent 理解模型结构和设计意图 |
 | `parameters` | 必填 | `[{"name":"g","min":20,"max":30,"step":0.5,"initial":25}]` | 变量名、范围、步进、初始值 |
 | `target_metric` | 必填 | `"9-11 GHz S11 mean ≤ -40 dB"` | 定量停止条件 |
 | `max_rounds` | 必填 | `15` | 不含 baseline |

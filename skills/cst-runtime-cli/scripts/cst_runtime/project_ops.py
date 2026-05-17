@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -49,13 +50,31 @@ def list_parameters(project_path: str) -> dict[str, Any]:
     try:
         m3d = project.model3d
         params: dict[str, Any] = {}
+        # Try to load descriptions from Model/Parameters.json
+        desc_map: dict[str, str] = {}
+        pdir = Path(normalized_project).with_suffix("")
+        params_json = pdir / "Model" / "Parameters.json"
+        if params_json.is_file():
+            try:
+                pdata = json.loads(params_json.read_text(encoding="utf-8"))
+                for entry in pdata.get("parameters", []):
+                    name = entry.get("name", "")
+                    descr = entry.get("descr", "")
+                    if name and descr:
+                        desc_map[name] = descr
+            except Exception:
+                pass
         for index in range(int(m3d.GetNumberOfParameters())):
             name = m3d.GetParameterName(index)
             try:
                 value = m3d.RestoreDoubleParameter(name)
             except Exception:
                 value = None
-            params[name] = round(value, 6) if isinstance(value, float) else value
+            desc = desc_map.get(name, "")
+            params[name] = {
+                "value": round(value, 6) if isinstance(value, float) else value,
+                "description": desc,
+            }
         return {
             "status": "success",
             "project_path": normalized_project,

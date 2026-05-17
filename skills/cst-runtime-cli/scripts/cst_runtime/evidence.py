@@ -102,10 +102,33 @@ def capture_snapshot(
 
 def _flatten_params(data: Any, indent: int = 0) -> str:
     if isinstance(data, dict):
-        return "\n".join(f"{'  '*indent}{k} = {v}" for k, v in data.items())
+        lines: list[str] = []
+        for k, v in data.items():
+            if isinstance(v, dict) and "value" in v:
+                val = v.get("value", v)
+                desc = v.get("description", "")
+                line = f"{'  '*indent}{k} = {val}"
+                if desc:
+                    line += f"  ({desc})"
+                lines.append(line)
+            else:
+                lines.append(f"{'  '*indent}{k} = {v}")
+        return "\n".join(lines)
     if isinstance(data, list):
         return "\n".join(f"{'  '*indent}{item}" for item in data)
     return str(data)
+
+
+def _unwrap_param(v: Any) -> Any:
+    if isinstance(v, dict) and "value" in v:
+        return v.get("value", v)
+    return v
+
+
+def _param_desc(v: Any) -> str:
+    if isinstance(v, dict) and "description" in v:
+        return str(v.get("description", "")).strip()
+    return ""
 
 
 def compare_snapshots(
@@ -143,14 +166,18 @@ def compare_snapshots(
             all_keys = sorted(set(b_params) | set(a_params))
             rows = ""
             for k in all_keys:
-                bv = b_params.get(k, "—")
-                av = a_params.get(k, "—")
+                bv_raw = b_params.get(k, "—")
+                av_raw = a_params.get(k, "—")
+                bv = _unwrap_param(bv_raw)
+                av = _unwrap_param(av_raw)
+                bd = _param_desc(bv_raw)
                 changed = bv != av
                 cls = " class='changed'" if changed else ""
-                rows += f"<tr{cls}><td>{k}</td><td>{bv}</td><td>{av}</td></tr>\n"
+                desc_cell = f"<td style='color:#6b7280;font-size:11px;max-width:200px'>{bd}</td>" if bd else ""
+                rows += f"<tr{cls}><td>{k}</td>{desc_cell}<td>{bv}</td><td>{av}</td></tr>\n"
             html_parts.append(f"""
-<h2>Parameters</h2>
-<table><tr><th>Name</th><th>Before</th><th>After</th></tr>
+<h2>参数对比</h2>
+<table><tr><th>参数名</th><th>描述</th><th>Before</th><th>After</th></tr>
 {rows}</table>""")
 
         elif ctype == "entities":

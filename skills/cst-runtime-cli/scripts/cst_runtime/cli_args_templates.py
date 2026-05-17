@@ -195,6 +195,22 @@ ARGS_TEMPLATES: dict[str, dict[str, Any]] = {
         "page_title": "S11 + Farfield Dashboard",
         "farfield_run_id": 1,
     },
+    "generate-optimization-dashboard": {
+        "run_dir": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001",
+        "farfield_files": [
+            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_13ghz_port1_realized_gain.txt"
+        ],
+        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\optimization_dashboard.html",
+        "page_title": "Optimization Dashboard",
+    },
+    "generate-optimization-audit": {
+        "run_dir": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001",
+        "farfield_files": [
+            "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_13ghz_port1_realized_gain.txt"
+        ],
+        "output_html": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\optimization_audit.html",
+        "page_title": "Optimization Audit Trail",
+    },
     "inspect-farfield-ascii": {
         "file_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports\\farfield_13ghz_port1.txt",
     },

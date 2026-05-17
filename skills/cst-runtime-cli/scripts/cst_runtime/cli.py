@@ -43,6 +43,8 @@ WORKSPACE_OPTIONAL_TOOLS = {
     "cst-session-quit",
     "generate-s11-comparison",
     "generate-s11-farfield-dashboard",
+    "generate-optimization-dashboard",
+    "generate-optimization-audit",
     "plot-exported-file",
     "inspect-farfield-ascii",
     "plot-farfield-multi",
@@ -285,7 +287,7 @@ def _usage_guide() -> dict[str, Any]:
             "process_cleanup": ["inspect-cst-environment", "cleanup-cst-processes"],
             "project_ops": ["list-parameters", "change-parameter", "define-parameters", "define-frequency-range", "change-frequency-range", "define-background", "define-boundary", "define-mesh", "define-solver", "define-port", "define-monitor", "change-solver-type", "start-simulation", "start-simulation-async", "is-simulation-running", "wait-simulation", "pause-simulation", "resume-simulation", "stop-simulation", "set-solver-acceleration", "set-fdsolver-extrude-open-bc", "set-mesh-fpbavoid-nonreg-unite", "set-mesh-minimum-step-number"],
             "modeling": ["define-brick", "define-cylinder", "define-cone", "define-rectangle", "define-units", "define-polygon-3d", "define-analytical-curve", "define-extrude-curve", "define-loft", "transform-shape", "transform-curve", "create-horn-segment", "create-loft-sweep", "create-hollow-sweep", "boolean-add", "boolean-subtract", "boolean-intersect", "boolean-insert", "create-component", "delete-entity", "rename-entity", "set-entity-color", "change-material", "define-material-from-mtd", "list-materials", "list-entities", "set-farfield-monitor", "set-efield-monitor", "set-field-monitor", "set-probe", "delete-probe", "delete-monitor", "set-background-with-space", "set-farfield-plot-cuts", "show-bounding-box", "activate-post-process", "create-mesh-group", "pick-face", "add-to-history", "export-e-field", "export-surface-current", "export-voltage"],
-            "results": ["open-results-project", "list-subprojects", "list-run-ids", "get-parameter-combination", "get-1d-result", "get-2d-result", "generate-s11-comparison", "generate-s11-farfield-dashboard", "plot-exported-file", "plot-project-result"],
+            "results": ["open-results-project", "list-subprojects", "list-run-ids", "get-parameter-combination", "get-1d-result", "get-2d-result", "generate-s11-comparison", "generate-s11-farfield-dashboard", "generate-optimization-dashboard", "generate-optimization-audit", "plot-exported-file", "plot-project-result"],
             "farfield": ["export-farfield-fresh-session", "read-realized-gain-grid-fresh-session", "inspect-farfield-ascii", "plot-farfield-multi"],
         },
         "hard_rules": [
@@ -1692,6 +1694,30 @@ def tool_generate_s11_farfield_dashboard(args: dict[str, Any]) -> dict[str, Any]
     )
 
 
+def tool_generate_optimization_dashboard(args: dict[str, Any]) -> dict[str, Any]:
+    farfield_files = args.get("farfield_files") or []
+    if isinstance(farfield_files, str):
+        farfield_files = json.loads(farfield_files)
+    return results.generate_optimization_dashboard(
+        run_dir=str(args.get("run_dir", "")),
+        farfield_files=[str(f) for f in farfield_files] if farfield_files else None,
+        output_html=str(args.get("output_html", "")),
+        page_title=str(args.get("page_title", "")),
+    )
+
+
+def tool_generate_optimization_audit(args: dict[str, Any]) -> dict[str, Any]:
+    farfield_files = args.get("farfield_files") or []
+    if isinstance(farfield_files, str):
+        farfield_files = json.loads(farfield_files)
+    return results.generate_optimization_audit(
+        run_dir=str(args.get("run_dir", "")),
+        farfield_files=[str(f) for f in farfield_files] if farfield_files else None,
+        output_html=str(args.get("output_html", "")),
+        page_title=str(args.get("page_title", "")),
+    )
+
+
 def tool_inspect_farfield_ascii(args: dict[str, Any]) -> dict[str, Any]:
     file_path = args.get("file_path") or args.get("output_file") or args.get("export_path")
     if not file_path:
@@ -2091,6 +2117,18 @@ TOOLS: dict[str, dict[str, Any]] = {
         "risk": "filesystem-write",
         "description": "Generate a combined S11 and farfield HTML dashboard from exported JSON/TXT files.",
         "function": tool_generate_s11_farfield_dashboard,
+    },
+    "generate-optimization-dashboard": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Generate an executive optimization dashboard from a run directory (S11, 3D farfield, timeline).",
+        "function": tool_generate_optimization_dashboard,
+    },
+    "generate-optimization-audit": {
+        "category": "results",
+        "risk": "filesystem-write",
+        "description": "Generate a full optimization audit trail page from a run directory with step-by-step operation cards.",
+        "function": tool_generate_optimization_audit,
     },
     "get-1d-result": {
         "category": "results",
