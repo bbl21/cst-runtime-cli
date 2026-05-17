@@ -5,8 +5,14 @@
 ## 自动流程
 
 ```powershell
+# 1. 全量自检 + 自动修复
 python <skill-root>\scripts\cst_runtime_cli.py health-check --auto-fix true
-python <skill-root>\scripts\cst_runtime_cli.py doctor
+
+# 2. 安装依赖到虚拟环境
+uv sync
+
+# 3. 确认就绪
+uv run python -m cst_runtime doctor
 ```
 
 `health-check --auto-fix true` 自动诊断并修复：
@@ -18,15 +24,12 @@ python <skill-root>\scripts\cst_runtime_cli.py doctor
 
 `health-check` 返回 `overall=blocked` 时 agent 停止，展示 `user_instructions`。
 
-`health-check` 通过后执行：
+`health-check` + `uv sync` 通过后执行：
 ```powershell
-# 安装 cst-runtime 包（使 uv run 模式可用）
-uv sync
-
 # 发现工具和管道
-python <skill-root>\scripts\cst_runtime_cli.py usage-guide
-python <skill-root>\scripts\cst_runtime_cli.py list-tools
-python <skill-root>\scripts\cst_runtime_cli.py list-pipelines
+uv run python -m cst_runtime usage-guide
+uv run python -m cst_runtime list-tools
+uv run python -m cst_runtime list-pipelines
 ```
 
 ## 入口模式
