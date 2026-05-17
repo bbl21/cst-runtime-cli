@@ -11,6 +11,186 @@ from typing import Any
 from .errors import error_response
 
 
+# ── SVG chart renderers (no JS, no CDN, self-contained) ──
+
+_SVG_W = 960
+_SVG_H = 540
+_SVG_MARGIN = dict(t=50, r=30, b=60, l=70)
+_COLORS = ["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"]
+_DARK_BG = "#1f2937"
+_DARK_TEXT = "#e5e7eb"
+_LIGHT_BG = "#ffffff"
+_LIGHT_TEXT = "#111827"
+
+
+def _svg_axes(x_min: float, x_max: float, y_min: float, y_max: float, xlabel: str, ylabel: str, dark: bool) -> str:
+    m = _SVG_MARGIN
+    pw = _SVG_W - m["l"] - m["r"]
+    ph = _SVG_H - m["t"] - m["b"]
+    bg = _DARK_BG if dark else _LIGHT_BG
+    tc = _DARK_TEXT if dark else _LIGHT_TEXT
+    gc = "#374151" if dark else "#d1d5db"
+    ac = "#9ca3af" if dark else "#6b7280"
+
+    x_pad = (x_max - x_min) * 0.03 or 1
+    y_pad = (y_max - y_min) * 0.05 or 1
+    x_min -= x_pad
+    x_max += x_pad
+    y_min -= y_pad
+    y_max += y_pad
+
+    def sx(v: float) -> float: return m["l"] + (v - x_min) / (x_max - x_min) * pw
+    def sy(v: float) -> float: return m["t"] + ph - (v - y_min) / (y_max - y_min) * ph
+
+    lines = [f'<rect x="0" y="0" width="{_SVG_W}" height="{_SVG_H}" fill="{bg}" rx="8"/>']
+    lines.append(f'<g fill="{tc}" font-family="Arial,sans-serif" font-size="13">')
+    lines.append(f'<text x="{_SVG_W/2}" y="24" text-anchor="middle" font-size="16" font-weight="bold">{escape(xlabel)} vs {escape(ylabel)}</text>')
+    lines.append("</g>")
+
+    # Grid + Y axis labels
+    y_steps = 5
+    for i in range(y_steps + 1):
+        v = y_min + (y_max - y_min) * i / y_steps
+        yy = sy(v)
+        lines.append(f'<line x1="{m["l"]}" y1="{yy}" x2="{m["l"]+pw}" y2="{yy}" stroke="{gc}" stroke-width="0.5"/>')
+        lines.append(f'<text x="{m["l"]-6}" y="{yy+4}" text-anchor="end" fill="{ac}" font-family="Arial,sans-serif" font-size="11">{v:.2f}</text>')
+    # Grid + X axis labels
+    x_steps = 8
+    for i in range(x_steps + 1):
+        v = x_min + (x_max - x_min) * i / x_steps
+        xx = sx(v)
+        lines.append(f'<line x1="{xx}" y1="{m["t"]}" x2="{xx}" y2="{m["t"]+ph}" stroke="{gc}" stroke-width="0.5"/>')
+        lines.append(f'<text x="{xx}" y="{m["t"]+ph+16}" text-anchor="middle" fill="{ac}" font-family="Arial,sans-serif" font-size="11">{v:.2f}</text>')
+    # Axis labels
+    lines.append(f'<text x="{m["l"]+pw/2}" y="{_SVG_H-6}" text-anchor="middle" fill="{tc}" font-family="Arial,sans-serif" font-size="13">{escape(xlabel)}</text>')
+    lines.append(f'<text x="16" y="{m["t"]+ph/2}" text-anchor="middle" fill="{tc}" font-family="Arial,sans-serif" font-size="13" transform="rotate(-90,16,{m["t"]+ph/2})">{escape(ylabel)}</text>')
+
+    return "\n".join(lines), x_min, x_max, y_min, y_max
+
+
+def _svg_linechart(traces: list[dict[str, Any]], xlabel: str = "Frequency (GHz)", ylabel: str = "S11 (dB)", dark: bool = False) -> str:
+    all_x = [v for t in traces for v in t.get("x", [])]
+    all_y = [v for t in traces for v in t.get("y", [])]
+    if not all_x or not all_y:
+        return f'<svg width="{_SVG_W}" height="{_SVG_H}"><text x="20" y="40">No data</text></svg>'
+
+    x_min, x_max = min(all_x), max(all_x)
+    y_min, y_max = min(all_y), max(all_y)
+    m = _SVG_MARGIN
+    pw = _SVG_W - m["l"] - m["r"]
+    ph = _SVG_H - m["t"] - m["b"]
+    x_pad = (x_max - x_min) * 0.03 or 1
+    y_pad = (y_max - y_min) * 0.05 or 1
+    x_min -= x_pad; x_max += x_pad
+    y_min -= y_pad; y_max += y_pad
+
+    def sx(v): return m["l"] + (v - x_min) / (x_max - x_min) * pw
+    def sy(v): return m["t"] + ph - (v - y_min) / (y_max - y_min) * ph
+
+    axes_svg, _, _, _, _ = _svg_axes(all_x[0], all_x[-1] if len(all_x) > 1 else all_x[0] + 1, y_min + y_pad, y_max - y_pad, xlabel, ylabel, dark)
+    parts = [axes_svg]
+
+    for idx, trace in enumerate(traces):
+        xs = trace.get("x", [])
+        ys = trace.get("y", [])
+        if not xs or not ys:
+            continue
+        color = _COLORS[idx % len(_COLORS)]
+        pts = " ".join(f"{sx(x)},{sy(y)}" for x, y in zip(xs, ys) if not (math.isnan(y) or math.isinf(y)))
+        parts.append(f'<polyline points="{pts}" fill="none" stroke="{color}" stroke-width="2"/>')
+        label = trace.get("name", f"Trace {idx+1}")
+        ly = m["t"] + 20 + idx * 22
+        parts.append(f'<line x1="{m["l"]+pw-120}" y1="{ly}" x2="{m["l"]+pw-100}" y2="{ly}" stroke="{color}" stroke-width="2"/>')
+        tc = _DARK_TEXT if dark else _LIGHT_TEXT
+        parts.append(f'<text x="{m["l"]+pw-94}" y="{ly+4}" fill="{tc}" font-family="Arial,sans-serif" font-size="12">{escape(label)}</text>')
+
+    return f'<svg width="{_SVG_W}" height="{_SVG_H}" xmlns="http://www.w3.org/2000/svg">\n' + "\n".join(parts) + "\n</svg>"
+
+
+def _svg_heatmap(x: list[float], y: list[float], z: list[list[float]], title: str, xlabel: str, ylabel: str, zlabel: str) -> str:
+    if not x or not y or not z:
+        return f'<svg width="{_SVG_W}" height="{_SVG_H}"><text x="20" y="40">No data</text></svg>'
+    nx, ny = len(x), len(y)
+    m = _SVG_MARGIN
+    pw = _SVG_W - m["l"] - m["r"] - 60
+    ph = _SVG_H - m["t"] - m["b"]
+    cw, ch = pw / nx, ph / ny
+
+    all_z = [v for row in z for v in row]
+    z_min, z_max = min(all_z), max(all_z)
+    z_rng = z_max - z_min or 1
+
+    def _color(v):
+        t = (v - z_min) / z_rng
+        r = int(68 + (253 - 68) * t)
+        g = int(1 + (231 - 1) * (1 - abs(t - 0.5) * 2))
+        b = int(84 + (36 - 84) * (1 - t))
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    parts = [f'<rect x="0" y="0" width="{_SVG_W}" height="{_SVG_H}" fill="#ffffff" rx="8"/>']
+    parts.append(f'<text x="{_SVG_W/2}" y="24" text-anchor="middle" font-size="16" font-weight="bold" font-family="Arial,sans-serif">{escape(title)}</text>')
+
+    for i in range(ny):
+        for j in range(nx):
+            v = z[i][j] if i < len(z) and j < len(z[i]) else z_min
+            xx = m["l"] + j * cw
+            yy = m["t"] + i * ch
+            parts.append(f'<rect x="{xx}" y="{yy}" width="{cw}" height="{ch}" fill="{_color(v)}" stroke="none"/>')
+
+    # Colorbar
+    cb_x = m["l"] + pw + 12
+    cb_h = ph
+    cb_steps = 20
+    for i in range(cb_steps):
+        t = i / cb_steps
+        v = z_min + t * z_rng
+        yy = m["t"] + cb_h - (cb_h * t)
+        ch_step = cb_h / cb_steps + 1
+        parts.append(f'<rect x="{cb_x}" y="{yy}" width="16" height="{ch_step}" fill="{_color(v)}" stroke="none"/>')
+    parts.append(f'<text x="{cb_x+20}" y="{m["t"]+4}" fill="#111827" font-family="Arial,sans-serif" font-size="10">{z_max:.1f}</text>')
+    parts.append(f'<text x="{cb_x+20}" y="{m["t"]+cb_h+4}" fill="#111827" font-family="Arial,sans-serif" font-size="10">{z_min:.1f}</text>')
+    parts.append(f'<text x="{cb_x+20}" y="{m["t"]+cb_h/2+4}" fill="#111827" font-family="Arial,sans-serif" font-size="10" transform="rotate(-90,{cb_x+20},{m["t"]+cb_h/2+4})">{escape(zlabel)}</text>')
+
+    tc = "#111827"
+    x_step = max(1, nx // 8)
+    for j in range(0, nx, x_step):
+        parts.append(f'<text x="{m["l"]+j*cw+cw/2}" y="{m["t"]+ph+14}" text-anchor="middle" fill="{tc}" font-family="Arial,sans-serif" font-size="10">{x[j]:.1f}</text>')
+    y_step = max(1, ny // 6)
+    for i in range(0, ny, y_step):
+        parts.append(f'<text x="{m["l"]-6}" y="{m["t"]+i*ch+ch/2+3}" text-anchor="end" fill="{tc}" font-family="Arial,sans-serif" font-size="10">{y[i]:.1f}</text>')
+    parts.append(f'<text x="{m["l"]+pw/2}" y="{_SVG_H-6}" text-anchor="middle" fill="{tc}" font-family="Arial,sans-serif" font-size="12">{escape(xlabel)}</text>')
+    parts.append(f'<text x="14" y="{m["t"]+ph/2}" text-anchor="middle" fill="{tc}" font-family="Arial,sans-serif" font-size="12" transform="rotate(-90,14,{m["t"]+ph/2})">{escape(ylabel)}</text>')
+
+    return f'<svg width="{_SVG_W}" height="{_SVG_H}" xmlns="http://www.w3.org/2000/svg">\n' + "\n".join(parts) + "\n</svg>"
+
+
+def _svg_page(title: str, body_svg: str, dark: bool = False, extra_html: str = "") -> str:
+    bg = _DARK_BG if dark else _LIGHT_BG
+    tc = _DARK_TEXT if dark else _LIGHT_TEXT
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{escape(title)}</title>
+  <style>
+    body {{ margin: 0; font-family: Arial, sans-serif; background: {bg}; color: {tc}; }}
+    main {{ padding: 24px; max-width: 1024px; margin: 0 auto; }}
+    h1 {{ margin: 0 0 18px; font-size: 22px; }}
+    svg {{ max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }}
+    table {{ border-collapse: collapse; margin-top: 16px; width: 100%; font-size: 13px; }}
+    th, td {{ border-bottom: 1px solid #374151; padding: 8px; text-align: left; }}
+  </style>
+</head>
+<body>
+<main>
+  <h1>{escape(title)}</h1>
+  {body_svg}
+  {extra_html}
+</main>
+</body>
+</html>"""
+
+
 def _serialize_value(value: Any) -> Any:
     if isinstance(value, complex):
         return {"real": value.real, "imag": value.imag, "complex_str": str(value)}
@@ -505,36 +685,23 @@ def plot_exported_file(file_path: str, output_html: str = "", page_title: str = 
         if "xdata" in payload and "ydata" in payload:
             xdata = payload.get("xdata") or []
             ydata, y_kind = _scalar_series(payload.get("ydata") or [])
-            plot_data = json.dumps({"x": xdata, "y": ydata}, ensure_ascii=False)
             yaxis_title = "Magnitude (dB)" if y_kind == "magnitude_db" else str(payload.get("ylabel") or "Value")
-            body = f"""
-const data = {plot_data};
-Plotly.newPlot('plot', [{{x: data.x, y: data.y, type: 'scatter', mode: 'lines', name: 'value'}}], {{
-  title: {json.dumps(title)},
-  xaxis: {{title: {json.dumps(str(payload.get("xlabel") or "X"))}}},
-  yaxis: {{title: {json.dumps(yaxis_title)}}},
-  margin: {{t: 60, r: 24, b: 56, l: 72}}
-}}, {{responsive: true, displaylogo: false}});
-"""
+            svg = _svg_linechart(
+                [{"x": xdata, "y": ydata, "name": "value"}],
+                xlabel=str(payload.get("xlabel") or "X"),
+                ylabel=yaxis_title,
+            )
             rendered_kind = "1d"
         elif "data" in payload:
-            plot_data = json.dumps(
-                {
-                    "x": payload.get("xpositions") or [],
-                    "y": payload.get("ypositions") or [],
-                    "z": payload.get("data") or [],
-                },
-                ensure_ascii=False,
+            svg = _svg_heatmap(
+                x=payload.get("xpositions") or [],
+                y=payload.get("ypositions") or [],
+                z=payload.get("data") or [],
+                title=title,
+                xlabel=str(payload.get("xlabel") or "X"),
+                ylabel=str(payload.get("ylabel") or "Y"),
+                zlabel=str(payload.get("zlabel") or "Value"),
             )
-            body = f"""
-const data = {plot_data};
-Plotly.newPlot('plot', [{{x: data.x, y: data.y, z: data.z, type: 'heatmap', colorscale: 'Viridis'}}], {{
-  title: {json.dumps(title)},
-  xaxis: {{title: {json.dumps(str(payload.get("xlabel") or "X"))}}},
-  yaxis: {{title: {json.dumps(str(payload.get("ylabel") or "Y"))}}},
-  margin: {{t: 60, r: 24, b: 56, l: 72}}
-}}, {{responsive: true, displaylogo: false}});
-"""
             rendered_kind = "2d"
         else:
             return error_response(
@@ -544,29 +711,7 @@ Plotly.newPlot('plot', [{{x: data.x, y: data.y, z: data.z, type: 'heatmap', colo
                 runtime_module="cst_runtime.results",
             )
 
-        html = f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>{escape(title)}</title>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <style>
-    body {{ margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }}
-    main {{ padding: 24px; }}
-    #plot {{ height: 72vh; min-height: 520px; }}
-  </style>
-</head>
-<body>
-<main>
-  <div id="plot"></div>
-</main>
-<script>
-{body}
-</script>
-</body>
-</html>
-"""
-        target.write_text(html, encoding="utf-8")
+        target.write_text(_svg_page(title, svg), encoding="utf-8")
         return {
             "status": "success",
             "source": "exported_file",
@@ -718,84 +863,15 @@ def plot_farfield_multi(
         first_path = Path(file_paths[0]).expanduser().resolve()
         target = _plot_output_path(output_html, first_path, "farfield_multi")
         title = page_title or "Farfield Preview"
-        panels_json = json.dumps(panels, ensure_ascii=False)
-        html = f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>{escape(title)}</title>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <style>
-    body {{ margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }}
-    main {{ padding: 24px; }}
-    h1 {{ margin: 0 0 18px; font-size: 22px; }}
-    .panel {{ margin: 0 0 28px; border-bottom: 1px solid #d1d5db; padding-bottom: 22px; }}
-    .plot3d {{ height: 68vh; min-height: 500px; }}
-    .meta {{ font-size: 13px; color: #4b5563; margin-bottom: 6px; }}
-    .toolbar {{ margin-bottom: 12px; display: flex; gap: 12px; align-items: center; }}
-    label {{ font-size: 13px; }}
-    select {{ padding: 4px 8px; }}
-  </style>
-</head>
-<body>
-<main>
-  <h1>{escape(title)}</h1>
-  <div id="panels"></div>
-</main>
-<script>
-const panels = {panels_json};
-const root = document.getElementById('panels');
-panels.forEach((panel, idx) => {{
-  const wrapper = document.createElement('section');
-  wrapper.className = 'panel';
-  const meta = panel.metadata || {{}};
-  wrapper.innerHTML = `
-    <h2>${{panel.title}}</h2>
-    <div class="meta">${{panel.file_path}} | ${{meta.source_quantity || panel.zlabel}} | theta=${{meta.theta_count || panel.y.length}}, phi=${{meta.phi_count || panel.x.length}}</div>
-    <div class="toolbar"><label>View: <select id="view-${{idx}}"><option value="3d">3D Polar</option><option value="2d">2D Heatmap</option></select></label></div>
-    <div id="plot-${{idx}}" class="plot3d"></div>`;
-  root.appendChild(wrapper);
-  const D2R = Math.PI / 180;
-  const theta = panel.y, phi = panel.x, gain = panel.z;
-  function to3D() {{
-    const nt = theta.length, np = phi.length;
-    const x = [], y = [], z = [];
-    for (let i = 0; i < nt; i++) {{
-      const th = theta[i] * D2R;
-      const rowX = [], rowY = [], rowZ = [];
-      for (let j = 0; j < np; j++) {{
-        const ph = phi[j] * D2R, r = Math.pow(10, gain[i][j] / 20);
-        rowX.push(r * Math.sin(th) * Math.cos(ph));
-        rowY.push(r * Math.sin(th) * Math.sin(ph));
-        rowZ.push(r * Math.cos(th));
-      }}
-      x.push(rowX); y.push(rowY); z.push(rowZ);
-    }}
-    return [{{
-      type: 'surface', x, y, z,
-      colorscale: 'Viridis', colorbar: {{title: panel.zlabel}},
-      contours: {{z: {{show: true, usecolormap: true, highlightcolor: '#fff', project: {{z: true}}}}}}
-    }}];
-  }}
-  function to2D() {{
-    return [{{type: 'heatmap', x: phi, y: theta, z: gain, colorscale: 'Viridis', colorbar: {{title: panel.zlabel}}}}];
-  }}
-  function draw(view) {{
-    const data = view === '3d' ? to3D() : to2D();
-    const layout = view === '3d'
-      ? {{scene: {{xaxis: {{title: 'X'}}, yaxis: {{title: 'Y'}}, zaxis: {{title: 'Z'}},
-             camera: {{eye: {{x: 1.8, y: 1.8, z: 0.8}}}}}}, margin: {{t: 12, r: 12, b: 12, l: 12}}}}
-      : {{xaxis: {{title: 'Phi (deg)'}}, yaxis: {{title: 'Theta (deg)'}}, margin: {{t: 40, r: 28, b: 56, l: 72}}}};
-    Plotly.react(`plot-${{idx}}`, data, layout, {{responsive: true, displaylogo: false}});
-  }}
-  draw('3d');
-  document.getElementById(`view-${{idx}}`).addEventListener('change', e => draw(e.target.value));
-}});
-</script>
-</body>
-</html>
-"""
-        target.write_text(html, encoding="utf-8")
+        panel_svgs: list[str] = []
+        for p in panels:
+            panel_svgs.append(
+                _svg_heatmap(p["x"], p["y"], p["z"], p["title"], p["xlabel"], p["ylabel"], p["zlabel"])
+            )
+        combined_svg = "\n".join(
+            f'<div style="margin-bottom: 28px;">{s}</div>' for s in panel_svgs
+        )
+        target.write_text(_svg_page(title, combined_svg), encoding="utf-8")
         return {
             "status": "success",
             "output_html": str(target),
@@ -879,47 +955,16 @@ def generate_s11_comparison(
         html_path.parent.mkdir(parents=True, exist_ok=True)
 
         title = page_title or "S11 Comparison"
-        series_json = json.dumps(all_series, ensure_ascii=False)
-        html = f"""<!doctype html>
-<html lang=\"en\">
-<head>
-  <meta charset=\"utf-8\">
-  <title>{title}</title>
-  <script src=\"https://cdn.plot.ly/plotly-2.35.2.min.js\"></script>
-  <style>
-    body {{ margin: 0; font-family: Arial, sans-serif; background: #111827; color: #e5e7eb; }}
-    main {{ padding: 24px; }}
-    #plot {{ height: 70vh; min-height: 520px; }}
-    table {{ border-collapse: collapse; margin-top: 16px; width: 100%; }}
-    th, td {{ border-bottom: 1px solid #374151; padding: 8px; text-align: left; }}
-  </style>
-</head>
-<body>
-<main>
-  <h1>{title}</h1>
-  <div id=\"plot\"></div>
-  <table id=\"summary\"></table>
-</main>
-<script>
-const series = {series_json};
-const traces = series.map(s => ({{x: s.xdata, y: s.ydata, mode: 'lines', type: 'scatter', name: s.label}}));
-Plotly.newPlot('plot', traces, {{
-  title: 'S11 Comparison',
-  xaxis: {{title: 'Frequency (GHz)'}},
-  yaxis: {{title: 'S11 (dB)'}},
-  paper_bgcolor: '#111827',
-  plot_bgcolor: '#1f2937',
-  font: {{color: '#e5e7eb'}},
-  hovermode: 'x unified'
-}}, {{responsive: true, displaylogo: false}});
-document.getElementById('summary').innerHTML =
-  '<tr><th>Run</th><th>File</th><th>Best Freq</th><th>Min S11 dB</th></tr>' +
-  series.map(s => `<tr><td>${{s.run_id}}</td><td>${{s.file}}</td><td>${{s.best_freq}}</td><td>${{s.min_db.toFixed(3)}}</td></tr>`).join('');
-</script>
-</body>
-</html>
-"""
-        html_path.write_text(html, encoding="utf-8")
+        traces = [{"x": s["xdata"], "y": s["ydata"], "name": s["label"]} for s in all_series]
+        table_html = (
+            "<table><tr><th>Run</th><th>File</th><th>Best Freq</th><th>Min S11 dB</th></tr>"
+            + "".join(
+                f"<tr><td>{s['run_id']}</td><td>{escape(s['file'])}</td><td>{s['best_freq']}</td><td>{s['min_db']:.3f}</td></tr>"
+                for s in all_series
+            )
+            + "</table>"
+        )
+        html_path.write_text(_svg_page(title, _svg_linechart(traces, dark=True), dark=True, extra_html=table_html), encoding="utf-8")
         return {
             "status": "success",
             "output_html": str(html_path),
@@ -1039,88 +1084,29 @@ def generate_s11_farfield_dashboard(
         target = Path(output_html).expanduser().resolve() if output_html else first_path.parent / "s11_farfield_dashboard.html"
         target.parent.mkdir(parents=True, exist_ok=True)
         title = page_title or "S11 + Farfield Dashboard"
-        s11_json = json.dumps(s11_series, ensure_ascii=False)
-        farfield_json = json.dumps(farfield_items, ensure_ascii=False)
-        html = f"""<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>{escape(title)}</title>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <style>
-    body {{ margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }}
-    main {{ padding: 24px; }}
-    h1 {{ margin: 0 0 18px; font-size: 22px; }}
-    .toolbar {{ display: flex; gap: 16px; align-items: end; flex-wrap: wrap; margin: 0 0 16px; }}
-    label {{ display: block; font-size: 12px; color: #4b5563; margin-bottom: 6px; }}
-    select {{ min-width: 220px; padding: 8px 10px; }}
-    #s11Plot {{ height: 44vh; min-height: 360px; }}
-    #farfieldPlot {{ height: 58vh; min-height: 440px; }}
-    table {{ border-collapse: collapse; margin-top: 16px; width: 100%; }}
-    th, td {{ border-bottom: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 13px; }}
-  </style>
-</head>
-<body>
-<main>
-  <h1>{escape(title)}</h1>
-  <div id="s11Plot"></div>
-  <div class="toolbar">
-    <div>
-      <label for="farfieldSelect">Farfield run</label>
-      <select id="farfieldSelect"></select>
-    </div>
-  </div>
-  <div id="farfieldPlot"></div>
-  <table id="summary"></table>
-</main>
-<script>
-const s11Series = {s11_json};
-const farfields = {farfield_json};
-let selectedRunId = {json.dumps(selected_run_id)};
-const s11Traces = s11Series.map(s => ({{x: s.xdata, y: s.ydata, mode: 'lines', type: 'scatter', name: s.label}}));
-Plotly.newPlot('s11Plot', s11Traces, {{
-  title: 'S11 Comparison',
-  xaxis: {{title: 'Frequency (GHz)'}},
-  yaxis: {{title: 'S11 (dB)'}},
-  margin: {{t: 56, r: 28, b: 56, l: 72}},
-  hovermode: 'x unified'
-}}, {{responsive: true, displaylogo: false}});
-const select = document.getElementById('farfieldSelect');
-farfields.forEach(item => {{
-  const option = document.createElement('option');
-  option.value = item.run_id;
-  option.textContent = `Run ${{item.run_id}} - ${{item.file}}`;
-  if (item.run_id === selectedRunId) option.selected = true;
-  select.appendChild(option);
-}});
-function drawFarfield(runId) {{
-  const item = farfields.find(entry => Number(entry.run_id) === Number(runId)) || farfields[0];
-      const D2R = Math.PI / 180, th = item.y, ph = item.x, g = item.z;
-      const nt = th.length, np = ph.length;
-      const sx = [], sy = [], sz = [];
-      for (let i = 0; i < nt; i++) {{ const t = th[i] * D2R; const rx = [], ry = [], rz = [];
-        for (let j = 0; j < np; j++) {{ const p = ph[j] * D2R, r = Math.pow(10, g[i][j] / 20);
-          rx.push(r * Math.sin(t) * Math.cos(p)); ry.push(r * Math.sin(t) * Math.sin(p)); rz.push(r * Math.cos(t)); }}
-        sx.push(rx); sy.push(ry); sz.push(rz); }}
-      Plotly.newPlot('farfieldPlot', [{{
-        type: 'surface', x: sx, y: sy, z: sz, colorscale: 'Viridis', colorbar: {{title: item.zlabel}},
-        contours: {{z: {{show: true, usecolormap: true, highlightcolor: '#fff', project: {{z: true}}}}}}
-      }}], {{
-        scene: {{xaxis: {{title: 'X'}}, yaxis: {{title: 'Y'}}, zaxis: {{title: 'Z'}},
-                camera: {{eye: {{x: 1.8, y: 1.8, z: 0.8}}}}}},
-        margin: {{t: 12, r: 12, b: 12, l: 12}}
-      }}, {{responsive: true, displaylogo: false}});
-}}
-select.addEventListener('change', event => drawFarfield(event.target.value));
-drawFarfield(selectedRunId);
-document.getElementById('summary').innerHTML =
-  '<tr><th>Run</th><th>S11 file</th><th>Best freq</th><th>Min S11 dB</th></tr>' +
-  s11Series.map(s => `<tr><td>${{s.run_id}}</td><td>${{s.file}}</td><td>${{s.best_freq}}</td><td>${{Number(s.min_db).toFixed(3)}}</td></tr>`).join('');
-</script>
-</body>
-</html>
-"""
-        target.write_text(html, encoding="utf-8")
+        s11_traces = [{"x": s["xdata"], "y": s["ydata"], "name": s["label"]} for s in s11_series]
+        s11_svg = _svg_linechart(s11_traces, dark=False)
+
+        farfield_svgs: list[str] = []
+        for item in farfield_items:
+            farfield_svgs.append(
+                _svg_heatmap(item["x"], item["y"], item["z"], item["title"], item["xlabel"], item["ylabel"], item["zlabel"])
+            )
+        farfield_block = "\n".join(
+            f'<div style="margin-bottom: 28px;">{s}</div>' for s in farfield_svgs
+        )
+
+        table_html = (
+            "<table><tr><th>Run</th><th>S11 file</th><th>Best freq</th><th>Min S11 dB</th></tr>"
+            + "".join(
+                f"<tr><td>{s['run_id']}</td><td>{escape(s['file'])}</td><td>{s['best_freq']}</td><td>{s['min_db']:.3f}</td></tr>"
+                for s in s11_series
+            )
+            + "</table>"
+        )
+
+        combined_svg = s11_svg + "\n" + farfield_block
+        target.write_text(_svg_page(title, combined_svg, extra_html=table_html), encoding="utf-8")
         return {
             "status": "success",
             "output_html": str(target),
