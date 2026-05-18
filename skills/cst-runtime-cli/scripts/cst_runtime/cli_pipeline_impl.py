@@ -230,24 +230,12 @@ def pipeline_run_experiment(
             step="run-experiment:close",
         )
 
-    # Discover latest run_id produced by this simulation round
-    latest_run_id = None
-    try:
-        from .results import _load_project
-        proj, _ = _load_project(project_path, allow_interactive=True)
-        all_rids = proj.get_3d().get_all_run_ids(max_mesh_passes_only=True)
-        if all_rids:
-            latest_run_id = max(all_rids)
-    except Exception:
-        pass
-
     export_result = export_run_results(
         project_path=project_path,
         farfield_names=farfield_names,
         farfield_plot_mode=farfield_plot_mode,
         farfield_theta_step=farfield_theta_step,
         farfield_phi_step=farfield_phi_step,
-        run_id=latest_run_id,
     )
     if export_result.get("status") != "success":
         return error_response(
