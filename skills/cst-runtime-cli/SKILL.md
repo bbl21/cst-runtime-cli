@@ -174,7 +174,8 @@ CLI 命令：`inspect-cst-environment` / `cst-session-inspect` / `cst-session-op
 ## 结果与远场红线
 
 - 读取结果后禁止保存，以免造成项目报错。
-- 远场导出必须放在流程最后；导出后必须 `close(save=False)`。
+- 远场导出必须放在流程最后；导出后必须 `close(save=False)`。远场导出操作会使 CST 处于错误状态，若保存则下次打开工程将无法正常使用。
+- 远场导出放在每轮最后可以免去额外开关 session 的开销——导出完非保存关闭即可，工程文件不受影响。
 - S11 原始数据是复数字典，不是 dB 值。
 - 远场增益证据只允许使用 `Realized Gain`、`Gain` 或 `Directivity`。`Abs(E)` 不能写成 dBi 增益。
 - modeler session 与 results session 是两个独立 session，禁止混用。

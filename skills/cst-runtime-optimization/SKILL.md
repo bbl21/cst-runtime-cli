@@ -66,6 +66,8 @@ prepare-run(run_00N) → cst-session-open
 - 每轮 S11 按 `s11_run{N}.json` 保存所有 run_id
 - 远场每轮覆盖写（粗精度，2° 步进）
 
+> **模式 A 远场红线**：同 `.cst` 工程内每轮新仿真会覆盖旧的远场结果。必须在每轮仿真后立即导出远场（`export-run-results` 或 `export-farfield-fresh-session`），以带 `run{N}` 的文件名落盘。不导出则永久丢失，无法在最终报告中展示所有轮的 3D 远场对比。
+
 ### 模式 B：每次新建项目
 
 适合改变几何实体或需要完全独立数据。每轮独立 `run_00N` 目录。
@@ -139,6 +141,7 @@ export-run-results --project_path <.cst>
 ```
 
 - 先关 modeler（释放工程锁），再导出
+- 远场导出会使 CST 处于错误状态，导出后必须 `close(save=False)`（不保存则工程文件不受影响，可再次打开）
 - `export-run-results` 自动导出 S11、2D、远场到 `exports/`
 - 文件固定命名：`s11_run{N}.json`、`farfield_{freq}ghz_run{N}.txt`
 
