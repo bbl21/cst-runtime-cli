@@ -526,18 +526,21 @@ def export_run_results(
         # Auto-discover farfield monitors if none provided
         if not farfield_names:
             try:
-                proj_ff, _ = _load_project(str(p), allow_interactive=True)
-                m3d_ff = proj_ff.get_3d()
-                ff_tree = [
-                    str(it) for it in m3d_ff.get_tree_items("Farfields")
-                ]
-                discovered = []
-                for item in ff_tree:
-                    short = item.rsplit("\\", 1)[-1] if "\\" in item else item
-                    if short and short.strip():
-                        discovered.append(short)
-                if discovered:
-                    farfield_names = discovered
+                from .farfield import _gui_open_project, _gui_close_project
+                ff_open = _gui_open_project(str(p))
+                if ff_open.get("status") == "success":
+                    proj = ff_open["project"]
+                    discovered = []
+                    for item in proj.model3d.get_tree_items():
+                        tree_path = str(item)
+                        low = tree_path.lower()
+                        if "farfields" in low and "\\farfield" in low and "cut" not in low:
+                            short = tree_path.rsplit("\\", 1)[-1]
+                            if short and short.strip() and short not in discovered:
+                                discovered.append(short)
+                    if discovered:
+                        farfield_names = discovered
+                    _gui_close_project(proj, str(p), save=False)
             except Exception:
                 pass
 
