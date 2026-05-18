@@ -57,16 +57,20 @@ exports/
 适合仅调参数、不改变几何结构。参数变更在同一个 `.cst` 中累积多个 CST run_id。
 
 ```
-prepare-run(run_00N) → cst-session-open
-  → change-parameter → save-project
-  → start-simulation-async → wait-simulation → cst-session-close
-  → export-run-results
+┌─ 每轮迭代 ─────────────────────────────────────────┐
+│ cst-session-open                                    │
+│   → change-parameter → save-project                 │
+│   → start-simulation-async → wait-simulation        │
+│   → cst-session-close --save false                  │
+│   → export-run-results    ← 必须每轮执行，导出 S11 + 远场 │
+│   → 早停判断 → 达标 break / 未达标继续下一轮              │
+└────────────────────────────────────────────────────┘
 ```
 
 - 每轮 S11 按 `s11_run{N}.json` 保存所有 run_id
-- 远场每轮覆盖写（粗精度，2° 步进）
+- 远场按 `farfield_{freq}ghz_run{N}.txt` 保存所有轮数据
 
-> **模式 A 远场红线**：同 `.cst` 工程内每轮新仿真会覆盖旧的远场结果。必须在每轮仿真后立即导出远场（`export-run-results` 或 `export-farfield-fresh-session`），以带 `run{N}` 的文件名落盘。不导出则永久丢失，无法在最终报告中展示所有轮的 3D 远场对比。
+> **模式 A 远场红线**：同 `.cst` 工程内每轮新仿真会覆盖旧的远场结果。`export-run-results` 必须在每轮仿真后立即调用。不导出则永久丢失，无法在最终报告中展示所有轮的 3D 远场对比。
 
 ### 模式 B：每次新建项目
 
@@ -101,74 +105,67 @@ generate-report --data_dir <run 或 task 目录>
 ## 优化闭环流程
 
 ### 1. 创建 run
-
 ```
 prepare-run → get-run-context
 ```
-
 后续所有路径使用返回的 `working_project`、`exports_dir`、`logs_dir`。
 
 ### 2. 打开工程
-
 ```
 cst-session-open → verify-project-identity → list-parameters
 ```
-
 若返回 `ambiguous_open_projects`，必须先关闭无关 CST 工程。
 
-### 3. 修改参数
+### 3. 迭代循环（每轮重复执行 3a-3e）
 
+> 以下为一轮的完整步骤。重复多轮直到早停条件满足。
+
+#### 3a. 修改参数
 ```
 change-parameter --name <p> --value <v>
 list-parameters  ← 确认参数生效
 ```
 
-`change-parameter` 字段固定为 `name` 和 `value`。
-
-### 4. 仿真
-
+#### 3b. 仿真
 ```
 start-simulation-async → wait-simulation
 ```
 
-优先使用异步仿真，同步 `start-simulation` 更容易超时。
-
-### 5. 导出结果
-
+#### 3c. 关闭 modeler
 ```
 cst-session-close --save false
-export-run-results --project_path <.cst>
 ```
 
-- 先关 modeler（释放工程锁），再导出
-- 远场导出会使 CST 处于错误状态，导出后必须 `close(save=False)`（不保存则工程文件不受影响，可再次打开）
-- `export-run-results` 自动导出 S11、2D、远场到 `exports/`
-- 文件固定命名：`s11_run{N}.json`、`farfield_{freq}ghz_run{N}.txt`
+#### 3d. 导出本轮结果（远场红线）
+```
+export-run-results --project_path <.cst>
+```
+- 自动导出本轮 S11、2D、远场到 `exports/`，文件命名 `s11_run{N}.json`、`farfield_{freq}ghz_run{N}.txt`
+- **必须每轮执行**：同 `.cst` 内新仿真会覆盖远场，不导出则永久丢失，无法在报告中对比多轮 3D 远场
+- 远场导出会使 CST 处于错误状态，`export-run-results` 内部已 `close(save=False)`，工程不受影响
 
-### 6. 生成报告
+#### 3e. 早停判断
+- 解析 `exports/s11_run{N}.json`：`20*log10(hypot(real, imag))` 转 dB
+- 判断是否达目标 → 达则 **break**，不达则回到 3a 继续下一轮
+- 若超过目标后继续执行额外轮次，任务输出必须标记 `overrun`
 
+### 4. 生成报告
 ```
 generate-report --data_dir <run_dir>
 ```
+输出 `exports/report.html`，自动读取所有 `s11_run*.json`、`farfield_*.txt`。
 
-输出 `exports/report.html`。
-
-### 7. 阶段记录
-
-每轮记录参数变更、run_id、指标、文件输出、异常和耗时。
-
+### 5. 阶段记录
 ```
 record-stage --stage "iteration" --status "completed"
 update-status --status "validated"
 ```
 
-### 8. 进程清理
-
+### 6. 进程清理
 ```
 cleanup-cst-processes
 ```
-
-强杀白名单：`cstd`、`CST DESIGN ENVIRONMENT_AMD64`、`CSTDCMainController_AMD64`、`CSTDCSolverServer_AMD64`。Access is denied 残留只能记录，禁止声称已杀掉。
+强杀白名单固定，Access is denied 残留只能记录。
 
 ## 引用
 
