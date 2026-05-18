@@ -90,6 +90,8 @@ generate-report --data_dir <run 或 task 目录>
 
 ## 自动化优化循环红线
 
+> **早停判断** 是本 Skill 区别于照单执行的关键红线。其他通用红线（session 分离、S11 复数处理、远场增益证据约束等）见 `cst-runtime-cli` SKILL.md。
+
 - 每轮执行流程必须包含早停判断：`仿真 → 读结果 → 解析指标 → 判断是否达目标 → 达则 break，不达则继续`
 - "执行"和"评估"不得拆分为两个独立阶段；目标指标必须在每轮循环体内部实时解析和判断
 - 若未实现早停导致超过目标后继续执行额外轮次，任务输出必须明确标记为 `overrun`
@@ -165,21 +167,13 @@ cleanup-cst-processes
 
 强杀白名单：`cstd`、`CST DESIGN ENVIRONMENT_AMD64`、`CSTDCMainController_AMD64`、`CSTDCSolverServer_AMD64`。Access is denied 残留只能记录，禁止声称已杀掉。
 
-## CLI 调用原则
+## 引用
 
-- 入口固定为 base skill：`python <base-skill-root>\scripts\cst_runtime_cli.py ...`
-- 复杂参数优先 `args-template` → JSON → `--args-file`
-- 所有 `project_path` 必须指向具体 `.cst` 文件
-- 每次调用检查 JSON `status`；不得只看退出码
-- S11 原始数据是复数字典 `{'real':..., 'imag':...}`，不是 dB 值
-
-## 错误处理
-
-- `workspace_not_initialized`：先 `init-workspace`
-- `source_project_missing`：检查路径是否指向 `.cst` 文件
-- `ambiguous_open_projects`：关闭无关 CST 工程
-- `lock_not_released`：等待或清理当前任务相关 CST 窗口
-- `Access is denied` 杀不掉：记录 PID/进程名/原因，标为非阻塞残留
+以下通用规则详见 `cst-runtime-cli` SKILL.md：
+- **CLI 调用原则** — 入口模式、JSON 契约、args-template 优先、project_path 约束
+- **错误处理** — `workspace_not_initialized`、`source_project_missing`、`ambiguous_open_projects`、`lock_not_released`、`Access is denied`
+- **进程管理前置 gate** — `cst-session-management-gate` 管道、硬性停止条件
+- **结果与远场红线** — S11 复数处理、modeler/results session 分离、仿真后关闭顺序、`close(save=False)` 规则
 
 ## 最终验收清单
 

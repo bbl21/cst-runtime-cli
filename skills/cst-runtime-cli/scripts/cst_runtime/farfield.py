@@ -9,6 +9,15 @@ from typing import Any
 
 from . import process_cleanup
 from .errors import error_response
+from .farfield_analysis import (
+    _extract_farfield_frequency_ghz,
+    _build_farfield_angle_values,
+    inspect_farfield_ascii_grid,
+    _parse_farfield_cut_payload,
+    _evaluate_farfield_cut_neighborhood_flatness,
+    _group_farfield_cut_flatness,
+    calculate_farfield_neighborhood_flatness,
+)
 
 FARFIELD_EXPORT_DEFAULT_MAX_ATTEMPTS = 6
 FARFIELD_EXPORT_HARD_MAX_ATTEMPTS = 12
@@ -44,71 +53,7 @@ def _serialize_value(value: Any) -> Any:
     return value
 
 
-def _extract_farfield_frequency_ghz(farfield_name: str) -> float | None:
-    match = re.search(r"f\s*=\s*([0-9]+(?:\.[0-9]+)?)", farfield_name)
-    if not match:
-        return None
-    return float(match.group(1))
 
-
-def _build_farfield_angle_values(
-    minimum: float,
-    maximum: float,
-    step: float,
-    *,
-    upper_bound: float,
-    exclude_upper_endpoint: bool = False,
-) -> list[float]:
-    if step <= 0:
-        raise ValueError("angle step must be positive")
-    if minimum < 0 or maximum > upper_bound or minimum > maximum:
-        raise ValueError(
-            f"invalid angle range: min={minimum}, max={maximum}, upper_bound={upper_bound}"
-        )
-
-    values: list[float] = []
-    value = minimum
-    if exclude_upper_endpoint:
-        while value < maximum - 1e-9:
-            values.append(round(value, 10))
-            value += step
-    else:
-        while value <= maximum + 1e-9:
-            values.append(round(value, 10))
-            value += step
-    if not values:
-        raise ValueError(
-            f"angle range produced no sample points: min={minimum}, max={maximum}, step={step}"
-        )
-    return values
-
-
-def inspect_farfield_ascii_grid(file_path: str) -> dict[str, Any]:
-    theta_values: set[float] = set()
-    phi_values: set[float] = set()
-    row_count = 0
-    with open(file_path, "r", encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            parts = line.split()
-            if len(parts) < 2:
-                continue
-            try:
-                theta = float(parts[0])
-                phi = float(parts[1])
-            except Exception:
-                continue
-            theta_values.add(theta)
-            phi_values.add(phi)
-            row_count += 1
-    return {
-        "row_count": row_count,
-        "theta_count": len(theta_values),
-        "phi_count": len(phi_values),
-        "theta_min": min(theta_values) if theta_values else None,
-        "theta_max": max(theta_values) if theta_values else None,
-        "phi_min": min(phi_values) if phi_values else None,
-        "phi_max": max(phi_values) if phi_values else None,
-    }
 
 
 def _derive_farfield_cut_tree_path(
@@ -967,147 +912,4 @@ def read_realized_gain_grid_fresh_session(
         flow_log.append({"step": "quit_after_close", "result": end_quit})
 
 
-def _parse_farfield_cut_payload(file_path: str) -> dict[str, Any]:
-    payload = json.loads(Path(file_path).read_text(encoding="utf-8-sig"))
-    angle_deg = payload.get("angle_deg")
-    primary_db = payload.get("primary_db")
-    if not isinstance(angle_deg, list) or not isinstance(primary_db, list):
-        raise ValueError(f"farfield cut JSON must contain angle_deg and primary_db: {file_path}")
-    if len(angle_deg) != len(primary_db):
-        raise ValueError(f"angle_deg and primary_db lengths differ: {file_path}")
-    samples = [(float(angle), float(gain)) for angle, gain in zip(angle_deg, primary_db)]
-    if not samples:
-        raise ValueError(f"farfield cut data is empty: {file_path}")
-    source = Path(file_path).resolve()
-    return {
-        "file_path": str(source),
-        "label": source.stem,
-        "frequency_ghz": payload.get("frequency_ghz"),
-        "port": payload.get("port"),
-        "cut": payload.get("cut"),
-        "const_axis_value": payload.get("const_axis_value"),
-        "samples": samples,
-    }
 
-
-def _evaluate_farfield_cut_neighborhood_flatness(cut_item: dict[str, Any], theta_max_deg: float) -> dict[str, Any]:
-    samples = [
-        (angle, gain)
-        for angle, gain in cut_item["samples"]
-        if 0.0 <= angle <= theta_max_deg
-    ]
-    if not samples:
-        raise ValueError(f"no samples in theta <= {theta_max_deg:g} deg: {cut_item['file_path']}")
-    gains = [gain for _, gain in samples]
-    max_idx = max(range(len(samples)), key=lambda idx: samples[idx][1])
-    min_idx = min(range(len(samples)), key=lambda idx: samples[idx][1])
-    max_angle, max_gain = samples[max_idx]
-    min_angle, min_gain = samples[min_idx]
-    boresight_gain = next((gain for angle, gain in samples if abs(angle) <= 1e-9), None)
-
-    frequency = cut_item.get("frequency_ghz")
-    try:
-        frequency = None if frequency is None else float(frequency)
-    except Exception:
-        frequency = None
-    port = cut_item.get("port")
-    try:
-        port = None if port is None else int(port)
-    except Exception:
-        port = None
-
-    return {
-        "file_path": cut_item["file_path"],
-        "label": cut_item["label"],
-        "frequency_ghz": frequency,
-        "port": port,
-        "cut": cut_item.get("cut"),
-        "const_axis_value": cut_item.get("const_axis_value"),
-        "theta_max_deg": float(theta_max_deg),
-        "sample_count": len(samples),
-        "angle_range_deg": [samples[0][0], samples[-1][0]],
-        "flatness_db": float(max_gain - min_gain),
-        "max_gain_db": float(max_gain),
-        "max_gain_angle_deg": float(max_angle),
-        "min_gain_db": float(min_gain),
-        "min_gain_angle_deg": float(min_angle),
-        "boresight_gain_db": None if boresight_gain is None else float(boresight_gain),
-    }
-
-
-def _group_farfield_cut_flatness(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    groups: dict[tuple[float | None, int | None], list[dict[str, Any]]] = {}
-    for item in items:
-        key = (item.get("frequency_ghz"), item.get("port"))
-        groups.setdefault(key, []).append(item)
-
-    summaries: list[dict[str, Any]] = []
-    for key in sorted(
-        groups.keys(),
-        key=lambda value: (
-            float("inf") if value[0] is None else float(value[0]),
-            float("inf") if value[1] is None else int(value[1]),
-        ),
-    ):
-        members = groups[key]
-        flatness_values = [float(member["flatness_db"]) for member in members]
-        max_gain_values = [float(member["max_gain_db"]) for member in members]
-        min_gain_values = [float(member["min_gain_db"]) for member in members]
-        summaries.append(
-            {
-                "frequency_ghz": key[0],
-                "port": key[1],
-                "cut_count": len(members),
-                "cuts": [member.get("cut") for member in members],
-                "worst_flatness_db": max(flatness_values),
-                "best_flatness_db": min(flatness_values),
-                "mean_flatness_db": sum(flatness_values) / len(flatness_values),
-                "max_gain_db": max(max_gain_values),
-                "min_gain_db": min(min_gain_values),
-                "files": [member["file_path"] for member in members],
-            }
-        )
-    return summaries
-
-
-def calculate_farfield_neighborhood_flatness(
-    file_paths: list[str],
-    theta_max_deg: float = 15.0,
-    output_json: str = "",
-) -> dict[str, Any]:
-    try:
-        if not file_paths:
-            raise ValueError("file_paths cannot be empty")
-        if theta_max_deg <= 0:
-            raise ValueError("theta_max_deg must be positive")
-        per_file = [
-            _evaluate_farfield_cut_neighborhood_flatness(
-                _parse_farfield_cut_payload(file_path),
-                theta_max_deg,
-            )
-            for file_path in file_paths
-        ]
-        result = {
-            "status": "success",
-            "theta_max_deg": float(theta_max_deg),
-            "file_count": len(per_file),
-            "per_file": per_file,
-            "grouped_summary": _group_farfield_cut_flatness(per_file),
-            "runtime_module": "cst_runtime.farfield",
-        }
-        if output_json:
-            target = Path(output_json).expanduser()
-            if not target.is_absolute():
-                target = (Path.cwd() / target).resolve()
-            if target.suffix.lower() != ".json":
-                target = target.with_suffix(".json")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
-            result["output_json"] = str(target)
-        return result
-    except Exception as exc:
-        return error_response(
-            "farfield_flatness_failed",
-            str(exc),
-            runtime_module="cst_runtime.farfield",
-        )

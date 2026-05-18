@@ -1,38 +1,27 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from .errors import error_response
-
-PYTHON = sys.executable
-
-
-def _resolve_scripts_root() -> Path:
-    return Path(__file__).resolve().parent
+from .project_ops import list_parameters, list_entities
 
 
-def _run_cli(args: list[str], cwd: str) -> dict[str, Any]:
-    cli = _resolve_scripts_root().parent / "cst_runtime_cli.py"
-    r = subprocess.run(
-        [PYTHON, str(cli), *args],
-        capture_output=True, text=True, cwd=cwd,
-    )
-    try:
-        return json.loads(r.stdout)
-    except Exception:
-        return {"_raw_stdout": r.stdout[:1000], "_raw_stderr": r.stderr[:500], "_returncode": r.returncode}
+def _call_internal_tool(tool_name: str, project_path: str) -> dict[str, Any]:
+    if tool_name == "list-parameters":
+        return list_parameters(project_path=project_path)
+    if tool_name == "list-entities":
+        return list_entities(project_path=project_path, component="")
+    return {"status": "error", "message": f"unknown internal tool: {tool_name}"}
 
 
 def _gather_evidence(project_path: str, capture_types: list[str], cwd: str) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     for ctype in capture_types:
         if ctype == "parameters":
-            raw = _run_cli(["list-parameters", "--project-path", project_path], cwd)
+            raw = _call_internal_tool("list-parameters", project_path)
             items.append({
                 "type": "parameters",
                 "command": f"list-parameters --project-path {project_path}",
@@ -41,7 +30,7 @@ def _gather_evidence(project_path: str, capture_types: list[str], cwd: str) -> l
                 "count": raw.get("count", 0),
             })
         elif ctype == "entities":
-            raw = _run_cli(["list-entities", "--project-path", project_path], cwd)
+            raw = _call_internal_tool("list-entities", project_path)
             items.append({
                 "type": "entities",
                 "command": f"list-entities --project-path {project_path}",
