@@ -33,11 +33,37 @@ from .pipelines.impl import (
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+# ── 自动检测 CST 库路径并加入 sys.path ──
+_CST_SEARCH_PATHS = [
+    r"C:\Program Files\CST Studio Suite 2026\AMD64\python_cst_libraries",
+    r"C:\Program Files\CST Studio Suite 2025\AMD64\python_cst_libraries",
+    r"C:\Program Files (x86)\CST Studio Suite 2026\AMD64\python_cst_libraries",
+]
+_cst_found = False
+try:
+    _pp = Path.cwd().resolve() / "pyproject.toml"
+    if _pp.exists():
+        import tomllib
+        _src = tomllib.loads(_pp.read_text(encoding="utf-8")).get("tool", {}).get("uv", {}).get("sources", {}).get("cst-studio-suite-link", {})
+        if isinstance(_src, dict) and _src.get("path"):
+            _p = Path(_src["path"]).resolve()
+            if _p.is_dir() and (_p / "cst").is_dir() and str(_p) not in sys.path:
+                sys.path.insert(0, str(_p))
+                _cst_found = True
+except Exception:
+    pass
+if not _cst_found:
+    for _csp in _CST_SEARCH_PATHS:
+        _d = Path(_csp)
+        if _d.is_dir() and (_d / "cst").is_dir():
+            sys.path.insert(0, str(_d.resolve()))
+            break
+
 CLI_VERSION = "0.1.0"
 _BOOTSTRAP_ENTRYPOINT = "python <skill-root>\\scripts\\cst_runtime_cli.py"
 _UV_ENTRYPOINT = "uv run python -m cst_runtime"
 SAFE_WORKSPACE_COMMANDS = {
-    "doctor",
+    "health-check",
     "usage-guide",
     "list-tools",
     "list-pipelines",
@@ -234,7 +260,9 @@ def _json_response(payload: dict[str, Any]) -> int:
 
 def _entrypoint() -> str:
     main_script = Path(sys.argv[0]).name if sys.argv else ""
-    return _BOOTSTRAP_ENTRYPOINT if main_script == "cst_runtime_cli.py" else _UV_ENTRYPOINT
+    if main_script in ("cst_runtime_cli.py", "cli.py"):
+        return _BOOTSTRAP_ENTRYPOINT
+    return _UV_ENTRYPOINT
 
 
 def _categorized_help_text() -> str:
@@ -373,7 +401,7 @@ def _usage_guide() -> dict[str, Any]:
             "merge": "When using stdin together with --args-file/--args-json, add --args-stdin. Stdin JSON is loaded first; explicit args override same-name fields.",
         },
         "safe_discovery_commands": [
-            _cmd("doctor"),
+            _cmd("health-check --auto-fix false"),
             _cmd("usage-guide"),
             _cmd("list-tools"),
             _cmd("list-pipelines"),
@@ -647,143 +675,6 @@ def _check_solid_gate_error(tool_name: str, tool_args: dict[str, Any]) -> dict[s
         }
 
     return None
-
-
-def _doctor(explicit_workspace: str = "") -> dict[str, Any]:
-    checks: list[dict[str, Any]] = []
-    workspace_info = workspace.workspace_status(explicit_workspace)
-    skill_root = workspace.skill_root()
-    scripts_root = workspace.scripts_root()
-    uv_path = shutil.which("uv")
-    checks.append(
-        {
-            "name": "uv_on_path",
-            "status": "success" if uv_path else "warning",
-            "path": uv_path,
-            "message": None if uv_path else "uv not found on PATH; use the Python executable that can import CST dependencies.",
-        }
-    )
-    checks.append(
-        {
-            "name": "python_version",
-            "status": "success" if sys.version_info >= (3, 12) else "warning",
-            "version": sys.version,
-            "executable": sys.executable,
-            "required": ">=3.12",
-        }
-    )
-    workspace_root = Path(str(workspace_info["workspace_root"]))
-    pyproject_path = workspace_root / "pyproject.toml"
-    cst_link_path = None
-    if pyproject_path.exists():
-        try:
-            import tomllib
-
-            pyproject_data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-            cst_source = (
-                pyproject_data.get("tool", {})
-                .get("uv", {})
-                .get("sources", {})
-                .get("cst-studio-suite-link", {})
-            )
-            if isinstance(cst_source, dict):
-                cst_link_path = cst_source.get("path")
-        except Exception:
-            cst_link_path = None
-    checks.append(
-        {
-            "name": "pyproject_cst_path_dependency",
-            "status": "success" if cst_link_path and Path(str(cst_link_path)).exists() else "warning",
-            "path": cst_link_path,
-            "message": None
-            if cst_link_path and Path(str(cst_link_path)).exists()
-            else "pyproject CST path dependency is missing or not readable; CST production commands may need PYTHONPATH or installed CST libraries.",
-        }
-    )
-    checks.append(
-        {
-            "name": "skill_package",
-            "status": "success" if (scripts_root / "cst_runtime").exists() else "error",
-            "skill_root": str(skill_root),
-            "scripts_root": str(scripts_root),
-            "entrypoint": _entrypoint(),
-        }
-    )
-    checks.append(
-        {
-            "name": "workspace",
-            "status": "success" if workspace_info["workspace_initialized"] else "warning",
-            "path": workspace_info["workspace_root"],
-            "source": workspace_info["workspace_source"],
-            "cwd": str(Path.cwd()),
-            "marker": workspace_info["workspace_marker"],
-            "pyproject_exists": pyproject_path.exists(),
-            "message": None if workspace_info["workspace_initialized"] else "workspace is not initialized; run init-workspace before production commands.",
-        }
-    )
-    stdin_info: dict[str, Any] = {"name": "stdin", "status": "success"}
-    for attr in ("isatty", "readable"):
-        try:
-            value = getattr(sys.stdin, attr)()
-        except Exception as exc:
-            value = f"error: {exc}"
-        stdin_info[attr] = value
-    checks.append(stdin_info)
-    checks.append(
-        {
-            "name": "encoding",
-            "status": "success",
-            "stdout_encoding": getattr(sys.stdout, "encoding", None),
-            "stderr_encoding": getattr(sys.stderr, "encoding", None),
-            "filesystem_encoding": sys.getfilesystemencoding(),
-        }
-    )
-    checks.append(_check_import("cst_runtime"))
-    checks.append(_check_import("cst.interface"))
-    checks.append(_check_import("cst.results"))
-
-    cst_import_ready = all(
-        item.get("status") == "success"
-        for item in checks
-        if item.get("name") in {"import:cst.interface", "import:cst.results"}
-    )
-    skill_ready = all(
-        item.get("status") == "success"
-        for item in checks
-        if item.get("name") in {"skill_package", "import:cst_runtime"}
-    )
-    workspace_ready = bool(workspace_info["workspace_initialized"])
-    production_ready = bool(skill_ready and workspace_ready and cst_import_ready)
-    warning_count = sum(1 for item in checks if item.get("status") == "warning")
-    error_count = sum(1 for item in checks if item.get("status") == "error")
-    readiness = "ready" if error_count == 0 and warning_count == 0 else "degraded"
-    if error_count:
-        readiness = "blocked"
-    return {
-        "status": "success",
-        "adapter": "cst_runtime_cli",
-        "readiness": readiness,
-        "skill_ready": skill_ready,
-        "workspace_ready": workspace_ready,
-        "production_ready": production_ready,
-        "workspace": workspace_info,
-        "platform": {
-            "system": platform.system(),
-            "release": platform.release(),
-            "machine": platform.machine(),
-        },
-        "recommended_entrypoints": [
-            _cmd("<command>"),
-        ],
-        "checks": checks,
-        "compatibility_notes": [
-            "Use --args-file for Windows paths and cross-shell compatibility.",
-            "When combining stdin with --args-file or --args-json, add --args-stdin.",
-            "Run init-workspace in an empty directory before production commands.",
-            "Use CST_WORKSPACE or --workspace when the current directory is not the target workspace.",
-            "Meta commands such as doctor, usage-guide, list-tools, describe-tool, and args-template do not start CST.",
-        ],
-    }
 
 
 def _tool_runbook(tool_name: str) -> dict[str, Any]:
@@ -1168,13 +1059,6 @@ def main() -> int:
     parser.add_argument("--version", action="version", version=f"cst_runtime {CLI_VERSION}")
     subparsers = parser.add_subparsers(dest="command", required=True, parser_class=JsonArgumentParser)
 
-    doctor = subparsers.add_parser(
-        "doctor",
-        help="Run a no-CST-start compatibility self-check.",
-        epilog=DIRECT_TOOL_HELP,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    _add_workspace_arg(doctor)
     list_tools = subparsers.add_parser(
         "list-tools",
         help="List available runtime tools.",
@@ -1271,9 +1155,6 @@ def main() -> int:
         _add_direct_args(direct, tool_name)
 
     args = parser.parse_args()
-
-    if args.command == "doctor":
-        return _json_response(_doctor(str(getattr(args, "workspace", "") or "")))
 
     if args.command == "list-tools":
         return _json_response(

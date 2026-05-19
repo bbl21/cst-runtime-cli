@@ -209,7 +209,7 @@ class CliContractOutputFormatTests(unittest.TestCase):
     """All CLI output follows the JSON contract."""
 
     def test_all_outputs_have_required_fields(self) -> None:
-        for cmd in ("doctor", "usage-guide", "list-tools", "list-pipelines"):
+        for cmd in ("usage-guide", "list-tools", "list-pipelines"):
             with self.subTest(command=cmd):
                 r = run_cli(cmd)
                 self.assertEqual(r.returncode, 0, r.stderr)
@@ -282,10 +282,10 @@ class CliContractNoCstFunctionalTests(unittest.TestCase):
         p = json.loads(r.stdout)
         self.assertEqual(p["status"], "success")
         self.assertIn("overall", p)
-        self.assertIn("checks", p)
+        self.assertIn("phases", p)
         self.assertIn("fixes_applied", p)
-        self.assertIn("remaining_issues", p)
-        self.assertIn("readiness_summary", p)
+        self.assertIn("workspace", p)
+        self.assertIn("platform", p)
 
     def test_health_check_without_auto_fix(self) -> None:
         r = run_cli("health-check", "--auto-fix", "false")

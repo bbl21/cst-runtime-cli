@@ -147,10 +147,11 @@ def _write_pyproject_cst_path(cst_path: str) -> dict[str, Any]:
     deps_start = "dependencies = ["
     ds = new_content.find(deps_start)
     if ds >= 0:
-        # 找到与 deps_start 的 [ 配对的 ]
         de = new_content.find("]", ds)
         if de >= 0 and dep_name not in new_content[ds:de]:
-            new_content = new_content[:de] + f', "{dep_name}"' + new_content[de:]
+            existing = new_content[ds + len(deps_start):de].strip()
+            prefix = f'{dep_name}' if not existing else f', {dep_name}'
+            new_content = new_content[:de] + prefix + new_content[de:]
 
     pyproject.write_text(new_content, encoding="utf-8")
     return {"status": "success", "cst_path": cst_path, "updated_file": str(pyproject)}
@@ -250,27 +251,34 @@ def _record_check(checks: list[dict[str, Any]], remaining: list[dict[str, Any]],
 
 
 def health_check(workspace: str = "", auto_fix: bool = True) -> dict[str, Any]:
-    checks: list[dict[str, Any]] = []
-    fixes_applied: list[str] = []
-    remaining_issues: list[dict[str, Any]] = []
-
-    # 1. Python version
-    py_ok = sys.version_info >= (3, 12)
-    _record_check(checks, remaining_issues, "python_version",
-        "pass" if py_ok else "error",
-        f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}" if py_ok else f"Python {sys.version_info.major}.{sys.version_info.minor} < 3.12",
-        user_action="Install Python 3.12 or later from https://python.org" if not py_ok else "")
-
-    # 2. uv
-    uv_path = shutil.which("uv")
-    _record_check(checks, remaining_issues, "uv",
-        "pass" if uv_path else "warning",
-        f"uv found at {uv_path}" if uv_path else "uv not on PATH",
-        user_action='Install uv: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"' if not uv_path else "")
-
-    # 3. Workspace
     from . import workspace as ws_mod
+    import platform
+
+    skill_root = ws_mod.skill_root()
+    scripts_root = ws_mod.scripts_root()
     ws_info = ws_mod.workspace_status(workspace)
+
+    def _r(name: str, status: str, **kw: Any) -> dict[str, Any]:
+        return {"name": name, "status": status, **kw}
+
+    phases: dict[str, Any] = {}
+    fixes_applied: list[str] = []
+
+    # ── Phase 1: Workspace + Platform ──
+    ws_checks: list[dict[str, Any]] = []
+
+    # 1a. Python version
+    py_ok = sys.version_info >= (3, 12)
+    ws_checks.append(_r("python_version", "pass" if py_ok else "error",
+        version=sys.version, required=">=3.12",
+        user_action="Install Python 3.12+" if not py_ok else ""))
+
+    # 1b. uv
+    uv_path = shutil.which("uv")
+    ws_checks.append(_r("uv", "pass" if uv_path else "warning",
+        path=uv_path, user_action="Install uv from https://astral.sh/uv" if not uv_path else ""))
+
+    # 1c. Workspace
     ws_ok = ws_info["workspace_initialized"]
     ws_fixed = False
     if not ws_ok and auto_fix:
@@ -283,13 +291,60 @@ def health_check(workspace: str = "", auto_fix: bool = True) -> dict[str, Any]:
                 ws_ok = True
         except Exception:
             pass
-    _record_check(checks, remaining_issues, "workspace",
-        "pass" if ws_ok else "error",
-        f"Workspace at {ws_info['workspace_root']}" if ws_ok else "Workspace not initialized",
+    ws_checks.append(_r("workspace", "pass" if ws_ok else "error",
+        root=ws_info.get("workspace_root"), marker=ws_info.get("workspace_marker"),
         auto_fixed=ws_fixed,
-        user_action="Run: python <skill-root>/scripts/cst_runtime_cli.py init-workspace --workspace <path>" if not ws_ok and not auto_fix else "")
+        user_action="Run init-workspace --workspace <path>" if not ws_ok and not auto_fix else ""))
 
-    # 4. CST library scan + auto-configure
+    # 1d. Skill package
+    pkg_ok = (scripts_root / "cst_runtime").exists()
+    ws_checks.append(_r("skill_package", "pass" if pkg_ok else "error",
+        skill_root=str(skill_root), scripts_root=str(scripts_root)))
+
+    # 1e. stdin
+    stdin_info = {"isatty": False, "readable": False}
+    for attr in ("isatty", "readable"):
+        try:
+            stdin_info[attr] = getattr(sys.stdin, attr)()
+        except Exception:
+            pass
+    ws_checks.append(_r("stdin", "success", **stdin_info))
+
+    # 1f. encoding
+    ws_checks.append(_r("encoding", "success",
+        stdout_encoding=getattr(sys.stdout, "encoding", None),
+        stderr_encoding=getattr(sys.stderr, "encoding", None),
+        filesystem_encoding=sys.getfilesystemencoding()))
+
+    ws_status = "pass"
+    for c in ws_checks:
+        if c["status"] == "error":
+            ws_status = "error"
+            break
+        if c["status"] == "warning":
+            ws_status = "degraded"
+    phases["workspace"] = {"status": ws_status, "checks": ws_checks, "auto_fixed": ws_fixed}
+
+    # ── Phase 2: CST Environment ──
+    cst_checks: list[dict[str, Any]] = []
+
+    # 2a. pyproject CST path dependency
+    ws_root = Path(str(ws_info.get("workspace_root", "")))
+    pyproject_path = ws_root / "pyproject.toml"
+    cst_link_path = None
+    if pyproject_path.exists():
+        try:
+            import tomllib
+            src = tomllib.loads(pyproject_path.read_text(encoding="utf-8")).get("tool", {}).get("uv", {}).get("sources", {}).get("cst-studio-suite-link", {})
+            if isinstance(src, dict):
+                cst_link_path = src.get("path")
+        except Exception:
+            pass
+    cst_link_ok = bool(cst_link_path and Path(str(cst_link_path)).is_dir())
+    cst_checks.append(_r("pyproject_cst_path", "pass" if cst_link_ok else "info",
+        path=cst_link_path))
+
+    # 2b. CST installation scan
     scan = scan_cst_installations()
     cst_found = scan["found_count"] > 0
     cst_valid = any(inst["has_interface"] and inst["has_results"] for inst in scan["installations"])
@@ -301,54 +356,71 @@ def health_check(workspace: str = "", auto_fix: bool = True) -> dict[str, Any]:
             install_result = install_cst_libraries()
             if install_result.get("status") == "success":
                 cst_fixed = True
-                fixes_applied.append(f"cst_libraries: configured {install_result.get('cst_path', '')}")
+                fixes_applied.append(f"cst: configured {install_result.get('cst_path', '')}")
                 scan = scan_cst_installations()
                 cst_configured = True
         except Exception:
             pass
 
     if not cst_found:
-        cst_status, cst_msg, cst_action = "error", "No CST Studio Suite installation detected", "Install CST Studio Suite 2026 or higher, then re-run health-check"
+        cst_status, cst_msg = "error", "No CST Studio Suite installation detected"
     elif not cst_valid:
-        cst_status, cst_msg, cst_action = "error", f"CST found at {scan['installations'][0]['path']} but Python libraries incomplete", "Reinstall CST Studio Suite with Python libraries option"
+        cst_status, cst_msg = "error", "CST found but Python libraries incomplete"
     elif not cst_configured:
-        cst_status, cst_msg, cst_action = "warning", "CST libraries found but not configured in pyproject.toml", f"Run: python <skill-root>/scripts/cst_runtime_cli.py install-cst-libraries --cst-path \"{scan['installations'][0]['path']}\""
+        cst_status, cst_msg = "warning", "CST libraries found but not configured"
     else:
-        cst_status, cst_msg, cst_action = "pass", f"CST libraries at {scan['active_path']}", ""
-    _record_check(checks, remaining_issues, "cst_libraries", cst_status, cst_msg, auto_fixed=cst_fixed, user_action=cst_action)
+        cst_status, cst_msg = "pass", f"CST libraries at {scan['active_path']}"
+    cst_checks.append(_r("cst_libraries", cst_status, message=cst_msg, auto_fixed=cst_fixed))
 
-    # 5. uv sync (auto-fix only, skip if blocking issues exist)
-    if auto_fix and not any(c["status"] == "error" for c in checks):
-        ws_root = ws_info.get("workspace_root")
-        if ws_root:
-            first_setup = not (Path(str(ws_root)) / ".venv").is_dir()
-            sync_result = _run_uv_cmd(["uv", "sync"], str(ws_root), label="uv sync")
-            _record_check(checks, remaining_issues, "uv_sync",
-                "pass" if sync_result["status"] == "success" else "error",
-                sync_result.get("message", "uv sync completed"))
-            if sync_result["status"] == "success" and first_setup:
-                fixes_applied.append("uv_sync: dependencies installed to .venv")
-                doctor_result = _run_uv_cmd(["uv", "run", "python", "-m", "cst_runtime", "doctor"], str(ws_root), timeout=60, label="doctor")
-                _record_check(checks, remaining_issues, "final_verification",
-                    "pass" if doctor_result["status"] == "success" else "warning",
-                    doctor_result.get("message", "Post-sync doctor check passed"))
-                if doctor_result["status"] == "success":
-                    fixes_applied.append("final_verification: doctor check passed")
+    # 2c. Import checks
+    for mod_name in ("cst_runtime", "cst.interface", "cst.results"):
+        try:
+            __import__(mod_name)
+            cst_checks.append(_r(f"import:{mod_name}", "pass"))
+        except Exception as exc:
+            cst_checks.append(_r(f"import:{mod_name}", "error", message=str(exc)))
 
-    overall = "pass"
-    for c in checks:
+    cst_status_agg = "pass"
+    for c in cst_checks:
         if c["status"] == "error":
-            overall = "blocked"
+            cst_status_agg = "error"
             break
-        if c["status"] == "warning" and overall == "pass":
-            overall = "degraded"
+        if c["status"] == "warning":
+            cst_status_agg = "degraded"
+    phases["cst"] = {"status": cst_status_agg, "checks": cst_checks, "auto_fixed": cst_fixed}
+
+    # ── Phase 3: Integration (auto-fix only) ──
+    if auto_fix and not any(c["status"] == "error" for c in ws_checks + cst_checks):
+        sync_result = _run_uv_cmd(["uv", "sync"], str(ws_root), label="uv sync")
+        sync_ok = sync_result["status"] == "success"
+        phases["integration"] = {
+            "status": "pass" if sync_ok else "error",
+            "message": sync_result.get("message", "uv sync completed" if sync_ok else "uv sync failed"),
+        }
+        if sync_ok:
+            first_setup = not (ws_root / ".venv").is_dir() or True
+            if first_setup:
+                fixes_applied.append("uv_sync: dependencies installed to .venv")
+    else:
+        phases["integration"] = {"status": "skipped", "message": "uv sync skipped (blocking issues exist or auto_fix=False)"}
+
+    # ── Overall readiness ──
+    has_error = any(p.get("status") == "error" for p in phases.values())
+    has_warning = any(p.get("status") in ("degraded", "warning") for p in phases.values())
+    overall = "blocked" if has_error else ("degraded" if has_warning else "pass")
 
     return {
         "status": "success",
         "overall": overall,
-        "checks": checks,
+        "phases": phases,
         "fixes_applied": fixes_applied,
-        "remaining_issues": [{k: v for k, v in issue.items() if v} for issue in remaining_issues],
-        "readiness_summary": "All systems ready." if overall == "pass" else f"Auto-fixed {len(fixes_applied)} issue(s); {len(remaining_issues)} remaining.",
-        "user_instructions": "\n".join(f"- [{issue['name']}] {issue['user_action']}" for issue in remaining_issues if issue.get("user_action")) if remaining_issues else "No manual action needed.",
+        "workspace": {
+            "root": ws_info.get("workspace_root"),
+            "initialized": ws_info["workspace_initialized"],
+        },
+        "platform": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "machine": platform.machine(),
+        },
     }
