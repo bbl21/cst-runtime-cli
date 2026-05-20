@@ -84,3 +84,5 @@ from . import farfield  # noqa: E402, F811
 from . import session  # noqa: E402, F811
 from . import audit  # noqa: E402, F811
 from . import workspace  # noqa: E402, F811
+from . import optimization  # noqa: E402, F811
+from . import doe  # noqa: E402, F811
