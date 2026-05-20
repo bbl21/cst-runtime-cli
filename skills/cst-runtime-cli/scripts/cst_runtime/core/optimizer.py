@@ -230,6 +230,57 @@ def param_importances(storage_path: str, study_name: str) -> dict[str, Any]:
         return error_response("param_importances_failed", str(exc), study_name=study_name)
 
 
+def add_trials(
+    storage_path: str, study_name: str,
+    trials: list[dict],
+) -> dict[str, Any]:
+    """Inject pre-computed trials into a study (e.g. from manual grid scan).
+
+    Each trial dict: {"params": {"R": 0.1}, "values": [-28.7], "constraints": [0.0]}
+    """
+    optuna, err = _try_import_optuna()
+    if err:
+        return err
+    sp = Path(storage_path).expanduser().resolve()
+    storage = f"sqlite:///{sp.as_posix()}"
+    try:
+        study = optuna.load_study(storage=storage, study_name=study_name)
+        param_raw = study.user_attrs.get("parameters", "{}")
+        params_def = _parse_json(param_raw, {})
+        distributions: dict[str, Any] = {}
+        for pname, pdef in params_def.items():
+            ptype = pdef.get("type", "float")
+            low = pdef.get("min", pdef.get("low", 0))
+            high = pdef.get("max", pdef.get("high", 1))
+            if ptype == "int":
+                distributions[pname] = optuna.distributions.IntDistribution(int(low), int(high))
+            else:
+                log = pdef.get("log", False)
+                distributions[pname] = optuna.distributions.FloatDistribution(float(low), float(high), log=log)
+        added = 0
+        for td in trials:
+            params = td.get("params", {})
+            values = td.get("values", [td.get("value", 0)])
+            constraints = td.get("constraints")
+            trial = optuna.create_trial(
+                params=params,
+                distributions=distributions,
+                values=values,
+                state=optuna.trial.TrialState.COMPLETE,
+            )
+            if constraints is not None:
+                trial.system_attrs["constraints"] = constraints
+            study.add_trial(trial)
+            added += 1
+        return {
+            "status": "success", "study_name": study_name,
+            "trials_added": added, "total_trials": len(study.trials),
+            "runtime_module": "cst_runtime.core.optimizer",
+        }
+    except Exception as exc:
+        return error_response("add_trials_failed", str(exc), study_name=study_name)
+
+
 def terminate_check(storage_path: str, study_name: str) -> dict[str, Any]:
     optuna, err = _try_import_optuna()
     if err:

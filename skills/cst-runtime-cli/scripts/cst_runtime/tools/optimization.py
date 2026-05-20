@@ -63,6 +63,18 @@ _register_tool_defs({
             "study_name": "horn_matching",
         },
     },
+    "study-add-trials": {
+        "category": "optimization",
+        "risk": "filesystem-write",
+        "description": "Inject pre-computed trials (e.g. from manual grid scan) into a study. Each trial: {params, values, constraints?}.",
+        "handler": "tool_add_trials",
+        "direct_flags": True,
+        "args_template": {
+            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
+            "study_name": "horn_matching",
+            "trials": [{"params": {"R": 0.1}, "values": [-28.7]}, {"params": {"R": 0.2}, "values": [-39.9]}],
+        },
+    },
     "study-param-importances": {
         "category": "optimization",
         "risk": "read",
@@ -125,6 +137,14 @@ def tool_best_study(args: dict) -> dict:
     return _opt.best_study(
         storage_path=str(args.get("storage_path", "")),
         study_name=str(args.get("study_name", "")),
+    )
+
+
+def tool_add_trials(args: dict) -> dict:
+    return _opt.add_trials(
+        storage_path=str(args.get("storage_path", "")),
+        study_name=str(args.get("study_name", "")),
+        trials=args.get("trials", []),
     )
 
 

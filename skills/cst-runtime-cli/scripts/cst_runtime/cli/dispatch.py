@@ -1010,6 +1010,7 @@ _HANDLER_MAP["tool_create_study"] = _lazy_tool("optimization", "create_study")
 _HANDLER_MAP["tool_ask_study"] = _lazy_tool("optimization", "ask_study")
 _HANDLER_MAP["tool_tell_study"] = _lazy_tool("optimization", "tell_study")
 _HANDLER_MAP["tool_best_study"] = _lazy_tool("optimization", "best_study")
+_HANDLER_MAP["tool_add_trials"] = _lazy_tool("optimization", "add_trials")
 _HANDLER_MAP["tool_param_importances"] = _lazy_tool("optimization", "param_importances")
 _HANDLER_MAP["tool_terminate_check"] = _lazy_tool("optimization", "terminate_check")
 assert len(_HANDLER_MAP) > 100, f"Handler map too small: {len(_HANDLER_MAP)}"
