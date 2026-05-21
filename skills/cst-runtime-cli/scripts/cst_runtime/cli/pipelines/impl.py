@@ -206,6 +206,12 @@ def pipeline_run_experiment(
     from ...core.project import start_simulation_async, is_simulation_running
     from ...core.results import export_run_results
 
+    # Record pre-existing exported file count to detect if solver produced new results.
+    # Checks the exports/ directory before and after export:
+    #   - mode A (existing project): file number must increase
+    #   - mode B (new project): first file is created (0 → N)
+    max_before_export = _max_exported_run_id(project_path)
+
     open_result = sm_open(project_path)
     if open_result.get("status") != "success":
         return error_response(
@@ -260,8 +266,6 @@ def pipeline_run_experiment(
             step="run-experiment:close",
         )
 
-    max_existing_run_id = _max_exported_run_id(project_path)
-
     export_result = export_run_results(
         project_path=project_path,
         farfield_names=farfield_names,
@@ -289,12 +293,29 @@ def pipeline_run_experiment(
 
     run_id = s11_metric.get("run_id") if s11_metric else None
 
-    re_run_warning = None
-    if run_id is not None and run_id <= max_existing_run_id:
-        re_run_warning = (
-            f"simulation may not have re-ran: exported run_id={run_id} <= pre-existing max={max_existing_run_id}. "
-            f"Parameter changes may not have triggered a new solver run."
-        )
+    # Verify solver produced new results by checking if exported file number increased
+    max_after_export = _max_exported_run_id(project_path)
+    solver_produced_new_data = max_after_export > max_before_export
+
+    if not solver_produced_new_data:
+        return {
+            "status": "error",
+            "error_type": "solver_did_not_complete",
+            "message": (
+                f"Solver did not produce new results: "
+                f"exported file number {max_after_export} <= pre-existing {max_before_export}. "
+                f"The simulation may have failed silently (e.g. mesh error, geometry issue). "
+                f"Check CST solver logs in Result/*.log for details."
+            ),
+            "pipeline": "run-experiment",
+            "project_path": project_path,
+            "polls": polls,
+            "waited_seconds": waited,
+            "exported_count": len(exported_files),
+            "exported": exported_files,
+            "pre_export_max_file_num": max_before_export,
+            "post_export_max_file_num": max_after_export,
+        }
 
     output: dict[str, Any] = {
         "status": "success",
@@ -307,9 +328,10 @@ def pipeline_run_experiment(
         "s11_export_path": s11_export_path,
         "s11_metric": s11_metric,
         "farfield_exported": farfield_files,
+        "solver_completed": True,
+        "pre_export_max_file_num": max_before_export,
+        "post_export_max_file_num": max_after_export,
     }
     if run_id is not None:
         output["run_id"] = run_id
-    if re_run_warning:
-        output["warning"] = re_run_warning
     return output
