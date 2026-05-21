@@ -138,10 +138,10 @@ PIPELINES: dict[str, dict[str, Any]] = {
         "when_to_use": "When using the CLI for the first time in a new environment, or after installing/upgrading CST.",
         "required_context": [],
         "commands": [
-            "python <skill-root>\\scripts\\cst_runtime_cli.py health-check --auto-fix true",
-            "python <skill-root>\\scripts\\cst_runtime_cli.py --help",
-            "python <skill-root>\\scripts\\cst_runtime_cli.py list-tools",
-            "python <skill-root>\\scripts\\cst_runtime_cli.py list-pipelines",
+            "uv run python -m cst_runtime health-check --auto-fix true",
+            "uv run python -m cst_runtime --help",
+            "uv run python -m cst_runtime list-tools",
+            "uv run python -m cst_runtime list-pipelines",
         ],
         "steps": [
             {"tool": "health-check", "purpose": "Diagnose environment, auto-fix what's possible, report remaining issues."},
