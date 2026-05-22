@@ -8,8 +8,58 @@ TOOL_DEFS = {
     "risk": "long-running",
     "description": "Run a simulation, wait for completion, and export S11 + farfield results. Returns s11_metric with min_db and best_freq.",
     "handler": "tool_run_experiment",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "farfield_names": [], "farfield_plot_mode": "Realized Gain", "farfield_theta_step": 2.0, "farfield_phi_step": 2.0, "timeout_seconds": 3600},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "farfield_names": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    []
+                ]
+            },
+            "farfield_plot_mode": {
+                "type": "string",
+                "examples": [
+                    "Realized Gain"
+                ]
+            },
+            "farfield_theta_step": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            },
+            "farfield_phi_step": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            },
+            "timeout_seconds": {
+                "type": "integer",
+                "examples": [
+                    3600
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "farfield_names",
+            "farfield_plot_mode",
+            "farfield_theta_step",
+            "farfield_phi_step",
+            "timeout_seconds"
+        ]
+    },
 },
 }
 

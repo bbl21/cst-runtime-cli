@@ -8,8 +8,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Activate or deactivate a post-processing operation.",
     "handler": "tool_activate_post_process",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "operation": "envelop", "enable": True},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "operation": {
+                "type": "string",
+                "examples": [
+                    "envelop"
+                ]
+            },
+            "enable": {
+                "type": "boolean",
+                "examples": [
+                    True
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "operation",
+            "enable"
+        ]
+    },
 },
 
 "add-to-history": {
@@ -17,8 +43,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Execute a raw VBA command via add_to_history for operations not covered by other tools.",
     "handler": "tool_add_to_history",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "command": "Solid.Add \"Component1:solid1\", \"Component1:solid2\"", "history_name": "custom boolean add"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "command": {
+                "type": "string",
+                "examples": [
+                    "Solid.Add \"Component1:solid1\", \"Component1:solid2\""
+                ]
+            },
+            "history_name": {
+                "type": "string",
+                "examples": [
+                    "custom boolean add"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "command",
+            "history_name"
+        ]
+    },
 },
 
 "boolean-add": {
@@ -26,8 +78,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Unite two solids (boolean union).",
     "handler": "tool_boolean_add",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "shape1": "Component1:part1", "shape2": "Component1:part2"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "shape1": {
+                "type": "string",
+                "examples": [
+                    "Component1:part1"
+                ]
+            },
+            "shape2": {
+                "type": "string",
+                "examples": [
+                    "Component1:part2"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "shape1",
+            "shape2"
+        ]
+    },
 },
 
 "boolean-insert": {
@@ -35,8 +113,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Insert one solid into another (boolean insert).",
     "handler": "tool_boolean_insert",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "shape1": "Component1:outer", "shape2": "Component1:insert"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "shape1": {
+                "type": "string",
+                "examples": [
+                    "Component1:outer"
+                ]
+            },
+            "shape2": {
+                "type": "string",
+                "examples": [
+                    "Component1:insert"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "shape1",
+            "shape2"
+        ]
+    },
 },
 
 "boolean-intersect": {
@@ -44,8 +148,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Intersect two solids (boolean intersection).",
     "handler": "tool_boolean_intersect",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "shape1": "Component1:part1", "shape2": "Component1:part2"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "shape1": {
+                "type": "string",
+                "examples": [
+                    "Component1:part1"
+                ]
+            },
+            "shape2": {
+                "type": "string",
+                "examples": [
+                    "Component1:part2"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "shape1",
+            "shape2"
+        ]
+    },
 },
 
 "boolean-subtract": {
@@ -53,8 +183,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Subtract one solid from another (boolean difference).",
     "handler": "tool_boolean_subtract",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "target": "Component1:outer", "tool": "Component1:inner"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "target": {
+                "type": "string",
+                "examples": [
+                    "Component1:outer"
+                ]
+            },
+            "tool": {
+                "type": "string",
+                "examples": [
+                    "Component1:inner"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "target",
+            "tool"
+        ]
+    },
 },
 
 "change-material": {
@@ -62,8 +218,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Change the material of a geometry entity. Use list-materials to see available names.",
     "handler": "tool_change_material",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "shape_name": "Component1:my_brick", "material": "Copper (pure)"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "shape_name": {
+                "type": "string",
+                "examples": [
+                    "Component1:my_brick"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "Copper (pure)"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "shape_name",
+            "material"
+        ]
+    },
 },
 
 "create-component": {
@@ -71,8 +253,27 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a new component in the CST project.",
     "handler": "tool_create_component",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "component_name": "MyComponent"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "component_name": {
+                "type": "string",
+                "examples": [
+                    "MyComponent"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "component_name"
+        ]
+    },
 },
 
 "create-hollow-sweep": {
@@ -80,8 +281,118 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a hollow loft sweep with outer and inner walls.",
     "handler": "tool_create_hollow_sweep",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "horn", "component": "HornAntenna", "material": "PEC", "x_min1": -10, "x_max1": 10, "y_min1": -10, "y_max1": 10, "z1": 0, "x_min2": -35, "x_max2": 35, "y_min2": -35, "y_max2": 35, "z2": 50, "wall_thickness": 2.0},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "horn"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "HornAntenna"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "PEC"
+                ]
+            },
+            "x_min1": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "x_max1": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "y_min1": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "y_max1": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "z1": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "x_min2": {
+                "type": "integer",
+                "examples": [
+                    -35
+                ]
+            },
+            "x_max2": {
+                "type": "integer",
+                "examples": [
+                    35
+                ]
+            },
+            "y_min2": {
+                "type": "integer",
+                "examples": [
+                    -35
+                ]
+            },
+            "y_max2": {
+                "type": "integer",
+                "examples": [
+                    35
+                ]
+            },
+            "z2": {
+                "type": "integer",
+                "examples": [
+                    50
+                ]
+            },
+            "wall_thickness": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "component",
+            "material",
+            "x_min1",
+            "x_max1",
+            "y_min1",
+            "y_max1",
+            "z1",
+            "x_min2",
+            "x_max2",
+            "y_min2",
+            "y_max2",
+            "z2",
+            "wall_thickness"
+        ]
+    },
 },
 
 "create-horn-segment": {
@@ -89,8 +400,55 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a horn segment (outer cone - inner cone).",
     "handler": "tool_create_horn_segment",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "segment_id": 1, "bottom_radius": 8, "top_radius": 25, "z_min": 0, "z_max": 30},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "segment_id": {
+                "type": "integer",
+                "examples": [
+                    1
+                ]
+            },
+            "bottom_radius": {
+                "type": "integer",
+                "examples": [
+                    8
+                ]
+            },
+            "top_radius": {
+                "type": "integer",
+                "examples": [
+                    25
+                ]
+            },
+            "z_min": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "z_max": {
+                "type": "integer",
+                "examples": [
+                    30
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "segment_id",
+            "bottom_radius",
+            "top_radius",
+            "z_min",
+            "z_max"
+        ]
+    },
 },
 
 "create-loft-sweep": {
@@ -98,8 +456,111 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a loft sweep between two 2D profiles in one step.",
     "handler": "tool_create_loft_sweep",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "horn_shell", "component": "HornAntenna", "material": "PEC", "x_min1": -10, "x_max1": 10, "y_min1": -10, "y_max1": 10, "z1": 0, "x_min2": -35, "x_max2": 35, "y_min2": -35, "y_max2": 35, "z2": 50},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "horn_shell"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "HornAntenna"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "PEC"
+                ]
+            },
+            "x_min1": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "x_max1": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "y_min1": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "y_max1": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "z1": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "x_min2": {
+                "type": "integer",
+                "examples": [
+                    -35
+                ]
+            },
+            "x_max2": {
+                "type": "integer",
+                "examples": [
+                    35
+                ]
+            },
+            "y_min2": {
+                "type": "integer",
+                "examples": [
+                    -35
+                ]
+            },
+            "y_max2": {
+                "type": "integer",
+                "examples": [
+                    35
+                ]
+            },
+            "z2": {
+                "type": "integer",
+                "examples": [
+                    50
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "component",
+            "material",
+            "x_min1",
+            "x_max1",
+            "y_min1",
+            "y_max1",
+            "z1",
+            "x_min2",
+            "x_max2",
+            "y_min2",
+            "y_max2",
+            "z2"
+        ]
+    },
 },
 
 "create-mesh-group": {
@@ -107,8 +568,40 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a mesh group and add items.",
     "handler": "tool_create_mesh_group",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "group_name": "fine_mesh", "items": ["solid1", "solid2"]},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "group_name": {
+                "type": "string",
+                "examples": [
+                    "fine_mesh"
+                ]
+            },
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "solid1",
+                        "solid2"
+                    ]
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "group_name",
+            "items"
+        ]
+    },
 },
 
 "define-analytical-curve": {
@@ -116,8 +609,69 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Define an analytical curve using parametric equations.",
     "handler": "tool_define_analytical_curve",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "exp_curve", "curve": "curve1", "law_x": "C1*exp(R*t)+C2", "law_y": "0", "law_z": "t", "param_start": "0", "param_end": "10"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "exp_curve"
+                ]
+            },
+            "curve": {
+                "type": "string",
+                "examples": [
+                    "curve1"
+                ]
+            },
+            "law_x": {
+                "type": "string",
+                "examples": [
+                    "C1*exp(R*t)+C2"
+                ]
+            },
+            "law_y": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "law_z": {
+                "type": "string",
+                "examples": [
+                    "t"
+                ]
+            },
+            "param_start": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "param_end": {
+                "type": "string",
+                "examples": [
+                    "10"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "curve",
+            "law_x",
+            "law_y",
+            "law_z",
+            "param_start",
+            "param_end"
+        ]
+    },
 },
 
 "define-brick": {
@@ -125,8 +679,83 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a rectangular brick in the CST project.",
     "handler": "tool_define_brick",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "my_brick", "component": "Component1", "material": "PEC", "x_min": -10, "x_max": 10, "y_min": -10, "y_max": 10, "z_min": 0, "z_max": 20},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "my_brick"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "Component1"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "PEC"
+                ]
+            },
+            "x_min": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "x_max": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "y_min": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "y_max": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "z_min": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "z_max": {
+                "type": "integer",
+                "examples": [
+                    20
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "component",
+            "material",
+            "x_min",
+            "x_max",
+            "y_min",
+            "y_max",
+            "z_min",
+            "z_max"
+        ]
+    },
 },
 
 "define-cone": {
@@ -134,8 +763,90 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a cone in the CST project.",
     "handler": "tool_define_cone",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "my_cone", "component": "Component1", "material": "PEC", "bottom_radius": 5, "top_radius": 15, "axis": "z", "z_min": 0, "z_max": 30, "x_center": 0, "y_center": 0},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "my_cone"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "Component1"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "PEC"
+                ]
+            },
+            "bottom_radius": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            },
+            "top_radius": {
+                "type": "integer",
+                "examples": [
+                    15
+                ]
+            },
+            "axis": {
+                "type": "string",
+                "examples": [
+                    "z"
+                ]
+            },
+            "z_min": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "z_max": {
+                "type": "integer",
+                "examples": [
+                    30
+                ]
+            },
+            "x_center": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "y_center": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "component",
+            "material",
+            "bottom_radius",
+            "top_radius",
+            "axis",
+            "z_min",
+            "z_max",
+            "x_center",
+            "y_center"
+        ]
+    },
 },
 
 "define-cylinder": {
@@ -143,8 +854,90 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a cylinder in the CST project.",
     "handler": "tool_define_cylinder",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "my_cylinder", "component": "Component1", "material": "PEC", "outer_radius": 5, "inner_radius": 0, "axis": "z", "z_min": 0, "z_max": 20, "x_center": 0, "y_center": 0},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "my_cylinder"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "Component1"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "PEC"
+                ]
+            },
+            "outer_radius": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            },
+            "inner_radius": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "axis": {
+                "type": "string",
+                "examples": [
+                    "z"
+                ]
+            },
+            "z_min": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "z_max": {
+                "type": "integer",
+                "examples": [
+                    20
+                ]
+            },
+            "x_center": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "y_center": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "component",
+            "material",
+            "outer_radius",
+            "inner_radius",
+            "axis",
+            "z_min",
+            "z_max",
+            "x_center",
+            "y_center"
+        ]
+    },
 },
 
 "define-extrude-curve": {
@@ -152,8 +945,55 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Extrude a curve profile into a solid.",
     "handler": "tool_define_extrude_curve",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "extruded_part", "component": "Component1", "material": "PEC", "curve": "curve1:my_polygon", "thickness": 5},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "extruded_part"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "Component1"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "PEC"
+                ]
+            },
+            "curve": {
+                "type": "string",
+                "examples": [
+                    "curve1:my_polygon"
+                ]
+            },
+            "thickness": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "component",
+            "material",
+            "curve",
+            "thickness"
+        ]
+    },
 },
 
 "define-loft": {
@@ -161,8 +1001,55 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Execute a loft between pre-picked faces.",
     "handler": "tool_define_loft",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "loft_result", "component": "Component1", "material": "PEC", "tangency": 0, "minimize_twist": True},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "loft_result"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "Component1"
+                ]
+            },
+            "material": {
+                "type": "string",
+                "examples": [
+                    "PEC"
+                ]
+            },
+            "tangency": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "minimize_twist": {
+                "type": "boolean",
+                "examples": [
+                    True
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "component",
+            "material",
+            "tangency",
+            "minimize_twist"
+        ]
+    },
 },
 
 "define-material-from-mtd": {
@@ -170,8 +1057,27 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Define a CST material from .mtd file by material name. Material must exist in references/Materials/. Use list-materials to see available names.",
     "handler": "tool_define_material_from_mtd",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "material_name": "Copper (pure)"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "material_name": {
+                "type": "string",
+                "examples": [
+                    "Copper (pure)"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "material_name"
+        ]
+    },
 },
 
 "define-polygon-3d": {
@@ -179,8 +1085,70 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Define a 3D polygon curve from a list of points.",
     "handler": "tool_define_polygon_3d",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "my_polygon", "curve": "curve1", "points": [["-10", "0", "0"], ["10", "0", "0"], ["10", "0", "10"], ["-10", "0", "10"], ["-10", "0", "0"]]},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "my_polygon"
+                ]
+            },
+            "curve": {
+                "type": "string",
+                "examples": [
+                    "curve1"
+                ]
+            },
+            "points": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        [
+                            "-10",
+                            "0",
+                            "0"
+                        ],
+                        [
+                            "10",
+                            "0",
+                            "0"
+                        ],
+                        [
+                            "10",
+                            "0",
+                            "10"
+                        ],
+                        [
+                            "-10",
+                            "0",
+                            "10"
+                        ],
+                        [
+                            "-10",
+                            "0",
+                            "0"
+                        ]
+                    ]
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "curve",
+            "points"
+        ]
+    },
 },
 
 "define-rectangle": {
@@ -188,8 +1156,62 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a 2D rectangle on a curve in the CST project.",
     "handler": "tool_define_rectangle",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "my_rect", "curve": "curve1", "x_min": -10, "x_max": 10, "y_min": -5, "y_max": 5},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "my_rect"
+                ]
+            },
+            "curve": {
+                "type": "string",
+                "examples": [
+                    "curve1"
+                ]
+            },
+            "x_min": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "x_max": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "y_min": {
+                "type": "integer",
+                "examples": [
+                    -5
+                ]
+            },
+            "y_max": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "curve",
+            "x_min",
+            "x_max",
+            "y_min",
+            "y_max"
+        ]
+    },
 },
 
 "define-units": {
@@ -197,8 +1219,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set the CST project unit system.",
     "handler": "tool_define_units",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "length": "mm", "frequency": "GHz"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "length": {
+                "type": "string",
+                "examples": [
+                    "mm"
+                ]
+            },
+            "frequency": {
+                "type": "string",
+                "examples": [
+                    "GHz"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "length",
+            "frequency"
+        ]
+    },
 },
 
 "delete-entity": {
@@ -206,8 +1254,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Delete a geometry entity from the CST project.",
     "handler": "tool_delete_entity",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "component": "Component1", "name": "temp_shape"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "Component1"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "temp_shape"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "component",
+            "name"
+        ]
+    },
 },
 
 "delete-monitor": {
@@ -215,8 +1289,27 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Delete a monitor by name.",
     "handler": "tool_delete_monitor",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "monitor_name": "farfield (f=10)"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "monitor_name": {
+                "type": "string",
+                "examples": [
+                    "farfield (f=10)"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "monitor_name"
+        ]
+    },
 },
 
 "delete-probe": {
@@ -224,8 +1317,27 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Delete a probe by its ID.",
     "handler": "tool_delete_probe",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "probe_id": "1"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "probe_id": {
+                "type": "string",
+                "examples": [
+                    "1"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "probe_id"
+        ]
+    },
 },
 
 "export-e-field": {
@@ -233,8 +1345,34 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Export E-field data at a given frequency to ASCII.",
     "handler": "tool_export_e_field",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "frequency": "10", "file_path": "C:\\path\\to\\run\\exports"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "frequency": {
+                "type": "string",
+                "examples": [
+                    "10"
+                ]
+            },
+            "file_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\run\\exports"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "frequency",
+            "file_path"
+        ]
+    },
 },
 
 "export-surface-current": {
@@ -242,8 +1380,34 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Export surface current data at a given frequency to ASCII.",
     "handler": "tool_export_surface_current",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "frequency": "10", "file_path": "C:\\path\\to\\run\\exports"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "frequency": {
+                "type": "string",
+                "examples": [
+                    "10"
+                ]
+            },
+            "file_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\run\\exports"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "frequency",
+            "file_path"
+        ]
+    },
 },
 
 "export-voltage": {
@@ -251,8 +1415,34 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Export voltage monitor data to ASCII.",
     "handler": "tool_export_voltage",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "voltage_index": "0", "file_path": "C:\\path\\to\\run\\exports"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "voltage_index": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "file_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\run\\exports"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "voltage_index",
+            "file_path"
+        ]
+    },
 },
 
 "list-entities": {
@@ -260,8 +1450,27 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "List geometry entities from the verified CST working project.",
     "handler": "tool_list_entities",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "component": ""},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    ""
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "component"
+        ]
+    },
 },
 
 "list-materials": {
@@ -269,8 +1478,11 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "List available CST material names from the Materials library.",
     "handler": "tool_list_materials",
-    "direct_flags": True,
-    "args_template": {},
+    "json_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+    },
 },
 
 "pick-face": {
@@ -278,8 +1490,41 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Select a face by ID for loft operations (zero-thickness entities only).",
     "handler": "tool_pick_face",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "component": "Component1", "name": "profile_wall", "face_id": "1"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "component": {
+                "type": "string",
+                "examples": [
+                    "Component1"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "profile_wall"
+                ]
+            },
+            "face_id": {
+                "type": "string",
+                "examples": [
+                    "1"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "component",
+            "name",
+            "face_id"
+        ]
+    },
 },
 
 "rename-entity": {
@@ -287,8 +1532,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Rename a geometry entity.",
     "handler": "tool_rename_entity",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "old_name": "Component1:old_name", "new_name": "Component1:new_name"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "old_name": {
+                "type": "string",
+                "examples": [
+                    "Component1:old_name"
+                ]
+            },
+            "new_name": {
+                "type": "string",
+                "examples": [
+                    "Component1:new_name"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "old_name",
+            "new_name"
+        ]
+    },
 },
 
 "set-background-with-space": {
@@ -296,8 +1567,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set background space distances.",
     "handler": "tool_set_background_with_space",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "set-efield-monitor": {
@@ -305,8 +1588,41 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set an E-field monitor over a frequency range.",
     "handler": "tool_set_efield_monitor",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "start_freq": 2.0, "end_freq": 18.0, "step": 1},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "start_freq": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            },
+            "end_freq": {
+                "type": "number",
+                "examples": [
+                    18.0
+                ]
+            },
+            "step": {
+                "type": "integer",
+                "examples": [
+                    1
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "start_freq",
+            "end_freq",
+            "step"
+        ]
+    },
 },
 
 "set-entity-color": {
@@ -314,8 +1630,48 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set the display color of a geometry entity.",
     "handler": "tool_set_entity_color",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "shape_name": "Component1:my_brick", "r": 255, "g": 0, "b": 0},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "shape_name": {
+                "type": "string",
+                "examples": [
+                    "Component1:my_brick"
+                ]
+            },
+            "r": {
+                "type": "integer",
+                "examples": [
+                    255
+                ]
+            },
+            "g": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "b": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "shape_name",
+            "r",
+            "g",
+            "b"
+        ]
+    },
 },
 
 "set-farfield-monitor": {
@@ -323,8 +1679,41 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set a farfield monitor over a frequency range.",
     "handler": "tool_set_farfield_monitor",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "start_freq": 2.0, "end_freq": 18.0, "step": 1},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "start_freq": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            },
+            "end_freq": {
+                "type": "number",
+                "examples": [
+                    18.0
+                ]
+            },
+            "step": {
+                "type": "integer",
+                "examples": [
+                    1
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "start_freq",
+            "end_freq",
+            "step"
+        ]
+    },
 },
 
 "set-farfield-plot-cuts": {
@@ -332,8 +1721,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set farfield plot cut angles.",
     "handler": "tool_set_farfield_plot_cuts",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "set-field-monitor": {
@@ -341,8 +1742,48 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set a field monitor (e.g. H-field) over a frequency range.",
     "handler": "tool_set_field_monitor",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "field_type": "H", "start_frequency": "2", "end_frequency": "18", "num_samples": "10"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "field_type": {
+                "type": "string",
+                "examples": [
+                    "H"
+                ]
+            },
+            "start_frequency": {
+                "type": "string",
+                "examples": [
+                    "2"
+                ]
+            },
+            "end_frequency": {
+                "type": "string",
+                "examples": [
+                    "18"
+                ]
+            },
+            "num_samples": {
+                "type": "string",
+                "examples": [
+                    "10"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "field_type",
+            "start_frequency",
+            "end_frequency",
+            "num_samples"
+        ]
+    },
 },
 
 "set-probe": {
@@ -350,8 +1791,48 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set a field probe at a specified position.",
     "handler": "tool_set_probe",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "field_type": "E", "x_pos": "0", "y_pos": "0", "z_pos": "5"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "field_type": {
+                "type": "string",
+                "examples": [
+                    "E"
+                ]
+            },
+            "x_pos": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "y_pos": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "z_pos": {
+                "type": "string",
+                "examples": [
+                    "5"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "field_type",
+            "x_pos",
+            "y_pos",
+            "z_pos"
+        ]
+    },
 },
 
 "show-bounding-box": {
@@ -359,8 +1840,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Toggle bounding box display.",
     "handler": "tool_show_bounding_box",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "transform-curve": {
@@ -368,8 +1861,69 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Mirror a curve.",
     "handler": "tool_transform_curve",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "curve_name": "curve1:my_curve", "center_x": "0", "center_y": "0", "center_z": "0", "plane_normal_x": "0", "plane_normal_y": "1", "plane_normal_z": "0"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "curve_name": {
+                "type": "string",
+                "examples": [
+                    "curve1:my_curve"
+                ]
+            },
+            "center_x": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "center_y": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "center_z": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "plane_normal_x": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "plane_normal_y": {
+                "type": "string",
+                "examples": [
+                    "1"
+                ]
+            },
+            "plane_normal_z": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "curve_name",
+            "center_x",
+            "center_y",
+            "center_z",
+            "plane_normal_x",
+            "plane_normal_y",
+            "plane_normal_z"
+        ]
+    },
 },
 
 "transform-shape": {
@@ -377,8 +1931,76 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Mirror or rotate a geometry shape.",
     "handler": "tool_transform_shape",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "shape_name": "Component1:my_shape", "transform_type": "mirror", "center_x": "0", "center_y": "0", "center_z": "0", "plane_normal_x": "0", "plane_normal_y": "1", "plane_normal_z": "0"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "shape_name": {
+                "type": "string",
+                "examples": [
+                    "Component1:my_shape"
+                ]
+            },
+            "transform_type": {
+                "type": "string",
+                "examples": [
+                    "mirror"
+                ]
+            },
+            "center_x": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "center_y": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "center_z": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "plane_normal_x": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            },
+            "plane_normal_y": {
+                "type": "string",
+                "examples": [
+                    "1"
+                ]
+            },
+            "plane_normal_z": {
+                "type": "string",
+                "examples": [
+                    "0"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "shape_name",
+            "transform_type",
+            "center_x",
+            "center_y",
+            "center_z",
+            "plane_normal_x",
+            "plane_normal_y",
+            "plane_normal_z"
+        ]
+    },
 },
 }
 

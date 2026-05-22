@@ -12,26 +12,101 @@ _register_tool_defs({
         "risk": "read",
         "description": "Design a Plackett-Burman probe plan to screen parameters. Returns a list of experiments; run each via prepare-experiment + run-experiment, then feed results to analyze-probes.",
         "handler": "tool_design_probes",
-        "direct_flags": True,
-        "args_template": {
-            "parameters": {"R": {"min": 0.1, "max": 0.5}, "g": {"min": 20, "max": 30}, "L": {"min": 100, "max": 150}},
-            "max_probes": 12,
-            "include_center": True,
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "parameters": {
+                "type": "object",
+                "examples": [
+                    {
+                        "R": {
+                            "min": 0.1,
+                            "max": 0.5
+                        },
+                        "g": {
+                            "min": 20,
+                            "max": 30
+                        },
+                        "L": {
+                            "min": 100,
+                            "max": 150
+                        }
+                    }
+                ]
+            },
+            "max_probes": {
+                "type": "integer",
+                "examples": [
+                    12
+                ]
+            },
+            "include_center": {
+                "type": "boolean",
+                "examples": [
+                    True
+                ]
+            }
         },
+        "required": [
+            "parameters",
+            "max_probes",
+            "include_center"
+        ]
+    },
     },
     "analyze-probes": {
         "category": "optimization",
         "risk": "read",
         "description": "Analyze probe results: compute main effects and two-way interactions. Input must include the parameter values and the objective value for each probe.",
         "handler": "tool_analyze_probes",
-        "direct_flags": True,
-        "args_template": {
-            "parameters": ["R", "g", "L"],
-            "probes": [
-                {"params": {"R": 0.1, "g": 20, "L": 100}, "value": -28.7},
-                {"params": {"R": 0.5, "g": 30, "L": 150}, "value": -26.3},
-            ],
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "parameters": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "R",
+                        "g",
+                        "L"
+                    ]
+                ]
+            },
+            "probes": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        {
+                            "params": {
+                                "R": 0.1,
+                                "g": 20,
+                                "L": 100
+                            },
+                            "value": -28.7
+                        },
+                        {
+                            "params": {
+                                "R": 0.5,
+                                "g": 30,
+                                "L": 150
+                            },
+                            "value": -26.3
+                        }
+                    ]
+                ]
+            }
         },
+        "required": [
+            "parameters",
+            "probes"
+        ]
+    },
     },
 })
 

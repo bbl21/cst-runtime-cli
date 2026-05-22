@@ -8,8 +8,40 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Calculate near-boresight farfield cut flatness from exported cut JSON payloads.",
     "handler": "tool_calculate_farfield_neighborhood_flatness",
-    "direct_flags": False,
-    "args_template": {"file_paths": ["C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_cut_phi0_port1.json", "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_cut_phi90_port1.json"], "theta_max_deg": 15.0, "output_json": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_flatness.json"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "file_paths": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_cut_phi0_port1.json",
+                        "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_cut_phi90_port1.json"
+                    ]
+                ]
+            },
+            "theta_max_deg": {
+                "type": "number",
+                "examples": [
+                    15.0
+                ]
+            },
+            "output_json": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\analysis\\farfield_flatness.json"
+                ]
+            }
+        },
+        "required": [
+            "file_paths",
+            "theta_max_deg",
+            "output_json"
+        ]
+    },
 },
 
 "export-farfield-cut": {
@@ -17,8 +49,41 @@ TOOL_DEFS = {
     "risk": "long-running",
     "description": "Export an existing CST Farfield Cut tree item to JSON under {export_dir}/farfield/cuts/.",
     "handler": "tool_export_farfield_cut",
-    "direct_flags": False,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "tree_path": "Farfields\\Farfield Cuts\\Excitation [1]\\Phi=0\\farfield (f=13)", "export_dir": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports", "fresh_session": False},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "tree_path": {
+                "type": "string",
+                "examples": [
+                    "Farfields\\Farfield Cuts\\Excitation [1]\\Phi=0\\farfield (f=13)"
+                ]
+            },
+            "export_dir": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports"
+                ]
+            },
+            "fresh_session": {
+                "type": "boolean",
+                "examples": [
+                    False
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "tree_path",
+            "export_dir",
+            "fresh_session"
+        ]
+    },
 },
 
 "export-farfield-grid": {
@@ -26,8 +91,97 @@ TOOL_DEFS = {
     "risk": "long-running",
     "description": "Compute a FarfieldCalculator scalar grid and export as JSON under {export_dir}/farfield/. Supports fresh_session reuse.",
     "handler": "tool_export_farfield_grid",
-    "direct_flags": False,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "farfield_name": "farfield (f=13) [1]", "export_dir": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports", "quantity": "Realized Gain", "theta_step_deg": 1.0, "phi_step_deg": 2.0, "theta_min_deg": 0.0, "theta_max_deg": 15.0, "phi_min_deg": 0.0, "phi_max_deg": 360.0, "run_id": "", "fresh_session": False},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "farfield_name": {
+                "type": "string",
+                "examples": [
+                    "farfield (f=13) [1]"
+                ]
+            },
+            "export_dir": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\exports"
+                ]
+            },
+            "quantity": {
+                "type": "string",
+                "examples": [
+                    "Realized Gain"
+                ]
+            },
+            "theta_step_deg": {
+                "type": "number",
+                "examples": [
+                    1.0
+                ]
+            },
+            "phi_step_deg": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            },
+            "theta_min_deg": {
+                "type": "number",
+                "examples": [
+                    0.0
+                ]
+            },
+            "theta_max_deg": {
+                "type": "number",
+                "examples": [
+                    15.0
+                ]
+            },
+            "phi_min_deg": {
+                "type": "number",
+                "examples": [
+                    0.0
+                ]
+            },
+            "phi_max_deg": {
+                "type": "number",
+                "examples": [
+                    360.0
+                ]
+            },
+            "run_id": {
+                "type": "string",
+                "examples": [
+                    ""
+                ]
+            },
+            "fresh_session": {
+                "type": "boolean",
+                "examples": [
+                    False
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "farfield_name",
+            "export_dir",
+            "quantity",
+            "theta_step_deg",
+            "phi_step_deg",
+            "theta_min_deg",
+            "theta_max_deg",
+            "phi_min_deg",
+            "phi_max_deg",
+            "run_id",
+            "fresh_session"
+        ]
+    },
 },
 
 "inspect-farfield-monitors": {
@@ -35,8 +189,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Discover farfield monitors from a CST project by scanning the result tree.",
     "handler": "tool_inspect_farfield_monitors",
-    "direct_flags": False,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 }
 

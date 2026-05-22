@@ -18,97 +18,339 @@ _register_tool_defs({
         "risk": "filesystem-write",
         "description": "Create or load an Optuna optimization study. Supports single-objective, multi-objective (directions), and constraint-enabled studies.",
         "handler": "tool_create_study",
-        "direct_flags": True,
-        "args_template": {
-            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
-            "study_name": "horn_matching",
-            "parameters": '{"R": {"type": "float", "min": 0.1, "max": 0.5}}',
-            "direction": "minimize",
-            "directions": ["minimize", "maximize"],
-            "value_names": ["S11_dB", "Gain_dBi"],
-            "constraints": [{"name": "VSWR", "operator": "<=", "threshold": 2.0}],
-            "sampler": "tpe",
-            "n_startup_trials": 10,
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "storage_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db"
+                ]
+            },
+            "study_name": {
+                "type": "string",
+                "examples": [
+                    "horn_matching"
+                ]
+            },
+            "parameters": {
+                "type": "string",
+                "examples": [
+                    "{\"R\": {\"type\": \"float\", \"min\": 0.1, \"max\": 0.5}}"
+                ]
+            },
+            "direction": {
+                "type": "string",
+                "examples": [
+                    "minimize"
+                ]
+            },
+            "directions": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "minimize",
+                        "maximize"
+                    ]
+                ]
+            },
+            "value_names": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "S11_dB",
+                        "Gain_dBi"
+                    ]
+                ]
+            },
+            "constraints": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        {
+                            "name": "VSWR",
+                            "operator": "<=",
+                            "threshold": 2.0
+                        }
+                    ]
+                ]
+            },
+            "sampler": {
+                "type": "string",
+                "examples": [
+                    "tpe"
+                ]
+            },
+            "n_startup_trials": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            }
         },
+        "required": [
+            "storage_path",
+            "study_name",
+            "parameters",
+            "direction",
+            "directions",
+            "value_names",
+            "constraints",
+            "sampler",
+            "n_startup_trials"
+        ]
+    },
     },
     "ask-study": {
         "category": "optimization",
         "risk": "read",
         "description": "Ask the study for the next trial parameter suggestion.",
         "handler": "tool_ask_study",
-        "direct_flags": True,
-        "args_template": {
-            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
-            "study_name": "horn_matching",
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "storage_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db"
+                ]
+            },
+            "study_name": {
+                "type": "string",
+                "examples": [
+                    "horn_matching"
+                ]
+            }
         },
+        "required": [
+            "storage_path",
+            "study_name"
+        ]
+    },
     },
     "tell-study": {
         "category": "optimization",
         "risk": "filesystem-write",
         "description": "Report trial result. Supports single value, multi-objective values array, and optional constraints.",
         "handler": "tool_tell_study",
-        "direct_flags": True,
-        "args_template": {
-            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
-            "study_name": "horn_matching",
-            "trial_number": 3,
-            "value": -35.5,
-            "values": [-35.5, 12.3],
-            "constraints": [-1.0, 0.5],
-            "state": "complete",
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "storage_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db"
+                ]
+            },
+            "study_name": {
+                "type": "string",
+                "examples": [
+                    "horn_matching"
+                ]
+            },
+            "trial_number": {
+                "type": "integer",
+                "examples": [
+                    3
+                ]
+            },
+            "value": {
+                "type": "number",
+                "examples": [
+                    -35.5
+                ]
+            },
+            "values": {
+                "type": "array",
+                "items": {
+                    "type": "number"
+                },
+                "examples": [
+                    [
+                        -35.5,
+                        12.3
+                    ]
+                ]
+            },
+            "constraints": {
+                "type": "array",
+                "items": {
+                    "type": "number"
+                },
+                "examples": [
+                    [
+                        -1.0,
+                        0.5
+                    ]
+                ]
+            },
+            "state": {
+                "type": "string",
+                "examples": [
+                    "complete"
+                ]
+            }
         },
+        "required": [
+            "storage_path",
+            "study_name",
+            "trial_number",
+            "value",
+            "values",
+            "constraints",
+            "state"
+        ]
+    },
     },
     "best-study": {
         "category": "optimization",
         "risk": "read",
         "description": "Get current best result. For multi-objective returns Pareto front samples.",
         "handler": "tool_best_study",
-        "direct_flags": True,
-        "args_template": {
-            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
-            "study_name": "horn_matching",
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "storage_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db"
+                ]
+            },
+            "study_name": {
+                "type": "string",
+                "examples": [
+                    "horn_matching"
+                ]
+            }
         },
+        "required": [
+            "storage_path",
+            "study_name"
+        ]
+    },
     },
     "study-add-trials": {
         "category": "optimization",
         "risk": "filesystem-write",
         "description": "Inject pre-computed trials (e.g. from manual grid scan) into a study. Each trial: {params, values, constraints?}.",
         "handler": "tool_add_trials",
-        "direct_flags": True,
-        "args_template": {
-            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
-            "study_name": "horn_matching",
-            "trials": [{"params": {"R": 0.1}, "values": [-28.7]}, {"params": {"R": 0.2}, "values": [-39.9]}],
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "storage_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db"
+                ]
+            },
+            "study_name": {
+                "type": "string",
+                "examples": [
+                    "horn_matching"
+                ]
+            },
+            "trials": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        {
+                            "params": {
+                                "R": 0.1
+                            },
+                            "values": [
+                                -28.7
+                            ]
+                        },
+                        {
+                            "params": {
+                                "R": 0.2
+                            },
+                            "values": [
+                                -39.9
+                            ]
+                        }
+                    ]
+                ]
+            }
         },
+        "required": [
+            "storage_path",
+            "study_name",
+            "trials"
+        ]
+    },
     },
     "study-param-importances": {
         "category": "optimization",
         "risk": "read",
         "description": "Analyze which parameters most affect the objective. Requires at least 5 completed trials.",
         "handler": "tool_param_importances",
-        "direct_flags": True,
-        "args_template": {
-            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
-            "study_name": "horn_matching",
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "storage_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db"
+                ]
+            },
+            "study_name": {
+                "type": "string",
+                "examples": [
+                    "horn_matching"
+                ]
+            }
         },
+        "required": [
+            "storage_path",
+            "study_name"
+        ]
+    },
     },
     "study-terminate-check": {
         "category": "optimization",
         "risk": "read",
         "description": "Check if optimization has converged using Optuna's regret-bound evaluator. Returns should_terminate.",
         "handler": "tool_terminate_check",
-        "direct_flags": True,
-        "args_template": {
-            "storage_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db",
-            "study_name": "horn_matching",
+        "json_schema": {
+        "type": "object",
+        "properties": {
+            "storage_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\studies\\optimization.db"
+                ]
+            },
+            "study_name": {
+                "type": "string",
+                "examples": [
+                    "horn_matching"
+                ]
+            }
         },
+        "required": [
+            "storage_path",
+            "study_name"
+        ]
+    },
     },
     "run-probe-phase": {
         "category": "optimization",
         "risk": "long-running",
         "description": "Run the complete probe phase: design Plackett-Burman probes, simulate each, analyze main effects and interactions, then inject results into an Optuna study. The working.cst is copied to working_probe.cst for isolation; exports go to exports/probe/. Returns top_params, edge_hit, and suggested_algorithm. Supports objective parameter to customize the objective function (default: s11_min_db).",
         "handler": "tool_run_probe_phase",
-        "direct_flags": True,
         "json_schema": {
             "$schema": "https://json-schema.org/draft-07/schema#",
             "type": "object",
@@ -166,7 +408,6 @@ _register_tool_defs({
         "risk": "long-running",
         "description": "Run one optimization iteration: ask Optuna for next parameters, apply them, simulate, compute objective, and report back. Agent inspects the objective_value output to decide whether to stop or continue the loop.",
         "handler": "tool_run_optimization_step",
-        "direct_flags": True,
         "json_schema": {
             "$schema": "https://json-schema.org/draft-07/schema#",
             "type": "object",
