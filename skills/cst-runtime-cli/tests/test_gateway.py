@@ -28,7 +28,6 @@ from cst_runtime.core.gateway import (
     resolve_run_id,
     compute_db,
     guard_farfield_quantity,
-    guard_farfield_run_id,
     annotate_change_param_result,
     guard_result_filter,
     on_session_open,
@@ -234,22 +233,6 @@ class GatewayT8FarfieldQuantityTests:
         err = guard_farfield_quantity("SomethingElse")
         assert err is not None
         assert err["error_type"] == "unsupported_quantity"
-
-
-class GatewayT11FarfieldRunIdTests:
-    def test_none_run_id_rejected(self):
-        err = guard_farfield_run_id(None)
-        assert err is not None
-        assert err["trap"] == "T11_farfield_overwrite"
-
-    def test_zero_run_id_allowed(self):
-        err = guard_farfield_run_id(0)
-        assert err is None
-
-    def test_positive_run_id_allowed(self):
-        err = guard_farfield_run_id(5)
-        assert err is None
-
 
 class GatewayT13ChangeParamAnnotationTests:
     def test_success_gets_warning(self):

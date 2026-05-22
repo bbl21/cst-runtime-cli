@@ -453,10 +453,6 @@ def export_farfield_grid(
     if rejected:
         return rejected
 
-    rejected = gateway.guard_farfield_run_id(run_id)
-    if rejected:
-        return rejected
-
     try:
         normalized_mode = _normalize_farfield_plot_mode(quantity)
     except ValueError as exc:

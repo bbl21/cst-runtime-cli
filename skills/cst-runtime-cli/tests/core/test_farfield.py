@@ -33,7 +33,7 @@ def test_export_farfield_grid_invalid_quantity(tmp_path):
 
 
 def test_export_farfield_grid_no_run_id(tmp_path):
-    """T11: farfield export without run_id rejected."""
+    """T11 was here — now passes through to project open which fails."""
     dummy_cst = tmp_path / "project.cst"
     dummy_cst.write_text("")
     from cst_runtime.core.farfield import export_farfield_grid
@@ -44,7 +44,7 @@ def test_export_farfield_grid_no_run_id(tmp_path):
         quantity="Gain",
         run_id=None,
     )
-    assert_json_error(result, "farfield_run_id_required")
+    assert result["status"] == "error"
 
 
 def test_export_farfield_grid_valid_quantity_passes_gate():

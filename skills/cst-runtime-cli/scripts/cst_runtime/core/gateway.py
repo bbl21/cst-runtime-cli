@@ -313,28 +313,6 @@ def guard_farfield_quantity(quantity: str) -> dict[str, Any] | None:
 
 
 # ---------------------------------------------------------------------------
-# T11 — farfield overwrite
-# ---------------------------------------------------------------------------
-def guard_farfield_run_id(run_id: int | None, project_path: str = "") -> dict[str, Any] | None:
-    if run_id is None:
-        return error_response(
-            "farfield_run_id_required",
-            "Farfield data is overwritten per simulation run in CST. "
-            "Provide explicit run_id to preserve historical farfield data across runs.",
-            trap="T11_farfield_overwrite",
-            cst_raw={
-                "run_id_provided": None,
-                "project_path": project_path or "(not provided)",
-                _explain: "CST farfield results in a .cst file are overwritten each simulation; "
-                          "only the latest run's farfield data survives unless exported per run",
-            },
-            next_action="Pass run_id=<N> where N is the run number from list-run-ids, "
-                        "or use export-run-results which handles this automatically",
-        )
-    return None
-
-
-# ---------------------------------------------------------------------------
 # T13 — change-parameter readback misleading
 # ---------------------------------------------------------------------------
 def annotate_change_param_result(result: dict[str, Any], project_path: str = "", param_name: str = "") -> dict[str, Any]:
