@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from .errors import error_response
-from . import gateway
 from .utils import serialize_value as _serialize_value
 
 
@@ -221,22 +220,9 @@ def get_1d_result(
         project, context = _load_project(project_path, allow_interactive, subproject_treepath)
         result_module, normalized_module = _get_result_module(project, module_type)
 
-        # T1: resolve run_id=0 alias
-        effective_run_id = int(run_id)
-        t1_warning = ""
-        if effective_run_id == 0:
-            try:
-                if treepath:
-                    available = result_module.get_run_ids(treepath)
-                else:
-                    available = result_module.get_all_run_ids()
-            except Exception:
-                available = []
-            effective_run_id, t1_warning, t1_info = gateway.resolve_run_id(0, list(available))
-
         result_item = result_module.get_result_item(
             treepath,
-            run_id=effective_run_id,
+            run_id=int(run_id),
             load_impedances=load_impedances,
         )
 
@@ -255,7 +241,7 @@ def get_1d_result(
             export_file = export_file.resolve()
         else:
             export_file = (
-                Path(context["fullpath"]).parent.parent / "exports" / f"s11_run{effective_run_id}.json"
+                Path(context["fullpath"]).parent.parent / "exports" / f"s11_run{run_id}.json"
             ).resolve()
             export_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -284,10 +270,6 @@ def get_1d_result(
             "export_path": str(export_file),
             "runtime_module": "cst_runtime.results",
         }
-        if t1_warning:
-            result["requested_run_id"] = 0
-            result["t1_translation"] = t1_warning
-            result["cst_raw"] = {"t1": t1_info}
         return result
     except Exception as exc:
         return error_response(

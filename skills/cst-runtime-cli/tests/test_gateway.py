@@ -25,7 +25,6 @@ from cst_runtime.core.gateway import (
     clear_dirty,
     mark_farfield_exported,
     guard_before_close_save,
-    resolve_run_id,
     compute_db,
     guard_farfield_quantity,
     annotate_change_param_result,
@@ -136,36 +135,6 @@ class GatewayT3FarfieldSaveTests:
         effective, msg = guard_before_close_save("C:/test.cst", True)
         assert effective
         assert msg == ""
-
-
-class GatewayT1RunIdTests:
-    def test_run_id_nonzero_passthrough(self):
-        rid, msg, info = resolve_run_id(5, [1, 2, 3, 5])
-        assert rid == 5
-        assert msg == ""
-        assert info == {}
-
-    def test_run_id_zero_resolves_to_latest(self):
-        rid, msg, info = resolve_run_id(0, [1, 2, 3, 5])
-        assert rid == 5
-        assert "T1" in msg
-        assert info["resolved_to"] == 5
-
-    def test_run_id_zero_single_run(self):
-        rid, msg, info = resolve_run_id(0, [1])
-        assert rid == 1
-        assert "T1" in msg
-
-    def test_run_id_zero_no_positive(self):
-        rid, msg, info = resolve_run_id(0, [0])
-        assert rid == 0
-        assert "T1" in msg
-
-    def test_run_id_zero_empty(self):
-        rid, msg, info = resolve_run_id(0, [])
-        assert rid == 0
-        assert "T1" in msg
-
 
 class GatewayT4ComplexDBTests:
     def test_compute_db_basic(self):

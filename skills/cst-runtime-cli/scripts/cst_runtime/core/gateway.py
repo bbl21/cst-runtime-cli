@@ -243,34 +243,6 @@ def guard_before_close_save(project_path: str, requested_save: bool) -> tuple[bo
 
 
 # ---------------------------------------------------------------------------
-# T1 — run_id=0 alias
-# ---------------------------------------------------------------------------
-def resolve_run_id(run_id: int, available_ids: list[int]) -> tuple[int, str, dict[str, Any]]:
-    """T1: translate run_id=0 to actual latest run_id.
-    Returns (effective_run_id, warning_message, cst_raw_info)."""
-    if run_id != 0:
-        return run_id, "", {}
-    positive = sorted(r for r in available_ids if r > 0)
-    if not positive:
-        return 0, "[T1] No positive run_ids available, falling back to run_id=0", {
-            "all_run_ids": available_ids,
-            "positive_count": 0,
-            _explain: "run_id 0 in CST is an alias for the most recent simulation result",
-        }
-    latest = positive[-1]
-    return latest, (
-        f"[T1] Requested run_id=0, resolved to {latest} "
-        f"(run_id=0 is always alias for latest result in CST)"
-    ), {
-        "all_run_ids": available_ids,
-        "resolved_to": latest,
-        "positive_count": len(positive),
-        _explain: "run_id 0 in CST is an alias for the most recent simulation result; "
-                  "export_run_results skips run_id 0 to avoid duplicate data",
-    }
-
-
-# ---------------------------------------------------------------------------
 # T4 — S11 complex ydata
 # ---------------------------------------------------------------------------
 def compute_db(ydata: list[dict[str, float]]) -> list[float]:
