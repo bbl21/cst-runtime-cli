@@ -92,15 +92,17 @@ def build_json_schemas() -> dict[str, dict]:
 
 
 def build_direct_arg_specs() -> dict[str, dict]:
-    """从 TOOL_DEFS 中提取 direct_flags=True 的标量字段。
+    """从 TOOL_DEFS 中提取支持直接参数的标量字段。
 
     优先从 json_schema，回退到 args_template。
+    当 direct_flags 未显式设置时（迁移后的 tool defn），默认开启以保持兼容。
     只暴露字符串、数字、布尔值字段作为直接参数 `--flag value`。
     数组/对象/None 字段必须通过 `--args-file` 传入。
     """
     result: dict[str, dict] = {}
     for name, defn in _ALL_DEFS.items():
-        if not defn.get("direct_flags", False):
+        # direct_flags 未设置时默认开启（args_template → json_schema 迁移后）
+        if defn.get("direct_flags") is False:
             continue
         scalar_fields: dict[str, str] = {}
         if "json_schema" in defn:

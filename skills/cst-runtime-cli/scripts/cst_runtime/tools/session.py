@@ -8,8 +8,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Create a new blank CST project at the specified path.",
     "handler": "tool_create_blank_project",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "cst-session-close": {
@@ -17,8 +29,48 @@ TOOL_DEFS = {
     "risk": "session",
     "description": "Close the expected CST project, optionally wait for locks to clear, then inspect the environment.",
     "handler": "tool_cst_session_close",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "save": False, "wait_unlock": True, "timeout_seconds": 30, "poll_interval_seconds": 0.5},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "save": {
+                "type": "boolean",
+                "examples": [
+                    False
+                ]
+            },
+            "wait_unlock": {
+                "type": "boolean",
+                "examples": [
+                    True
+                ]
+            },
+            "timeout_seconds": {
+                "type": "integer",
+                "examples": [
+                    30
+                ]
+            },
+            "poll_interval_seconds": {
+                "type": "number",
+                "examples": [
+                    0.5
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "save",
+            "wait_unlock",
+            "timeout_seconds",
+            "poll_interval_seconds"
+        ]
+    },
 },
 
 "cst-session-inspect": {
@@ -26,8 +78,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Central session/process gate: inspect processes, locks, open projects, and reattach readiness.",
     "handler": "tool_cst_session_inspect",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "cst-session-open": {
@@ -35,8 +99,20 @@ TOOL_DEFS = {
     "risk": "session",
     "description": "Open a CST project through the central session manager and inspect the environment afterward.",
     "handler": "tool_cst_session_open",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "cst-session-quit": {
@@ -44,8 +120,34 @@ TOOL_DEFS = {
     "risk": "process-control",
     "description": "Quit CST through the central session manager using only the process allowlist and lock evidence.",
     "handler": "tool_cst_session_quit",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "dry_run": False, "settle_seconds": 0.5},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "dry_run": {
+                "type": "boolean",
+                "examples": [
+                    False
+                ]
+            },
+            "settle_seconds": {
+                "type": "number",
+                "examples": [
+                    0.5
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "dry_run",
+            "settle_seconds"
+        ]
+    },
 },
 
 "cst-session-reattach": {
@@ -53,8 +155,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Reattach to the expected CST project only if it is the sole open project.",
     "handler": "tool_cst_session_reattach",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "save-project": {
@@ -62,8 +176,20 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Save the verified CST working project.",
     "handler": "tool_save_project",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 }
 

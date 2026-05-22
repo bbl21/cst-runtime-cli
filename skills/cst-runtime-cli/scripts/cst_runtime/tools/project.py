@@ -8,8 +8,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Change one CST parameter in the verified working project.",
     "handler": "tool_change_parameter",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "name": "R", "value": 0.102},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "name": {
+                "type": "string",
+                "examples": [
+                    "R"
+                ]
+            },
+            "value": {
+                "type": "number",
+                "examples": [
+                    0.102
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "name",
+            "value"
+        ]
+    },
 },
 
 "change-solver-type": {
@@ -17,8 +43,27 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Change the CST solver type.",
     "handler": "tool_change_solver_type",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "solver_type": "HF Time Domain"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "solver_type": {
+                "type": "string",
+                "examples": [
+                    "HF Time Domain"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "solver_type"
+        ]
+    },
 },
 
 "define-background": {
@@ -26,8 +71,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set the background type to Normal.",
     "handler": "tool_define_background",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "define-boundary": {
@@ -35,8 +92,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set expanded open boundary conditions.",
     "handler": "tool_define_boundary",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "define-frequency-range": {
@@ -44,8 +113,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set the simulation frequency range.",
     "handler": "tool_define_frequency_range",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "start_freq": 2.0, "end_freq": 18.0},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "start_freq": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            },
+            "end_freq": {
+                "type": "number",
+                "examples": [
+                    18.0
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "start_freq",
+            "end_freq"
+        ]
+    },
 },
 
 "define-mesh": {
@@ -53,8 +148,48 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Configure the hexahedral mesh parameters.",
     "handler": "tool_define_mesh",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "steps_per_wave_near": 5, "steps_per_wave_far": 5, "steps_per_box_near": 5, "steps_per_box_far": 1},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "steps_per_wave_near": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            },
+            "steps_per_wave_far": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            },
+            "steps_per_box_near": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            },
+            "steps_per_box_far": {
+                "type": "integer",
+                "examples": [
+                    1
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "steps_per_wave_near",
+            "steps_per_wave_far",
+            "steps_per_box_near",
+            "steps_per_box_far"
+        ]
+    },
 },
 
 "define-monitor": {
@@ -62,8 +197,41 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Define a farfield monitor over a frequency range.",
     "handler": "tool_define_monitor",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "start_freq": 2.0, "end_freq": 18.0, "step": 1},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "start_freq": {
+                "type": "number",
+                "examples": [
+                    2.0
+                ]
+            },
+            "end_freq": {
+                "type": "number",
+                "examples": [
+                    18.0
+                ]
+            },
+            "step": {
+                "type": "integer",
+                "examples": [
+                    1
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "start_freq",
+            "end_freq",
+            "step"
+        ]
+    },
 },
 
 "define-parameters": {
@@ -71,8 +239,48 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Batch-define multiple CST parameters using StoreParameters.",
     "handler": "tool_define_parameters",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "names": ["a", "b", "h"], "values": ["10", "5*b", "2"]},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "names": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "a",
+                        "b",
+                        "h"
+                    ]
+                ]
+            },
+            "values": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "10",
+                        "5*b",
+                        "2"
+                    ]
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "names",
+            "values"
+        ]
+    },
 },
 
 "define-port": {
@@ -80,8 +288,76 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Define a waveguide port.",
     "handler": "tool_define_port",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "port_number": "1", "x_min": -10, "x_max": 10, "y_min": -10, "y_max": 10, "z_min": 0, "z_max": 5, "orientation": "zmin"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "port_number": {
+                "type": "string",
+                "examples": [
+                    "1"
+                ]
+            },
+            "x_min": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "x_max": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "y_min": {
+                "type": "integer",
+                "examples": [
+                    -10
+                ]
+            },
+            "y_max": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            },
+            "z_min": {
+                "type": "integer",
+                "examples": [
+                    0
+                ]
+            },
+            "z_max": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            },
+            "orientation": {
+                "type": "string",
+                "examples": [
+                    "zmin"
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "port_number",
+            "x_min",
+            "x_max",
+            "y_min",
+            "y_max",
+            "z_min",
+            "z_max",
+            "orientation"
+        ]
+    },
 },
 
 "define-solver": {
@@ -89,8 +365,41 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Configure the time-domain solver settings.",
     "handler": "tool_define_solver",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "stimulation_port": "All", "steady_state_limit": -40, "norming_impedance": 50},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "stimulation_port": {
+                "type": "string",
+                "examples": [
+                    "All"
+                ]
+            },
+            "steady_state_limit": {
+                "type": "integer",
+                "examples": [
+                    -40
+                ]
+            },
+            "norming_impedance": {
+                "type": "integer",
+                "examples": [
+                    50
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "stimulation_port",
+            "steady_state_limit",
+            "norming_impedance"
+        ]
+    },
 },
 
 "infer-run-dir": {
@@ -98,8 +407,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Infer run_dir from a projects/working.cst project path.",
     "handler": "tool_infer_run_dir",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "inspect-project": {
@@ -107,8 +428,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Open a CST project, list all parameters and entities, then close. Returns parameter names/values and entity names.",
     "handler": "tool_inspect_project",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "is-simulation-running": {
@@ -116,8 +449,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Check whether the CST solver is currently running for the verified working project.",
     "handler": "tool_is_simulation_running",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "list-open-projects": {
@@ -125,8 +470,11 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "List CST projects visible through DesignEnvironment.connect_to_any().",
     "handler": "tool_list_open_projects",
-    "direct_flags": False,
-    "args_template": {},
+    "json_schema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+    },
 },
 
 "list-parameters": {
@@ -134,8 +482,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "List parameters from the verified CST working project.",
     "handler": "tool_list_parameters",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "pause-simulation": {
@@ -143,8 +503,20 @@ TOOL_DEFS = {
     "risk": "session",
     "description": "Pause the currently running CST solver.",
     "handler": "tool_pause_simulation",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "prepare-experiment": {
@@ -152,8 +524,60 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Open a CST project, change one or more parameters, confirm, then save and close. Supports batch via names+values arrays. Use before run-experiment.",
     "handler": "tool_prepare_experiment",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "param_name": "g", "param_value": 23.5, "names": ["R", "g"], "values": [0.16, 23.0]},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "param_name": {
+                "type": "string",
+                "examples": [
+                    "g"
+                ]
+            },
+            "param_value": {
+                "type": "number",
+                "examples": [
+                    23.5
+                ]
+            },
+            "names": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "examples": [
+                    [
+                        "R",
+                        "g"
+                    ]
+                ]
+            },
+            "values": {
+                "type": "array",
+                "items": {
+                    "type": "number"
+                },
+                "examples": [
+                    [
+                        0.16,
+                        23.0
+                    ]
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "param_name",
+            "param_value",
+            "names",
+            "values"
+        ]
+    },
 },
 
 "resume-simulation": {
@@ -161,8 +585,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Resume a paused CST solver.",
     "handler": "tool_resume_simulation",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "set-fdsolver-extrude-open-bc": {
@@ -170,8 +606,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Enable or disable FD solver extruded open boundary.",
     "handler": "tool_set_fdsolver_extrude_open_bc",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "set-mesh-fpbavoid-nonreg-unite": {
@@ -179,8 +627,20 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Enable or disable mesh FPBA non-regular unite avoidance.",
     "handler": "tool_set_mesh_fpbavoid_nonreg_unite",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "set-mesh-minimum-step-number": {
@@ -188,8 +648,27 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Set the minimum mesh step number.",
     "handler": "tool_set_mesh_minimum_step_number",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "num_steps": 5},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "num_steps": {
+                "type": "integer",
+                "examples": [
+                    5
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "num_steps"
+        ]
+    },
 },
 
 "set-solver-acceleration": {
@@ -197,8 +676,34 @@ TOOL_DEFS = {
     "risk": "write",
     "description": "Configure solver parallelization and hardware acceleration.",
     "handler": "tool_set_solver_acceleration",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "use_parallelization": True, "max_threads": 1024},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "use_parallelization": {
+                "type": "boolean",
+                "examples": [
+                    True
+                ]
+            },
+            "max_threads": {
+                "type": "integer",
+                "examples": [
+                    1024
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "use_parallelization",
+            "max_threads"
+        ]
+    },
 },
 
 "start-simulation-async": {
@@ -206,8 +711,20 @@ TOOL_DEFS = {
     "risk": "long-running",
     "description": "Start the CST solver asynchronously for the verified working project.",
     "handler": "tool_start_simulation_async",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "stop-simulation": {
@@ -215,8 +732,20 @@ TOOL_DEFS = {
     "risk": "session",
     "description": "Stop the currently running CST solver.",
     "handler": "tool_stop_simulation",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "verify-project-identity": {
@@ -224,8 +753,20 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Verify the expected project is the sole open CST project before writes.",
     "handler": "tool_verify_project_identity",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            }
+        },
+        "required": [
+            "project_path"
+        ]
+    },
 },
 
 "wait-project-unlocked": {
@@ -233,8 +774,34 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Wait for a project companion directory to have no .lok files.",
     "handler": "tool_wait_project_unlocked",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "timeout_seconds": 30, "poll_interval_seconds": 0.5},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "timeout_seconds": {
+                "type": "integer",
+                "examples": [
+                    30
+                ]
+            },
+            "poll_interval_seconds": {
+                "type": "number",
+                "examples": [
+                    0.5
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "timeout_seconds",
+            "poll_interval_seconds"
+        ]
+    },
 },
 
 "wait-simulation": {
@@ -242,8 +809,34 @@ TOOL_DEFS = {
     "risk": "long-running",
     "description": "Poll is-simulation-running until the solver finishes or timeout expires.",
     "handler": "tool_wait_simulation",
-    "direct_flags": True,
-    "args_template": {"project_path": "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst", "timeout_seconds": 3600, "poll_interval_seconds": 10},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "project_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                ]
+            },
+            "timeout_seconds": {
+                "type": "integer",
+                "examples": [
+                    3600
+                ]
+            },
+            "poll_interval_seconds": {
+                "type": "integer",
+                "examples": [
+                    10
+                ]
+            }
+        },
+        "required": [
+            "project_path",
+            "timeout_seconds",
+            "poll_interval_seconds"
+        ]
+    },
 },
 }
 

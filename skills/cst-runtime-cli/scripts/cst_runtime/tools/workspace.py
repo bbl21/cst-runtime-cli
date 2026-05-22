@@ -8,8 +8,27 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Read standard run context through cst_runtime.",
     "handler": "tool_get_run_context",
-    "direct_flags": False,
-    "args_template": {"task_path": "C:\\path\\to\\tasks\\task_xxx", "run_id": ""},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "task_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx"
+                ]
+            },
+            "run_id": {
+                "type": "string",
+                "examples": [
+                    ""
+                ]
+            }
+        },
+        "required": [
+            "task_path",
+            "run_id"
+        ]
+    },
 },
 
 "health-check": {
@@ -17,8 +36,27 @@ TOOL_DEFS = {
     "risk": "read",
     "description": "Run comprehensive environment diagnostics: Python, uv, workspace, CST libraries, imports. Auto-fixes what it can, reports remaining issues with user instructions.",
     "handler": "tool_health_check",
-    "direct_flags": True,
-    "args_template": {"workspace": "", "auto_fix": True},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "workspace": {
+                "type": "string",
+                "examples": [
+                    ""
+                ]
+            },
+            "auto_fix": {
+                "type": "boolean",
+                "examples": [
+                    True
+                ]
+            }
+        },
+        "required": [
+            "workspace",
+            "auto_fix"
+        ]
+    },
 },
 
 "init-task": {
@@ -26,8 +64,55 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Create a task.json and runs directory inside a runtime workspace.",
     "handler": "tool_init_task",
-    "direct_flags": True,
-    "args_template": {"workspace": "C:\\path\\to\\empty_workspace", "task_id": "task_001_demo", "source_project": "C:\\path\\to\\model.cst", "goal": "demo", "title": "", "force": False},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "workspace": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\empty_workspace"
+                ]
+            },
+            "task_id": {
+                "type": "string",
+                "examples": [
+                    "task_001_demo"
+                ]
+            },
+            "source_project": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\model.cst"
+                ]
+            },
+            "goal": {
+                "type": "string",
+                "examples": [
+                    "demo"
+                ]
+            },
+            "title": {
+                "type": "string",
+                "examples": [
+                    ""
+                ]
+            },
+            "force": {
+                "type": "boolean",
+                "examples": [
+                    False
+                ]
+            }
+        },
+        "required": [
+            "workspace",
+            "task_id",
+            "source_project",
+            "goal",
+            "title",
+            "force"
+        ]
+    },
 },
 
 "init-workspace": {
@@ -35,8 +120,20 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Initialize a minimal CST runtime workspace in an empty or existing directory.",
     "handler": "tool_init_workspace",
-    "direct_flags": True,
-    "args_template": {"workspace": "C:\\path\\to\\empty_workspace"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "workspace": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\empty_workspace"
+                ]
+            }
+        },
+        "required": [
+            "workspace"
+        ]
+    },
 },
 
 "install-cst-libraries": {
@@ -44,8 +141,27 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Install or verify CST Python libraries (cst, cst.results, cst.interface) using the uv-managed environment.",
     "handler": "tool_install_cst_libraries",
-    "direct_flags": True,
-    "args_template": {"cst_path": "C:\\Program Files\\CST Studio Suite 2026\\AMD64\\python_cst_libraries", "dry_run": True},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "cst_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\Program Files\\CST Studio Suite 2026\\AMD64\\python_cst_libraries"
+                ]
+            },
+            "dry_run": {
+                "type": "boolean",
+                "examples": [
+                    True
+                ]
+            }
+        },
+        "required": [
+            "cst_path",
+            "dry_run"
+        ]
+    },
 },
 
 "prepare-run": {
@@ -53,8 +169,20 @@ TOOL_DEFS = {
     "risk": "filesystem-write",
     "description": "Create a standard run workspace through cst_runtime.",
     "handler": "tool_prepare_run",
-    "direct_flags": False,
-    "args_template": {"task_path": "C:\\path\\to\\tasks\\task_xxx"},
+    "json_schema": {
+        "type": "object",
+        "properties": {
+            "task_path": {
+                "type": "string",
+                "examples": [
+                    "C:\\path\\to\\tasks\\task_xxx"
+                ]
+            }
+        },
+        "required": [
+            "task_path"
+        ]
+    },
 },
 }
 
