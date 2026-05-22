@@ -164,7 +164,7 @@ _register_tool_defs({
     "run-optimization-step": {
         "category": "optimization",
         "risk": "long-running",
-        "description": "Run one optimization iteration: ask Optuna for next parameters, apply them, simulate, read S11 objective, and report back. Agent inspects the s11_metric output to decide whether to stop or continue the loop.",
+        "description": "Run one optimization iteration: ask Optuna for next parameters, apply them, simulate, compute objective, and report back. Agent inspects the objective_value output to decide whether to stop or continue the loop.",
         "handler": "tool_run_optimization_step",
         "direct_flags": True,
         "json_schema": {
@@ -186,6 +186,16 @@ _register_tool_defs({
                     "type": "string",
                     "description": "Name of the Optuna study",
                     "default": "horn_matching"
+                },
+                "objective": {
+                    "type": "object",
+                    "default": {"type": "s11_min_db"},
+                    "description": "Objective function spec. Default: {\"type\": \"s11_min_db\"}. Supports: s11_min_db, s11_at_freq, gain_max, bandwidth, expression"
+                },
+                "sampler": {
+                    "type": "string",
+                    "enum": ["tpe", "cma-es", "random"],
+                    "description": "Override study sampler. Creates a new study with the specified sampler, migrates existing trials."
                 }
             }
         }
@@ -274,4 +284,6 @@ def tool_run_optimization_step(args: dict) -> dict:
         project_path=str(args["project_path"]),
         study_storage=str(args["study_storage"]),
         study_name=str(args["study_name"]),
+        objective=args.get("objective"),
+        sampler=args.get("sampler"),
     )

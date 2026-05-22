@@ -472,8 +472,18 @@ def pipeline_run_optimization_step(
     project_path: str,
     study_storage: str,
     study_name: str,
+    objective: dict | None = None,
+    sampler: str | None = None,
 ) -> dict[str, Any]:
     from ...core import optimizer as _opt
+
+    # 0. Switch sampler if requested
+    if sampler:
+        from ...core.optimizer import switch_sampler as _switch_sampler
+        switch_result = _switch_sampler(study_storage, study_name, sampler)
+        if switch_result.get("status") != "success":
+            return error_response("switch_sampler_failed",
+                switch_result.get("message", "failed to switch sampler"), step="opt-step:switch-sampler")
 
     # 1. Ask study for next parameter suggestion
     ask = _opt.ask_study(study_storage, study_name)
@@ -497,33 +507,35 @@ def pipeline_run_optimization_step(
     # 3. Run simulation and export
     sim = pipeline_run_experiment(project_path)
     if sim.get("status") != "success":
-        metric = sim.get("s11_metric")
-        if metric:
-            _opt.tell_study(study_storage, study_name, trial_number, value=metric["min_db"])
+        obj = compute_objective(objective or {}, sim)
+        if not obj.get("error"):
+            _opt.tell_study(study_storage, study_name, trial_number, value=obj["value"])
             return {
                 "status": "success",
                 "pipeline": "run-optimization-step",
                 "trial_id": trial_number,
                 "params_used": params,
-                "s11_metric": metric,
+                "objective_value": obj["value"],
+                "s11_metric": sim.get("s11_metric"),
                 "study_best": None,
                 "cache_hit": not sim.get("solver_completed", True),
+                "steps_since_improvement": 0,
             }
         _opt.tell_study(study_storage, study_name, trial_number, value=0.0, state="pruned")
         return error_response("simulation_failed",
             sim.get("message", "simulation did not complete"), step="opt-step:simulate")
 
-    # 4. Read S11 metric
-    metric = sim.get("s11_metric")
-    if not metric:
+    # 4. Compute objective
+    obj = compute_objective(objective or {}, sim)
+    if obj.get("error"):
         _opt.tell_study(study_storage, study_name, trial_number, value=0.0, state="pruned")
-        return error_response("no_s11_metric",
-            "S11 metric not found in run-experiment output", step="opt-step:parse")
+        return error_response("objective_failed",
+            obj["error"], step="opt-step:objective", objective_result=obj)
 
-    objective = metric["min_db"]
+    objective_value = obj["value"]
 
     # 5. Tell study the result
-    _opt.tell_study(study_storage, study_name, trial_number, value=objective)
+    _opt.tell_study(study_storage, study_name, trial_number, value=objective_value)
 
     # 6. Read current best
     best = _opt.best_study(study_storage, study_name)
@@ -531,12 +543,21 @@ def pipeline_run_optimization_step(
     if best.get("best_value") is not None:
         study_best = {"value": best["best_value"], "params": best.get("best_params")}
 
+    # 7. Compute steps since improvement
+    steps_since_improvement = 0
+    trial_num = trial_number or 0
+    best_trial_num = best.get("best_trial_number")
+    if best_trial_num is not None:
+        steps_since_improvement = trial_num - best_trial_num
+
     return {
         "status": "success",
         "pipeline": "run-optimization-step",
         "trial_id": trial_number,
         "params_used": params,
-        "s11_metric": metric,
+        "objective_value": objective_value,
+        "s11_metric": sim.get("s11_metric"),
         "study_best": study_best,
         "cache_hit": not sim.get("solver_completed", True),
+        "steps_since_improvement": steps_since_improvement,
     }

@@ -283,6 +283,57 @@ def add_trials(
         return error_response("add_trials_failed", str(exc), study_name=study_name)
 
 
+def switch_sampler(storage_path: str, study_name: str, new_sampler: str) -> dict[str, Any]:
+    optuna, err = _try_import_optuna()
+    if err:
+        return err
+    sp = Path(storage_path).expanduser().resolve()
+    storage = f"sqlite:///{sp.as_posix()}"
+    try:
+        study = optuna.load_study(storage=storage, study_name=study_name)
+        trials = study.trials
+        user_attrs = dict(study.user_attrs)
+        completed = [t for t in trials if t.state == optuna.trial.TrialState.COMPLETE]
+        direction = getattr(study, 'direction', None)
+        directions = getattr(study, 'directions', None)
+        sampler_map = {
+            "tpe": optuna.samplers.TPESampler(seed=42),
+            "cma-es": optuna.samplers.CmaEsSampler(seed=42),
+            "random": optuna.samplers.RandomSampler(seed=42),
+        }
+        new_sampler_obj = sampler_map.get(new_sampler)
+        if new_sampler_obj is None:
+            return error_response("unknown_sampler", f"unknown sampler: {new_sampler}", study_name=study_name)
+        optuna.delete_study(study_name=study_name, storage=storage)
+        create_kwargs: dict = dict(storage=storage, study_name=study_name, sampler=new_sampler_obj, load_if_exists=False)
+        if directions:
+            dir_map = {"MINIMIZE": optuna.study.StudyDirection.MINIMIZE, "MAXIMIZE": optuna.study.StudyDirection.MAXIMIZE}
+            create_kwargs["directions"] = [dir_map.get(str(d), d) for d in directions]
+        elif direction:
+            create_kwargs["direction"] = str(direction).lower()
+        else:
+            create_kwargs["direction"] = "minimize"
+        new_study = optuna.create_study(**create_kwargs)
+        for k, v in user_attrs.items():
+            new_study.set_user_attr(k, v)
+        migrated = 0
+        for t in trials:
+            if t.values is not None and t.state in (optuna.trial.TrialState.COMPLETE, optuna.trial.TrialState.PRUNED):
+                try:
+                    new_study.add_trial(t)
+                    migrated += 1
+                except Exception:
+                    pass
+        return {
+            "status": "success", "study_name": study_name,
+            "sampler": new_sampler, "total_trials": len(trials),
+            "trials_migrated": migrated,
+            "runtime_module": "cst_runtime.core.optimizer",
+        }
+    except Exception as exc:
+        return error_response("switch_sampler_failed", str(exc), study_name=study_name, sampler=new_sampler)
+
+
 def terminate_check(storage_path: str, study_name: str) -> dict[str, Any]:
     optuna, err = _try_import_optuna()
     if err:
