@@ -251,6 +251,7 @@ TOOL_DEFS = {
 # --- Handlers ---
 
 from ..core import project as _po
+from ..core import simulation as _sim
 from ..core import modeling as _md
 from ..core import identity as _pi
 from ..core.utils import project_path_from_args
@@ -329,15 +330,15 @@ def tool_define_parameters(args: dict) -> dict:
 
 
 def tool_start_simulation(args: dict) -> dict:
-    return _po.start_simulation(project_path_from_args(args))
+    return _sim.start_simulation(project_path_from_args(args))
 
 
 def tool_start_simulation_async(args: dict) -> dict:
-    return _po.start_simulation_async(project_path_from_args(args))
+    return _sim.start_simulation_async(project_path_from_args(args))
 
 
 def tool_is_simulation_running(args: dict) -> dict:
-    return _po.is_simulation_running(project_path_from_args(args))
+    return _sim.is_simulation_running(project_path_from_args(args))
 
 
 def tool_wait_simulation(args: dict) -> dict:
@@ -349,7 +350,7 @@ def tool_wait_simulation(args: dict) -> dict:
     last_result = None
     while True:
         polls += 1
-        last_result = _po.is_simulation_running(project_path)
+        last_result = _sim.is_simulation_running(project_path)
         if last_result.get("status") == "error":
             return {**last_result, "polls": polls, "waited_seconds": round(time.monotonic() - started, 3)}
         if not bool(last_result.get("running")):
@@ -377,31 +378,31 @@ def tool_wait_simulation(args: dict) -> dict:
 
 
 def tool_stop_simulation(args: dict) -> dict:
-    return _po.stop_simulation(project_path_from_args(args))
+    return _sim.stop_simulation(project_path_from_args(args))
 
 
 def tool_pause_simulation(args: dict) -> dict:
-    return _po.pause_simulation(project_path_from_args(args))
+    return _sim.pause_simulation(project_path_from_args(args))
 
 
 def tool_resume_simulation(args: dict) -> dict:
-    return _po.resume_simulation(project_path_from_args(args))
+    return _sim.resume_simulation(project_path_from_args(args))
 
 
 def tool_set_solver_acceleration(args: dict) -> dict:
-    return _po.set_solver_acceleration(**args)
+    return _sim.set_solver_acceleration(**args)
 
 
 def tool_set_fdsolver_extrude_open_bc(args: dict) -> dict:
-    return _po.set_fdsolver_extrude_open_bc(**args)
+    return _sim.set_fdsolver_extrude_open_bc(**args)
 
 
 def tool_set_mesh_fpbavoid_nonreg_unite(args: dict) -> dict:
-    return _po.set_mesh_fpbavoid_nonreg_unite(**args)
+    return _sim.set_mesh_fpbavoid_nonreg_unite(**args)
 
 
 def tool_set_mesh_minimum_step_number(args: dict) -> dict:
-    return _po.set_mesh_minimum_step_number(**args)
+    return _sim.set_mesh_minimum_step_number(**args)
 
 
 def tool_list_open_projects(args: dict) -> dict:

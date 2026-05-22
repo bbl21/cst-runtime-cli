@@ -168,8 +168,6 @@ def cleanup_orphan_processes(settle_seconds: float = 0.5) -> dict[str, Any]:
             f"orphan process cleanup failed: {str(exc)}",
             runtime_module="cst_runtime.core.process",
         )
-    lowered = message.lower()
-    return "access is denied" in lowered or "拒绝访问" in lowered or "存取被拒" in lowered
 
 
 def _lock_file_payload(paths: list[Path]) -> list[str]:

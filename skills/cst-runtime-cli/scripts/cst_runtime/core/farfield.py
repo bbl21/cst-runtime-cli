@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 from . import process as process_cleanup
+from . import gateway
 from .errors import error_response
+from .session import get_attached_project, open_project, close_project
 from .utils import abs_project_path, serialize_value
 from ..analysis.farfield import (
     _extract_farfield_frequency_ghz,
@@ -65,9 +67,7 @@ def _normalize_farfield_plot_mode(plot_mode: str) -> dict[str, str]:
     raise ValueError("unsupported plot_mode; use Realized Gain, Gain, or Directivity")
 
 
-def _gui_open_project(fullpath: str) -> dict[str, Any]:
-    from .session import get_attached_project, open_project
-
+def _gui_open_project(fullpath: str, session_type: str = "modeler") -> dict[str, Any]:
     normalized = abs_project_path(fullpath)
     if not os.path.isfile(normalized):
         return error_response("project_file_missing", "project file does not exist", project_path=normalized)
@@ -97,6 +97,7 @@ def _gui_open_project(fullpath: str) -> dict[str, Any]:
                 project_path=normalized,
                 runtime_module="cst_runtime.farfield",
             )
+        gateway.on_session_open(normalized, session_type)
         return {
             "status": "success",
             "project": project,
@@ -114,13 +115,13 @@ def _gui_open_project(fullpath: str) -> dict[str, Any]:
 
 
 def _gui_close_project(project: Any, fullpath: str, save: bool = False) -> dict[str, Any]:
-    from .session import close_project
-
     try:
         if save and hasattr(project, "save"):
             project.save()
         project.close()
-        return close_project(fullpath, save=False)
+        result = close_project(fullpath, save=False)
+        gateway.on_session_close(fullpath)
+        return result
     except Exception as exc:
         return error_response(
             "gui_close_project_failed",
@@ -149,6 +150,10 @@ def _gui_add_to_history(project: Any, command: str, history_name: str) -> dict[s
 def _gui_execute_vba(project: Any, code: str) -> dict[str, Any]:
     errors: list[str] = []
     for entrypoint in ("schematic", "modeler"):
+        rejected = gateway.guard_execute_vba_entrypoint(entrypoint)
+        if rejected:
+            errors.append(f"{entrypoint}: {rejected['message']}")
+            continue
         target = getattr(project, entrypoint, None)
         if target is None:
             errors.append(f"{entrypoint}: missing")
@@ -421,6 +426,14 @@ def export_farfield_grid(
     if not os.path.isfile(normalized_project):
         return error_response("project_file_missing", "project_path does not exist", project_path=normalized_project)
 
+    rejected = gateway.guard_farfield_quantity(quantity)
+    if rejected:
+        return rejected
+
+    rejected = gateway.guard_farfield_run_id(run_id)
+    if rejected:
+        return rejected
+
     try:
         normalized_mode = _normalize_farfield_plot_mode(quantity)
     except ValueError as exc:
@@ -484,6 +497,8 @@ def export_farfield_grid(
         }
         output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
+        gateway.mark_farfield_exported(normalized_project)
+
         return {
             "status": "success",
             "project_path": normalized_project,
@@ -510,8 +525,7 @@ def export_farfield_grid(
                 project.close()
             except Exception:
                 pass
-            from .session import close_project as _sm_close
-            _sm_close(normalized_project, save=False, kill_processes=fresh_session)
+            close_project(normalized_project, save=False, kill_processes=fresh_session)
             if fresh_session:
                 end_quit = process_cleanup.cleanup_cst_processes(dry_run=False, settle_seconds=0.5)
                 flow_log.append({"step": "quit_after_close", "result": end_quit})
@@ -596,6 +610,8 @@ def export_farfield_cut(
         }
         output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
+        gateway.mark_farfield_exported(normalized_project)
+
         return {
             "status": "success",
             "project_path": normalized_project,
@@ -614,8 +630,7 @@ def export_farfield_cut(
                 project.close()
             except Exception:
                 pass
-            from .session import close_project as _sm_close
-            _sm_close(normalized_project, save=False, kill_processes=fresh_session)
+            close_project(normalized_project, save=False, kill_processes=fresh_session)
             if fresh_session:
                 end_quit = process_cleanup.cleanup_cst_processes(dry_run=False, settle_seconds=0.5)
                 flow_log.append({"step": "quit_after_close", "result": end_quit})

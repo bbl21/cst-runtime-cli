@@ -8,40 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from .errors import error_response
-from .utils import serialize_value
-
-from ..render.svg_linechart import (
-    _SVG_W, _SVG_H, _SVG_MARGIN, _COLORS,
-    _DARK_BG, _DARK_TEXT, _LIGHT_BG, _LIGHT_TEXT,
-    _svg_axes, svg_linechart, svg_mini_trend,
-    complex_components, safe_log_db, scalar_series,
-)
-from ..render.svg_heatmap import svg_heatmap
-from ..render.svg_page import svg_page, metric_cards_html
-from ..render.canvas_3d import render_3d_farfield
-from ..render.dashboard import (
-    _TIMELINE_TOOLS, _SECTION_LABELS,
-    _parse_cli_filename, _build_timeline,
-    _categorize_step, _step_summary, _rationale_from_step,
-    _load_s11_exports, load_s11_series,
-    _optimization_s11_chart, _s11_table_html,
-    _optimization_metrics_html, _param_changes_table_html,
-    _step_card_html, _load_exported_payload, _try_parse_cst_farfield_ascii,
-    _plot_output_path,
-    plot_exported_file, generate_report,
-)
-
-# ── Backward-compatible aliases for old private names ──
-_svg_linechart = svg_linechart
-_svg_heatmap = svg_heatmap
-_svg_page = svg_page
-_svg_mini_trend = svg_mini_trend
-_metric_cards_html = metric_cards_html
-_render_3d_farfield = render_3d_farfield
-_complex_components = complex_components
-_safe_log_db = safe_log_db
-_scalar_series = scalar_series
-_serialize_value = serialize_value
+from .utils import serialize_value as _serialize_value
 
 
 def _load_project(project_path: str, allow_interactive: bool = False, subproject_treepath: str = "") -> tuple[Any, dict[str, Any]]:
@@ -455,7 +422,8 @@ def plot_project_result(
                 runtime_module="cst_runtime.results",
             )
         detected_kind, export_result = success
-        plot_result = plot_exported_file(
+        from ..render.dashboard import plot_exported_file as _plot_exported
+        plot_result = _plot_exported(
             file_path=str(export_path),
             output_html=str(output_target or ""),
             page_title=page_title or f"CST Result Preview - {treepath}",
@@ -593,3 +561,33 @@ def export_run_results(
             project_path=str(project_path),
             runtime_module="cst_runtime.results",
         )
+
+
+def generate_report(
+    data_dir: str = "",
+    output_html: str = "",
+    page_title: str = "",
+    modules: str = "",
+    split: bool = False,
+) -> dict[str, Any]:
+    from ..render.dashboard import generate_report as _impl
+    return _impl(
+        data_dir=data_dir,
+        output_html=output_html,
+        page_title=page_title,
+        modules=modules,
+        split=split,
+    )
+
+
+def plot_exported_file(
+    file_path: str = "",
+    output_html: str = "",
+    page_title: str = "",
+) -> dict[str, Any]:
+    from ..render.dashboard import plot_exported_file as _impl
+    return _impl(
+        file_path=file_path,
+        output_html=output_html,
+        page_title=page_title,
+    )

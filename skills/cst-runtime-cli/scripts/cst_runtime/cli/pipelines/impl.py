@@ -204,7 +204,7 @@ def pipeline_run_experiment(
     poll_interval_seconds: float = 10.0,
 ) -> dict[str, Any]:
     from ...core.session import open_project as sm_open, close_project as sm_close
-    from ...core.project import start_simulation_async, is_simulation_running
+    from ...core.simulation import start_simulation_async, is_simulation_running
     from ...core.results import export_run_results
 
     # Record pre-existing exported file count to detect if solver produced new results.
