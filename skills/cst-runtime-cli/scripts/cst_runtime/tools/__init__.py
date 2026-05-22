@@ -48,7 +48,7 @@ def build_tools(handler_map: dict[str, Callable]) -> dict[str, dict]:
 
 
 def _schema_to_template(schema: dict) -> dict:
-    """从 JSON Schema 生成示例值模板。"""
+    """从 JSON Schema 生成示例值模板，含语义路径推理。"""
     template: dict = {}
     for key, prop in schema.get("properties", {}).items():
         if "default" in prop:
@@ -58,7 +58,17 @@ def _schema_to_template(schema: dict) -> dict:
         else:
             ptype = prop.get("type", "string")
             if ptype == "string":
-                template[key] = ""
+                kl = key.lower()
+                if "project_path" in kl or ("path" in kl and "project" in kl):
+                    template[key] = "C:\\path\\to\\tasks\\task_xxx\\runs\\run_001\\projects\\working.cst"
+                elif "workspace" in kl:
+                    template[key] = "C:\\path\\to\\workspace"
+                elif key == "treepath":
+                    template[key] = "1D Results\\S-Parameters\\S1,1"
+                elif "output" in kl or "export" in kl or "file_path" in kl:
+                    template[key] = ""
+                else:
+                    template[key] = ""
             elif ptype in ("number", "integer"):
                 template[key] = prop.get("minimum", 0)
             elif ptype == "boolean":
@@ -76,13 +86,11 @@ def _schema_to_template(schema: dict) -> dict:
 
 
 def build_args_templates() -> dict[str, dict]:
-    """从 TOOL_DEFS 提取 args_template 或从 json_schema 生成。"""
+    """从 TOOL_DEFS 的 json_schema 生成 args 模板。"""
     result: dict[str, dict] = {}
     for name, defn in _ALL_DEFS.items():
         if "json_schema" in defn:
             result[name] = _schema_to_template(defn["json_schema"])
-        elif "args_template" in defn:
-            result[name] = dict(defn["args_template"])
     return result
 
 
@@ -92,29 +100,22 @@ def build_json_schemas() -> dict[str, dict]:
 
 
 def build_direct_arg_specs() -> dict[str, dict]:
-    """从 TOOL_DEFS 中提取支持直接参数的标量字段。
-
-    优先从 json_schema，回退到 args_template。
-    当 direct_flags 未显式设置时（迁移后的 tool defn），默认开启以保持兼容。
-    只暴露字符串、数字、布尔值字段作为直接参数 `--flag value`。
-    数组/对象/None 字段必须通过 `--args-file` 传入。
+    """从 json_schema 推导支持直接参数的工具。
+    只要有 string/number/integer/boolean 类型属性即可。
     """
     result: dict[str, dict] = {}
     for name, defn in _ALL_DEFS.items():
-        # direct_flags 未设置时默认开启（args_template → json_schema 迁移后）
-        if defn.get("direct_flags") is False:
-            continue
         scalar_fields: dict[str, str] = {}
-        if "json_schema" in defn:
-            for key, prop in defn["json_schema"].get("properties", {}).items():
-                ptype = prop.get("type", "string")
-                if ptype in ("string", "number", "integer", "boolean"):
-                    example = str(prop.get("default", prop.get("minimum", "")))
-                    scalar_fields[key] = example
-        elif "args_template" in defn:
-            for key, val in defn["args_template"].items():
-                if isinstance(val, (str, int, float, bool)):
-                    scalar_fields[key] = str(val) if not isinstance(val, str) else val
+        schema = defn.get("json_schema", {})
+        for key, prop in schema.get("properties", {}).items():
+            ptype = prop.get("type", "string")
+            if ptype in ("string", "number", "integer", "boolean"):
+                example = ""
+                if "examples" in prop and prop["examples"]:
+                    example = str(prop["examples"][0])
+                elif "default" in prop:
+                    example = str(prop["default"])
+                scalar_fields[key] = example
         if scalar_fields:
             result[name] = scalar_fields
     return result
