@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from ...core.errors import error_response
+from ...core.objective import compute_objective
 from ...core.utils import safe_log_db as _safe_log_db
 
 
@@ -352,6 +353,7 @@ def pipeline_run_probe_phase(
     study_name: str,
     max_probes: int = 12,
     include_center: bool = True,
+    objective: dict | None = None,
 ) -> dict[str, Any]:
     import shutil
     from pathlib import Path
@@ -389,20 +391,20 @@ def pipeline_run_probe_phase(
             continue
         sim = pipeline_run_experiment(probe_path)
         if sim.get("status") != "success":
-            metric = sim.get("s11_metric")
-            if metric:
-                simulated.append({"params": probe, "value": metric["min_db"]})
+            obj = compute_objective(objective or {}, sim)
+            if not obj.get("error"):
+                simulated.append({"params": probe, "value": obj["value"]})
             else:
                 failed.append({"params": probe, "error": sim.get("error_type", "sim_failed")})
             continue
-        metric = sim.get("s11_metric")
-        if metric:
-            result = {"params": probe, "value": metric["min_db"]}
+        obj = compute_objective(objective or {}, sim)
+        if not obj.get("error"):
+            result = {"params": probe, "value": obj["value"]}
             simulated.append(result)
             if not sim.get("solver_completed", True):
                 cached.append(result)
         else:
-            failed.append({"params": probe, "error": "no_s11_metric"})
+            failed.append({"params": probe, "error": obj.get("error", "objective_failed")})
 
     # 4. Move exported files to exports/probe/
     exports_dir = p.parent.parent / "exports"
@@ -426,6 +428,23 @@ def pipeline_run_probe_phase(
     inject = _opt.add_trials(study_storage, study_name, trials)
     trials_injected = inject.get("trials_added", 0)
 
+    # Edge hit detection
+    edge_hit: dict[str, bool] = {}
+    for name, ranges in parameters.items():
+        pmin = ranges.get("min", 0)
+        pmax = ranges.get("max", 0)
+        hits = [s for s in simulated if abs(s["params"].get(name, 0) - pmin) < 1e-9 or abs(s["params"].get(name, 0) - pmax) < 1e-9]
+        edge_hit[name] = len(hits) > 0
+
+    # Algorithm suggestion
+    n_important = len(analysis.get("top_params", []))
+    interactions = analysis.get("interactions", {})
+    has_strong_interaction = any(v > 0.3 for v in interactions.values()) if interactions else False
+    if n_important > 3 or has_strong_interaction:
+        suggested_algorithm = "CMA-ES"
+    else:
+        suggested_algorithm = "TPE"
+
     return {
         "status": "success" if len(simulated) >= len(probes) / 2 else "warning",
         "pipeline": "run-probe-phase",
@@ -442,6 +461,8 @@ def pipeline_run_probe_phase(
         "trials_injected": trials_injected,
         "probe_project": str(probe_project),
         "exports_dir": str(probe_exports),
+        "edge_hit": edge_hit,
+        "suggested_algorithm": suggested_algorithm,
     }
 
 

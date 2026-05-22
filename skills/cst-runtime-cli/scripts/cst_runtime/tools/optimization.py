@@ -106,7 +106,7 @@ _register_tool_defs({
     "run-probe-phase": {
         "category": "optimization",
         "risk": "long-running",
-        "description": "Run the complete probe phase: design Plackett-Burman probes, simulate each, analyze main effects and interactions, then inject results into an Optuna study. The working.cst is copied to working_probe.cst for isolation; exports go to exports/probe/. Returns top_params for agent to decide which parameters to carry into optimization.",
+        "description": "Run the complete probe phase: design Plackett-Burman probes, simulate each, analyze main effects and interactions, then inject results into an Optuna study. The working.cst is copied to working_probe.cst for isolation; exports go to exports/probe/. Returns top_params, edge_hit, and suggested_algorithm. Supports objective parameter to customize the objective function (default: s11_min_db).",
         "handler": "tool_run_probe_phase",
         "direct_flags": True,
         "json_schema": {
@@ -152,6 +152,11 @@ _register_tool_defs({
                     "type": "boolean",
                     "default": True,
                     "description": "Include center point in probe design"
+                },
+                "objective": {
+                    "type": "object",
+                    "default": {"type": "s11_min_db"},
+                    "description": "Objective function spec. Default: {\"type\": \"s11_min_db\"}. Supports: s11_min_db, s11_at_freq, gain_max, bandwidth, expression"
                 }
             }
         }
@@ -259,6 +264,7 @@ def tool_run_probe_phase(args: dict) -> dict:
         study_name=str(args["study_name"]),
         max_probes=int(args.get("max_probes", 12)),
         include_center=bool(args.get("include_center", True)),
+        objective=args.get("objective"),
     )
 
 
