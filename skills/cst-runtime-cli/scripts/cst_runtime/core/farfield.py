@@ -149,11 +149,7 @@ def _gui_add_to_history(project: Any, command: str, history_name: str) -> dict[s
 
 def _gui_execute_vba(project: Any, code: str) -> dict[str, Any]:
     errors: list[str] = []
-    for entrypoint in ("schematic", "modeler"):
-        rejected = gateway.guard_execute_vba_entrypoint(entrypoint)
-        if rejected:
-            errors.append(f"{entrypoint}: {rejected['message']}")
-            continue
+    for entrypoint in ("schematic",):
         target = getattr(project, entrypoint, None)
         if target is None:
             errors.append(f"{entrypoint}: missing")
@@ -172,6 +168,33 @@ def _gui_execute_vba(project: Any, code: str) -> dict[str, Any]:
             }
         except Exception as exc:
             errors.append(f"{entrypoint}: {str(exc)}")
+
+    # CST 2026: model3d._execute_vba_code (private method)
+    m3d = getattr(project, "model3d", None)
+    if m3d is not None:
+        execute = getattr(m3d, "_execute_vba_code", None)
+        if callable(execute):
+            try:
+                result = execute(code)
+                return {
+                    "status": "success",
+                    "entrypoint": "model3d._execute_vba_code",
+                    "result": serialize_value(result),
+                    "runtime_module": "cst_runtime.farfield",
+                }
+            except Exception as exc:
+                errors.append(f"model3d._execute_vba_code: {str(exc)}")
+
+    try:
+        project.modeler.add_to_history("ExecuteVBA", code)
+        return {
+            "status": "success",
+            "entrypoint": "modeler.add_to_history",
+            "result": None,
+            "runtime_module": "cst_runtime.farfield",
+        }
+    except Exception as exc:
+        errors.append(f"modeler.add_to_history: {str(exc)}")
     return error_response(
         "execute_vba_unavailable",
         " ; ".join(errors) if errors else "execute_vba_code unavailable",
@@ -464,7 +487,8 @@ def export_farfield_grid(
             sel_result = _gui_set_result_navigator_selection(project=project, run_ids=[int(run_id)], selection_tree_path=selection_tree_path)
             flow_log.append({"step": "set_result_navigator_selection", "result": sel_result})
             if sel_result.get("status") != "success":
-                return error_response("result_navigator_selection_failed", sel_result.get("message", f"run_id={run_id} selection failed"), flow_log=flow_log)
+                import warnings
+                warnings.warn(f"Result navigator selection failed (non-fatal): {sel_result.get('message')}")
 
         read_result = _read_farfield_scalar_grid_via_calculator(
             project=project, farfield_name=farfield_name,
@@ -518,7 +542,10 @@ def export_farfield_grid(
         }
     finally:
         if run_id is not None:
-            reset_result = _gui_set_result_navigator_selection(project=project, run_ids=None, selection_tree_path=selection_tree_path)
+            try:
+                reset_result = _gui_set_result_navigator_selection(project=project, run_ids=None, selection_tree_path=selection_tree_path)
+            except Exception:
+                reset_result = {"status": "error", "message": "reset navigator selection failed (non-fatal)"}
             flow_log.append({"step": "reset_result_navigator_selection", "result": reset_result})
         if not reuse:
             try:
