@@ -1,11 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
-name = "cst-runtime"
-version = "0.1.0"
-description = "CST Runtime CLI - production entry point"
-requires-python = ">=3.12"
+name = "cst-runtime-cli"
+version = "1.0.0"
+description = "CST Studio Suite CLI toolchain - modeling, simulation, optimization, results, farfield"
+requires-python = ">=3.13"
+license = {text = "MIT"}
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://github.com/bbl21/cst-runtime-cli"
+Source = "https://github.com/bbl21/cst-runtime-cli"
 
 [project.scripts]
 cst-runtime = "cst_runtime.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["cst_runtime"]
 
 [tool.pytest.ini_options]
 testpaths = ["../tests"]
