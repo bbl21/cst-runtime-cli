@@ -7,6 +7,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILL_ROOT = REPO_ROOT / "skills" / "cst-runtime-cli"
 PYTHON = sys.executable
+# Use skill scripts directory as PYTHONPATH
 _PYTHONPATH = str(SKILL_ROOT / "scripts")
 
 
