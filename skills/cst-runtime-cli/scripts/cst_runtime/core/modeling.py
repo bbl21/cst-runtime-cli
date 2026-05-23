@@ -1154,6 +1154,9 @@ def _set_preset_view(prj, preset_name: str) -> None:
     if preset_name == "Isometric":
         cst_view_name = "Perspective"  # Closest equivalent in CST
     prj.modeler.Plot.RestoreView(cst_view_name)
+    
+    # Zoom to fit the model in view
+    prj.modeler.Plot.ZoomToStructure()
 
 
 def _set_custom_view(prj, azimuth: float, elevation: float, zoom: float) -> None:
