@@ -24,7 +24,7 @@ from ..tools.workspace import tool_init_workspace, tool_init_task, tool_prepare_
 from ..tools.session import tool_create_blank_project, tool_cst_session_close, tool_cst_session_inspect, tool_cst_session_open, tool_cst_session_quit, tool_cst_session_reattach, tool_save_project
 from ..tools.farfield import tool_inspect_farfield_monitors, tool_export_farfield_grid, tool_export_farfield_cut, tool_calculate_farfield_neighborhood_flatness
 from ..tools.results import tool_open_results_project, tool_list_subprojects, tool_get_version_info, tool_list_result_items, tool_list_run_ids, tool_get_parameter_combination, tool_get_1d_result, tool_get_2d_result, tool_export_run_results, tool_generate_report, tool_plot_exported_file
-from ..tools.project import tool_inspect_project, tool_prepare_experiment, tool_list_materials, tool_list_parameters, tool_list_entities, tool_change_parameter, tool_define_parameters, tool_start_simulation_async, tool_is_simulation_running, tool_wait_simulation, tool_stop_simulation, tool_pause_simulation, tool_resume_simulation, tool_set_solver_acceleration, tool_set_fdsolver_extrude_open_bc, tool_set_mesh_fpbavoid_nonreg_unite, tool_set_mesh_minimum_step_number, tool_list_open_projects, tool_verify_project_identity, tool_infer_run_dir, tool_wait_project_unlocked, tool_define_frequency_range, tool_change_solver_type, tool_define_background, tool_define_boundary, tool_define_mesh, tool_define_solver, tool_define_port, tool_define_monitor, tool_capture_3d_view, tool_inspect_model_view
+from ..tools.project import tool_inspect_project, tool_prepare_experiment, tool_list_materials, tool_list_parameters, tool_list_entities, tool_change_parameter, tool_define_parameters, tool_start_simulation_async, tool_is_simulation_running, tool_wait_simulation, tool_stop_simulation, tool_pause_simulation, tool_resume_simulation, tool_set_solver_acceleration, tool_set_fdsolver_extrude_open_bc, tool_set_mesh_fpbavoid_nonreg_unite, tool_set_mesh_minimum_step_number, tool_list_open_projects, tool_verify_project_identity, tool_infer_run_dir, tool_wait_project_unlocked, tool_define_frequency_range, tool_change_solver_type, tool_define_background, tool_define_boundary, tool_define_mesh, tool_define_solver, tool_define_port, tool_define_monitor, tool_capture_3d_view
 from ..tools.modeling import tool_define_material_from_mtd, tool_define_brick, tool_define_cylinder, tool_define_cone, tool_define_rectangle, tool_boolean_subtract, tool_boolean_add, tool_boolean_intersect, tool_boolean_insert, tool_delete_entity, tool_create_component, tool_change_material, tool_rename_entity, tool_set_entity_color, tool_define_units, tool_set_farfield_monitor, tool_set_efield_monitor, tool_set_field_monitor, tool_set_probe, tool_delete_probe, tool_delete_monitor, tool_set_background_with_space, tool_set_farfield_plot_cuts, tool_show_bounding_box, tool_activate_post_process, tool_create_mesh_group, tool_define_polygon_3d, tool_define_analytical_curve, tool_define_extrude_curve, tool_transform_shape, tool_transform_curve, tool_create_horn_segment, tool_create_loft_sweep, tool_create_hollow_sweep, tool_add_to_history, tool_pick_face, tool_define_loft, tool_export_e_field, tool_export_surface_current, tool_export_voltage
 from .pipelines.registry import PIPELINES
 from .pipelines.impl import (
@@ -135,7 +135,7 @@ CST_INTERFACE_TOOLS = {
     "prepare-experiment",
     "run-experiment",
     "capture-3d-view",
-    "inspect-model-view",
+
 }
 CST_RESULTS_TOOLS = {
     "open-results-project",
@@ -929,7 +929,7 @@ _HANDLER_MAP: dict[str, Callable] = {
     "tool_define_port": tool_define_port,
     "tool_define_monitor": tool_define_monitor,
     "tool_capture_3d_view": tool_capture_3d_view,
-    "tool_inspect_model_view": tool_inspect_model_view,
+
     "tool_define_material_from_mtd": tool_define_material_from_mtd,
     "tool_define_brick": tool_define_brick,
     "tool_define_cylinder": tool_define_cylinder,

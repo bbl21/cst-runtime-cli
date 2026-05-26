@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 SKILL_ROOT = REPO_ROOT / "skills" / "cst-runtime-cli"
 PYTHON = sys.executable
 # Use skill scripts directory as PYTHONPATH
