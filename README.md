@@ -146,7 +146,7 @@ uv run python -m cst_runtime export-run-results --args-file <args.json>
 ### 方式 B：直接 CLI 使用
 
 ```powershell
-git clone https://github.com/anomalyco/cst-runtime-cli.git
+git clone https://github.com/bbl21/cst-runtime-cli.git
 cd cst-runtime-cli
 python skills/cst-runtime-cli/scripts/bootstrap.py --skill-path skills/cst-runtime-cli/scripts
 uv run python -m cst_runtime list-tools

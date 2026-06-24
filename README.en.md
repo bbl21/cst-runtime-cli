@@ -146,7 +146,7 @@ The extracted structure should include `skills/cst-runtime-cli/` and `skills/cst
 ### Option B: Direct CLI
 
 ```powershell
-git clone https://github.com/anomalyco/cst-runtime-cli.git
+git clone https://github.com/bbl21/cst-runtime-cli.git
 cd cst-runtime-cli
 python skills/cst-runtime-cli/scripts/bootstrap.py --skill-path skills/cst-runtime-cli/scripts
 uv run python -m cst_runtime list-tools
